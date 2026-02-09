@@ -18,13 +18,71 @@ const bot = new TelegramBot(token, { polling: true });
 // Palavras-chave para validar treino
 const WORKOUT_KEYWORDS = ['eu treinei', 'treinei', 'treinado'];
 
-// Armazena o estado de treino dos usuários (userId -> boolean)
-const userWorkoutStatus = new Map<number, boolean>();
+// Arquivo de persistência
+const DATA_FILE = path.join(__dirname, '../data/workout-status.json');
+
+// Armazena o estado de treino dos usuários (userId -> date string)
+const userWorkoutStatus = new Map<number, string>();
+
+// Carregar dados salvos
+function loadWorkoutStatus() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const data = fs.readFileSync(DATA_FILE, 'utf8');
+      const parsed = JSON.parse(data);
+      const today = new Date().toDateString();
+      
+      // Carregar apenas dados de hoje
+      Object.entries(parsed).forEach(([userId, date]) => {
+        if (date === today) {
+          userWorkoutStatus.set(Number(userId), date as string);
+        }
+      });
+      
+      console.log(`✅ Dados carregados: ${userWorkoutStatus.size} usuários`);
+    }
+  } catch (error) {
+    console.error('Erro ao carregar dados:', error);
+  }
+}
+
+// Salvar dados
+function saveWorkoutStatus() {
+  try {
+    const dataDir = path.dirname(DATA_FILE);
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    
+    const data: { [key: string]: string } = {};
+    userWorkoutStatus.forEach((date, userId) => {
+      data[userId.toString()] = date;
+    });
+    
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Erro ao salvar dados:', error);
+  }
+}
 
 // Função para verificar se a mensagem contém palavras de treino
 function hasWorkoutKeyword(text: string): boolean {
   const lowerText = text.toLowerCase();
   return WORKOUT_KEYWORDS.some(keyword => lowerText.includes(keyword));
+}
+
+// Função para verificar se o usuário treinou hoje
+function hasTrainedToday(userId: number): boolean {
+  const lastWorkoutDate = userWorkoutStatus.get(userId);
+  const today = new Date().toDateString();
+  return lastWorkoutDate === today;
+}
+
+// Função para marcar treino do usuário
+function markWorkout(userId: number) {
+  const today = new Date().toDateString();
+  userWorkoutStatus.set(userId, today);
+  saveWorkoutStatus();
 }
 
 // Função para enviar motivação (áudio + imagem)
@@ -85,7 +143,7 @@ bot.on('message', async (msg) => {
   // Verificar se a mensagem contém palavras-chave de treino
   if (hasWorkoutKeyword(text)) {
     // Marcar que o usuário treinou
-    userWorkoutStatus.set(userId, true);
+    markWorkout(userId);
     
     // Enviar mensagem de parabéns
     await sendCongratulations(chatId, userId);
@@ -99,7 +157,7 @@ bot.onText(/\/status/, async (msg) => {
 
   if (!userId) return;
 
-  const hasTrained = userWorkoutStatus.get(userId) || false;
+  const hasTrained = hasTrainedToday(userId);
 
   if (hasTrained) {
     await bot.sendMessage(chatId, '✅ Você já treinou hoje! Continue assim! 💪');
@@ -116,7 +174,7 @@ bot.onText(/\/checktreino/, async (msg) => {
 
   if (!userId) return;
 
-  const hasTrained = userWorkoutStatus.get(userId) || false;
+  const hasTrained = hasTrainedToday(userId);
 
   if (!hasTrained) {
     await sendMotivation(chatId, userId);
@@ -160,27 +218,35 @@ Este bot ajuda você a manter a motivação para treinar!
 
 // Função para verificação periódica (polling diário)
 function setupDailyCheck() {
-  // Reset status diário (às 00:00)
-  const now = new Date();
-  const night = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() + 1, // Próximo dia
-    0, 0, 0 // 00:00:00
-  );
-  const msToMidnight = night.getTime() - now.getTime();
+  // Função para calcular milissegundos até a próxima meia-noite
+  function msUntilMidnight(): number {
+    const now = new Date();
+    const night = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1, // Próximo dia
+      0, 0, 0 // 00:00:00
+    );
+    return night.getTime() - now.getTime();
+  }
 
-  setTimeout(() => {
-    console.log('Resetando status de treino diário...');
+  // Função para resetar status
+  function resetDailyStatus() {
+    console.log(`🔄 Resetando status de treino diário (${new Date().toLocaleString()})...`);
     userWorkoutStatus.clear();
+    saveWorkoutStatus();
     
-    // Configurar próxima verificação
-    setInterval(() => {
-      console.log('Resetando status de treino diário...');
-      userWorkoutStatus.clear();
-    }, 24 * 60 * 60 * 1000); // 24 horas
-  }, msToMidnight);
+    // Agendar próximo reset
+    setTimeout(resetDailyStatus, msUntilMidnight());
+  }
+
+  // Agendar primeiro reset à meia-noite
+  setTimeout(resetDailyStatus, msUntilMidnight());
+  console.log(`⏰ Próximo reset agendado para: ${new Date(Date.now() + msUntilMidnight()).toLocaleString()}`);
 }
+
+// Carregar dados salvos ao iniciar
+loadWorkoutStatus();
 
 // Iniciar verificação diária
 setupDailyCheck();

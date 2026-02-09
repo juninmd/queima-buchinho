@@ -1,0 +1,46 @@
+name: Daily Workout Check
+
+on:
+  schedule:
+    # Runs at 22:00 (10 PM) Brazil time (UTC-3)
+    # In UTC, this is 01:00 (1 AM) the next day
+    - cron: '0 1 * * *'
+  workflow_dispatch: # Permite execução manual
+
+jobs:
+  check-workout:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build TypeScript
+        run: npm run build
+      
+      - name: Run daily check
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          BOT_MODE: 'checker'
+        run: npm start
+      
+      - name: Upload data artifact (opcional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workout-data-${{ github.run_number }}
+          path: data/
+          retention-days: 7

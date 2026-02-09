@@ -7,6 +7,8 @@ Bot do Telegram para motivação de treinos! Este bot:
 - 🖼️ Envia imagem motivacional para te incentivar
 - 💰 **Sem custo de infraestrutura** - usa GitHub Actions gratuito!
 
+> 🔧 **[→ Ver lista completa de configurações necessárias (CONFIGURACAO.md)](CONFIGURACAO.md)**
+
 ## 🎯 Como Funciona
 
 1. Durante o dia, você envia "eu treinei", "treinei" ou "treinado" para o bot
@@ -171,6 +173,14 @@ queima-buchinho/
 - GitHub Actions: 2000 minutos/mês no plano gratuito
 - Este bot usa ~1 minuto/dia = ~30 minutos/mês
 - Sobram 1970 minutos para outros projetos!
+
+## 📚 Documentação Completa
+
+- **[CONFIGURACAO.md](CONFIGURACAO.md)** - 🔧 Lista completa de valores e secrets necessários
+- **[QUICKSTART.md](QUICKSTART.md)** - ⚡ Guia rápido de 3 passos
+- **[GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)** - 📖 Setup detalhado e troubleshooting
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - 🏗️ Arquitetura técnica do sistema
+- **[EXAMPLES.md](EXAMPLES.md)** - 💡 Exemplos de uso
 
 ## Contribuindo
 

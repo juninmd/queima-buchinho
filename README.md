@@ -54,9 +54,26 @@ npm run dev
 ```
 
 ### Produção
+
+#### Usando Node.js diretamente
 ```bash
 npm run build
 npm start
+```
+
+#### Usando Docker
+```bash
+# Build da imagem
+docker-compose build
+
+# Iniciar o bot
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f
+
+# Parar o bot
+docker-compose down
 ```
 
 ## Comandos do Bot

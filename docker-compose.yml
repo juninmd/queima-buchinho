@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TARGET_USER_ID=${TARGET_USER_ID}
+      - CHAT_ID=${CHAT_ID}
+    volumes:
+      - ./assets:/app/assets
+    env_file:
+      - .env

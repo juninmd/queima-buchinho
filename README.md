@@ -1,113 +1,158 @@
 # Queima Buchinho 🔥
 
-Bot do Telegram para motivação de treinos! Este bot monitora mensagens em um grupo do Telegram e:
+Bot do Telegram para motivação de treinos! Este bot:
+- ✅ Roda automaticamente via **GitHub Actions** às 22h todos os dias
 - ✅ Parabeniza quando você informa que treinou
 - 🎵 Envia áudio motivacional quando você não treinou
 - 🖼️ Envia imagem motivacional para te incentivar
+- 💰 **Sem custo de infraestrutura** - usa GitHub Actions gratuito!
+
+## 🎯 Como Funciona
+
+1. Durante o dia, você envia "eu treinei", "treinei" ou "treinado" para o bot
+2. Às **22h**, o bot verifica automaticamente se você treinou
+3. **Treinou?** → Recebe parabenização 🎉
+4. **Não treinou?** → Recebe motivação (áudio + imagem) 💪
 
 ## Funcionalidades
 
-- **Detecção automática de treino**: O bot reconhece quando você envia mensagens contendo "eu treinei", "treinei" ou "treinado"
-- **Mensagens de parabéns**: Receba parabenizações automáticas quando registrar seu treino
-- **Motivação ativa**: Se você não treinou, o bot envia áudio e imagem motivacionais
-- **Reset diário**: O status de treino é resetado automaticamente à meia-noite
-- **Comandos úteis**: Vários comandos para interagir com o bot
+- **Verificação diária automática**: Via GitHub Actions às 22h (horário de Brasília)
+- **Detecção automática de treino**: Reconhece mensagens com "eu treinei", "treinei" ou "treinado"
+- **Mensagens de parabéns**: Parabenizações automáticas quando você treina
+- **Motivação ativa**: Áudio e imagem motivacionais quando você não treina
+- **Sem custo**: Roda gratuitamente no GitHub Actions (2000 min/mês grátis)
+- **Dois modos de operação**:
+  - **Checker** (padrão): Verificação diária via cron
+  - **Listener** (opcional): Monitoramento contínuo de mensagens
 
 ## Pré-requisitos
 
-- Node.js (versão 18 ou superior)
-- npm ou yarn
+- Conta no GitHub (para rodar via Actions)
 - Token de bot do Telegram (obtido através do [@BotFather](https://t.me/botfather))
+- Seu Chat ID do Telegram
 
-## Instalação
+## 🚀 Setup Rápido (GitHub Actions)
 
-1. Clone o repositório:
-```bash
-git clone https://github.com/juninmd/queima-buchinho.git
-cd queima-buchinho
-```
+### 1. Obter Token do Bot
 
-2. Instale as dependências:
-```bash
-npm install
-```
+1. No Telegram, fale com [@BotFather](https://t.me/botfather)
+2. Envie `/newbot` e siga as instruções
+3. Copie o token fornecido
 
-3. Configure as variáveis de ambiente:
-```bash
-cp .env.example .env
-```
+### 2. Obter seu Chat ID
 
-4. Edite o arquivo `.env` e adicione seu token do Telegram:
-```
-TELEGRAM_BOT_TOKEN=seu_token_aqui
-```
+1. Envie uma mensagem qualquer para seu bot
+2. Acesse: `https://api.telegram.org/bot<SEU_TOKEN>/getUpdates`
+3. Procure por `"chat":{"id":XXXXXXX}` - esse é seu Chat ID
 
-5. (Opcional) Adicione arquivos de mídia motivacionais na pasta `assets/`:
-   - `motivation.mp3` - Áudio motivacional
-   - `motivation.jpg` - Imagem motivacional
+### 3. Configurar GitHub Secrets
+
+No seu repositório:
+
+1. Vá em **Settings** → **Secrets and variables** → **Actions**
+2. Crie dois secrets:
+   - `TELEGRAM_BOT_TOKEN`: Seu token do bot
+   - `CHAT_ID`: Seu chat ID (número)
+
+### 4. Pronto!
+
+O bot rodará automaticamente às 22h todos os dias! 🎉
+
+Para mais detalhes, veja [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)
 
 ## Como usar
 
-### Desenvolvimento
+### GitHub Actions (Recomendado - Grátis!)
+
+Após configurar os Secrets:
+
+1. O bot roda automaticamente às 22h
+2. Para testar agora: **Actions** → **Daily Workout Check** → **Run workflow**
+3. Envie "eu treinei" para o bot durante o dia
+4. Aguarde às 22h para receber a verificação!
+
+### Modo Local (Desenvolvimento)
+
+Se quiser rodar localmente:
+
 ```bash
-npm run dev
-```
+# Instalar dependências
+npm install
 
-### Produção
+# Configurar ambiente
+cp .env.example .env
+# Edite .env com suas credenciais
 
-#### Usando Node.js diretamente
-```bash
-npm run build
-npm start
-```
+# Modo listener (contínuo)
+BOT_MODE=listener npm run dev
 
-#### Usando Docker
-```bash
-# Build da imagem
-docker-compose build
-
-# Iniciar o bot
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
-
-# Parar o bot
-docker-compose down
+# Modo checker (teste de verificação única)
+BOT_MODE=checker npm start
 ```
 
 ## Comandos do Bot
+
+Quando em modo listener, você pode usar:
 
 - `/help` - Mostra a ajuda e instruções de uso
 - `/status` - Verifica se você já treinou hoje
 - `/checktreino` - Verifica o status e recebe motivação se necessário
 - `/reset` - Reseta seu status de treino (útil para testes)
 
+**Nota**: No modo checker (GitHub Actions), os comandos não são necessários - o bot verifica automaticamente às 22h.
+
 ## Como criar um bot no Telegram
 
 1. Abra o Telegram e procure por [@BotFather](https://t.me/botfather)
 2. Envie o comando `/newbot`
 3. Siga as instruções para escolher um nome e username para seu bot
-4. O BotFather fornecerá um token - copie este token
-5. Cole o token no arquivo `.env` na variável `TELEGRAM_BOT_TOKEN`
-6. Adicione o bot ao seu grupo do Telegram
-7. Inicie o bot com `npm start`
+4. O BotFather fornecerá um token - **guarde este token**
+5. Configure o token nos GitHub Secrets (veja Setup acima)
+6. Envie uma mensagem para seu bot para obter o Chat ID
+
+## 📊 Arquitetura
+
+### Modo Checker (GitHub Actions)
+```
+┌─────────────────────────────────────────┐
+│  GitHub Actions (às 22h diariamente)    │
+│  ┌─────────────────────────────────┐   │
+│  │ 1. Busca mensagens do dia       │   │
+│  │ 2. Verifica palavras-chave      │   │
+│  │ 3. Treinou? → Parabeniza        │   │
+│  │    Não treinou? → Motiva        │   │
+│  └─────────────────────────────────┘   │
+└─────────────────────────────────────────┘
+```
+
+### Modo Listener (Opcional)
+```
+┌─────────────────────────────────────────┐
+│  Bot rodando continuamente              │
+│  ┌─────────────────────────────────┐   │
+│  │ Mensagem recebida               │   │
+│  │ └─> Contém "treinei"?           │   │
+│  │     └─> Sim: Parabeniza         │   │
+│  └─────────────────────────────────┘   │
+└─────────────────────────────────────────┘
+```
 
 ## Estrutura do Projeto
 
 ```
 queima-buchinho/
+├── .github/
+│   └── workflows/
+│       ├── daily-check.yml    # Workflow principal (22h diárias)
+│       └── listener.yml       # Workflow opcional (contínuo)
 ├── src/
-│   └── index.ts          # Código principal do bot
+│   └── index.ts              # Código principal do bot
 ├── assets/
-│   ├── README.md         # Instruções sobre arquivos de mídia
-│   ├── motivation.mp3    # Áudio motivacional (adicione o seu)
-│   └── motivation.jpg    # Imagem motivacional (adicione a sua)
-├── dist/                 # Código compilado (gerado automaticamente)
-├── .env.example          # Exemplo de configuração
-├── .gitignore
-├── package.json
-├── tsconfig.json
+│   ├── motivation.mp3        # Áudio motivacional (opcional)
+│   └── motivation.jpg        # Imagem motivacional (opcional)
+├── data/                     # Dados persistidos (auto-gerado)
+├── .env.example              # Exemplo de configuração
+├── GITHUB_ACTIONS_SETUP.md   # Guia completo de setup
 └── README.md
 ```
 
@@ -116,7 +161,16 @@ queima-buchinho/
 - **TypeScript**: Linguagem de programação
 - **Node.js**: Runtime JavaScript
 - **node-telegram-bot-api**: Biblioteca para interação com a API do Telegram
+- **GitHub Actions**: Automação e agendamento (cron)
 - **dotenv**: Gerenciamento de variáveis de ambiente
+
+## 💰 Custo
+
+**GRÁTIS!** 🎉
+
+- GitHub Actions: 2000 minutos/mês no plano gratuito
+- Este bot usa ~1 minuto/dia = ~30 minutos/mês
+- Sobram 1970 minutos para outros projetos!
 
 ## Contribuindo
 

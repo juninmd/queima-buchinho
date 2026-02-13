@@ -1,0 +1,45 @@
+name: Message Listener (Optional)
+
+# Este workflow é opcional e pode ser executado para capturar mensagens de treino
+# Se preferir não usar infraestrutura contínua, você pode desabilitar este workflow
+
+on:
+  workflow_dispatch: # Apenas execução manual
+
+jobs:
+  listener:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build TypeScript
+        run: npm run build
+      
+      - name: Run listener mode
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          BOT_MODE: 'listener'
+        run: npm start
+        timeout-minutes: 1440 # 24 horas
+      
+      - name: Upload data on completion
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workout-data-listener-${{ github.run_number }}
+          path: data/
+          retention-days: 7

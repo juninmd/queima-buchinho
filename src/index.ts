@@ -34,14 +34,14 @@ function loadWorkoutStatus() {
       const data = fs.readFileSync(DATA_FILE, 'utf8');
       const parsed = JSON.parse(data);
       const today = new Date().toDateString();
-      
+
       // Carregar apenas dados de hoje
       Object.entries(parsed).forEach(([userId, date]) => {
         if (date === today) {
           userWorkoutStatus.set(Number(userId), date as string);
         }
       });
-      
+
       console.log(`✅ Dados carregados: ${userWorkoutStatus.size} usuários`);
     }
   } catch (error) {
@@ -56,12 +56,12 @@ function saveWorkoutStatus() {
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
-    
+
     const data: { [key: string]: string } = {};
     userWorkoutStatus.forEach((date, userId) => {
       data[userId.toString()] = date;
     });
-    
+
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
   } catch (error) {
     console.error('Erro ao salvar dados:', error);
@@ -88,31 +88,58 @@ function markWorkout(userId: number) {
   saveWorkoutStatus();
 }
 
-// Função para enviar motivação (áudio + imagem)
-async function sendMotivation(chatId: number, userId: number) {
+// Configuração dos arquivos de áudio
+const AUDIO_FILES = {
+  MOTIVATION: 'tai-lung-como-nao-posso_NrQYPc2.mp3',
+  NOT_TRAINED: ['tf_nemesis.mp3', 'voce-nao-tem-aura.mp3']
+};
+
+// Função para enviar áudio quando não treinou (Nemesis ou Aura)
+async function sendNotTrainedNotification(chatId: number, userId: number) {
   try {
-    const audioPath = path.join(__dirname, '../assets/motivation.mp3');
+    const randomAudio = AUDIO_FILES.NOT_TRAINED[Math.floor(Math.random() * AUDIO_FILES.NOT_TRAINED.length)];
+    const audioPath = path.join(__dirname, `../assets/${randomAudio}`);
     const imagePath = path.join(__dirname, '../assets/motivation.jpg');
 
-    // Enviar áudio motivacional
+    // Enviar áudio "tough love"
     if (fs.existsSync(audioPath)) {
       await bot.sendVoice(chatId, audioPath, {
-        caption: '🔥 Vamos lá! Não desista dos seus objetivos! 💪'
+        caption: '😤 Você não treinou hoje! Escute isso e reflita...'
       });
     } else {
-      await bot.sendMessage(chatId, '🔥 Vamos lá! Não desista dos seus objetivos! 💪\n\nLembre-se: o treino de hoje é a força de amanhã!');
+      console.warn(`Áudio não encontrado: ${audioPath}`);
+      await bot.sendMessage(chatId, '😤 Você não treinou hoje! Sem desculpas!');
     }
 
-    // Enviar imagem motivacional
+    // Enviar imagem motivacional (opcional, mantendo comportamento anterior)
     if (fs.existsSync(imagePath)) {
       await bot.sendPhoto(chatId, imagePath, {
-        caption: '💪 Você consegue! Não deixe para amanhã o treino de hoje!'
+        caption: '💪 O corpo alcança o que a mente acredita. Vá treinar!'
       });
     }
 
-    console.log(`Motivação enviada para usuário ${userId}`);
+    console.log(`Notificação de não-treino enviada para usuário ${userId}`);
   } catch (error) {
-    console.error('Erro ao enviar motivação:', error);
+    console.error('Erro ao enviar notificação de não-treino:', error);
+  }
+}
+
+// Função para enviar motivação geral (Tai Lung)
+async function sendGeneralMotivation(chatId: number) {
+  try {
+    const audioPath = path.join(__dirname, `../assets/${AUDIO_FILES.MOTIVATION}`);
+
+    if (fs.existsSync(audioPath)) {
+      await bot.sendVoice(chatId, audioPath, {
+        caption: '🔥 Motivação suprema! Acredite em você!'
+      });
+    } else {
+      console.warn(`Áudio não encontrado: ${audioPath}`);
+      await bot.sendMessage(chatId, '🔥 Acredite no seu potencial! Você é capaz de tudo!');
+    }
+    console.log(`Motivação geral enviada para chat ${chatId}`);
+  } catch (error) {
+    console.error('Erro ao enviar motivação geral:', error);
   }
 }
 
@@ -139,21 +166,21 @@ async function sendCongratulations(chatId: number, userId: number) {
 async function checkForWorkoutMessages() {
   try {
     console.log('🔍 Verificando mensagens do dia...');
-    
+
     // Buscar updates das últimas 24 horas
     const updates = await bot.getUpdates({ offset: -1, limit: 100 });
-    
+
     const today = new Date().toDateString();
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    
+
     for (const update of updates) {
       if (update.message) {
         const msg = update.message;
         const userId = msg.from?.id;
         const text = msg.text || '';
         const msgDate = new Date(msg.date * 1000);
-        
+
         // Verificar se a mensagem é de hoje e contém palavras-chave
         if (userId && msgDate >= todayStart && hasWorkoutKeyword(text)) {
           console.log(`✅ Encontrada mensagem de treino do usuário ${userId}`);
@@ -174,25 +201,25 @@ async function performDailyCheck() {
     }
 
     console.log('⏰ Executando verificação diária às 22h...');
-    
+
     // Carregar status dos usuários
     loadWorkoutStatus();
-    
+
     // Buscar mensagens do dia para atualizar status
     await checkForWorkoutMessages();
-    
+
     // Verificar se o usuário principal treinou
     const userId = chatId; // No modo checker, usamos o CHAT_ID como userId
     const hasTrained = hasTrainedToday(Number(userId));
-    
+
     if (hasTrained) {
       console.log('✅ Usuário treinou hoje - enviando parabéns');
       await sendCongratulations(Number(chatId), Number(userId));
     } else {
       console.log('❌ Usuário não treinou hoje - enviando motivação');
-      await sendMotivation(Number(chatId), Number(userId));
+      await sendNotTrainedNotification(Number(chatId), Number(userId));
     }
-    
+
     console.log('✅ Verificação diária concluída!');
   } catch (error) {
     console.error('Erro na verificação diária:', error);
@@ -203,7 +230,7 @@ async function performDailyCheck() {
 // Modo Listener: Escuta mensagens continuamente
 if (mode === 'listener') {
   console.log('🎧 Modo LISTENER ativado - monitorando mensagens...');
-  
+
   // Listener para mensagens
   bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
@@ -216,7 +243,7 @@ if (mode === 'listener') {
     if (hasWorkoutKeyword(text)) {
       // Marcar que o usuário treinou
       markWorkout(userId);
-      
+
       // Enviar mensagem de parabéns
       await sendCongratulations(chatId, userId);
     }
@@ -235,7 +262,7 @@ if (mode === 'listener') {
       await bot.sendMessage(chatId, '✅ Você já treinou hoje! Continue assim! 💪');
     } else {
       await bot.sendMessage(chatId, '❌ Você ainda não registrou seu treino hoje.');
-      await sendMotivation(chatId, userId);
+      await sendNotTrainedNotification(chatId, userId);
     }
   });
 
@@ -249,10 +276,16 @@ if (mode === 'listener') {
     const hasTrained = hasTrainedToday(userId);
 
     if (!hasTrained) {
-      await sendMotivation(chatId, userId);
+      await sendNotTrainedNotification(chatId, userId);
     } else {
       await sendCongratulations(chatId, userId);
     }
+  });
+
+  // Comando /motivar para receber motivação geral
+  bot.onText(/\/motivar/, async (msg) => {
+    const chatId = msg.chat.id;
+    await sendGeneralMotivation(chatId);
   });
 
   // Comando /reset para resetar o status de treino (útil para testes)
@@ -304,7 +337,7 @@ Este bot ajuda você a manter a motivação para treinar!
 // Modo Checker: Executa verificação única e sai
 if (mode === 'checker') {
   console.log('⏰ Modo CHECKER ativado - executando verificação diária...');
-  
+
   performDailyCheck()
     .then(() => {
       console.log('✅ Verificação concluída com sucesso!');

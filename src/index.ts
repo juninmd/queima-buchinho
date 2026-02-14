@@ -2,6 +2,7 @@ import TelegramBot from 'node-telegram-bot-api';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import * as fs from 'fs';
+import { getBrasiliaDateString, getBrasiliaDayStart, formatBrasiliaTime, getSurpriseMessage } from './utils/time';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -33,7 +34,7 @@ function loadWorkoutStatus() {
     if (fs.existsSync(DATA_FILE)) {
       const data = fs.readFileSync(DATA_FILE, 'utf8');
       const parsed = JSON.parse(data);
-      const today = new Date().toDateString();
+      const today = getBrasiliaDateString();
 
       // Carregar apenas dados de hoje
       Object.entries(parsed).forEach(([userId, date]) => {
@@ -77,13 +78,13 @@ function hasWorkoutKeyword(text: string): boolean {
 // Função para verificar se o usuário treinou hoje
 function hasTrainedToday(userId: number): boolean {
   const lastWorkoutDate = userWorkoutStatus.get(userId);
-  const today = new Date().toDateString();
+  const today = getBrasiliaDateString();
   return lastWorkoutDate === today;
 }
 
 // Função para marcar treino do usuário
 function markWorkout(userId: number) {
-  const today = new Date().toDateString();
+  const today = getBrasiliaDateString();
   userWorkoutStatus.set(userId, today);
   saveWorkoutStatus();
 }
@@ -170,9 +171,7 @@ async function checkForWorkoutMessages() {
     // Buscar updates das últimas 24 horas
     const updates = await bot.getUpdates({ offset: -1, limit: 100 });
 
-    const today = new Date().toDateString();
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const todayStart = getBrasiliaDayStart();
 
     for (const update of updates) {
       if (update.message) {
@@ -282,6 +281,15 @@ if (mode === 'listener') {
     }
   });
 
+  // Comando /hora
+  bot.onText(/\/hora/, async (msg) => {
+    const chatId = msg.chat.id;
+    const time = formatBrasiliaTime();
+    const surprise = getSurpriseMessage();
+    const message = `🕒 Horário de Brasília: ${time}\n\n${surprise}`;
+    await bot.sendMessage(chatId, message);
+  });
+
   // Comando /motivar para receber motivação geral
   bot.onText(/\/motivar/, async (msg) => {
     const chatId = msg.chat.id;
@@ -313,6 +321,7 @@ Este bot ajuda você a manter a motivação para treinar!
 - Envie uma mensagem contendo "eu treinei", "treinei" ou "treinado" quando você treinar
 - Use /status para verificar se você já treinou hoje
 - Use /checktreino para verificar e receber motivação se necessário
+- Use /hora para ver o horário de Brasília e receber uma mensagem surpresa
 - Use /reset para resetar seu status de treino
 - Use /help para ver esta mensagem
 

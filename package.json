@@ -9,17 +9,22 @@
     "dev": "ts-node src/index.ts",
     "test": "ts-node tests/validation.test.ts"
   },
-  "keywords": ["telegram", "bot", "workout", "motivation"],
+  "keywords": [
+    "telegram",
+    "bot",
+    "workout",
+    "motivation"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "node-telegram-bot-api": "^0.67.0",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "node-telegram-bot-api": "^0.67.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "@types/node-telegram-bot-api": "^0.61.7",
-    "typescript": "^5.3.2",
-    "ts-node": "^10.9.1"
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.2"
   }
 }

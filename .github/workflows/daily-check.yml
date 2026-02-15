@@ -2,45 +2,44 @@ name: Daily Workout Check
 
 on:
   schedule:
-    # Runs at 22:00 (10 PM) Brazil time (UTC-3)
-    # In UTC, this is 01:00 (1 AM) the next day
+    # 22:00 Brasilia Time (UTC-3) = 01:00 UTC
     - cron: '0 1 * * *'
-  workflow_dispatch: # Permite execução manual
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write # Allow pushing changes
 
 jobs:
-  check-workout:
+  daily-check:
     runs-on: ubuntu-latest
-    
-    permissions:
-      contents: read
-    
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build TypeScript
-        run: npm run build
-      
-      - name: Run daily check
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-          BOT_MODE: 'checker'
-        run: npm start
-      
-      - name: Upload data artifact (opcional)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: workout-data-${{ github.run_number }}
-          path: data/
-          retention-days: 7
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build
+      run: npm run build
+
+    - name: Run Daily Check
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        CHAT_ID: ${{ secrets.CHAT_ID }}
+        BOT_MODE: checker
+      run: npm start
+
+    - name: Commit Workout History
+      if: success() # Only if check ran successfully
+      run: |
+        git config --global user.name 'Queima Buchinho Bot'
+        git config --global user.email 'bot@queimabuchinho.com'
+        git add data/workout-history.json
+        # Only commit if there are changes
+        git diff --quiet && git diff --staged --quiet || (git commit -m "📝 Update workout history [skip ci]" && git push)

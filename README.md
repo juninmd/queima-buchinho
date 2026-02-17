@@ -1,7 +1,7 @@
 # Queima Buchinho 🔥
 
 Bot do Telegram para motivação de treinos! Este bot:
-- ✅ Roda automaticamente via **GitHub Actions** às 22h todos os dias
+- ✅ Roda automaticamente via **GitHub Actions** às 22h UTC todos os dias
 - ✅ Parabeniza quando você informa que treinou
 - 🎵 Envia áudio motivacional quando você não treinou
 - 🖼️ Envia imagem motivacional para te incentivar
@@ -12,13 +12,13 @@ Bot do Telegram para motivação de treinos! Este bot:
 ## 🎯 Como Funciona
 
 1. Durante o dia, você envia "eu treinei", "treinei" ou "treinado" para o bot
-2. Às **22h**, o bot verifica automaticamente se você treinou
+2. Às **22h UTC**, o bot verifica automaticamente se você treinou
 3. **Treinou?** → Recebe parabenização 🎉
 4. **Não treinou?** → Recebe motivação (áudio + imagem) 💪
 
 ## Funcionalidades
 
-- **Verificação diária automática**: Via GitHub Actions às 22h (horário de Brasília)
+- **Verificação diária automática**: Via GitHub Actions às 22h UTC
 - **Detecção automática de treino**: Reconhece mensagens com "eu treinei", "treinei" ou "treinado"
 - **Mensagens de parabéns**: Parabenizações automáticas quando você treina
 - **Motivação ativa**: Áudio e imagem motivacionais quando você não treina
@@ -58,7 +58,7 @@ No seu repositório:
 
 ### 4. Pronto!
 
-O bot rodará automaticamente às 22h todos os dias! 🎉
+O bot rodará automaticamente às 22h UTC todos os dias! 🎉
 
 Para mais detalhes, veja [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)
 
@@ -68,10 +68,10 @@ Para mais detalhes, veja [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)
 
 Após configurar os Secrets:
 
-1. O bot roda automaticamente às 22h
+1. O bot roda automaticamente às 22h UTC
 2. Para testar agora: **Actions** → **Daily Workout Check** → **Run workflow**
 3. Envie "eu treinei" para o bot durante o dia
-4. Aguarde às 22h para receber a verificação!
+4. Aguarde às 22h UTC para receber a verificação!
 
 ### Modo Local (Desenvolvimento)
 
@@ -101,7 +101,7 @@ Quando em modo listener, você pode usar:
 - `/checktreino` - Verifica o status e recebe motivação se necessário
 - `/reset` - Reseta seu status de treino (útil para testes)
 
-**Nota**: No modo checker (GitHub Actions), os comandos não são necessários - o bot verifica automaticamente às 22h.
+**Nota**: No modo checker (GitHub Actions), os comandos não são necessários - o bot verifica automaticamente às 22h UTC.
 
 ## Como criar um bot no Telegram
 
@@ -117,7 +117,7 @@ Quando em modo listener, você pode usar:
 ### Modo Checker (GitHub Actions)
 ```
 ┌─────────────────────────────────────────┐
-│  GitHub Actions (às 22h diariamente)    │
+│  GitHub Actions (às 22h UTC diariamente)    │
 │  ┌─────────────────────────────────┐   │
 │  │ 1. Busca mensagens do dia       │   │
 │  │ 2. Verifica palavras-chave      │   │
@@ -145,7 +145,7 @@ Quando em modo listener, você pode usar:
 queima-buchinho/
 ├── .github/
 │   └── workflows/
-│       ├── daily-check.yml    # Workflow principal (22h diárias)
+│       ├── daily-check.yml    # Workflow principal (22h UTC diárias)
 │       └── listener.yml       # Workflow opcional (contínuo)
 ├── src/
 │   └── index.ts              # Código principal do bot

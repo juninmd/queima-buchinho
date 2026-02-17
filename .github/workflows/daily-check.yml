@@ -2,8 +2,8 @@ name: Daily Workout Check
 
 on:
   schedule:
-    # 22:00 Brasilia Time (UTC-3) = 01:00 UTC
-    - cron: '0 1 * * *'
+    # 22:00 UTC
+    - cron: '0 22 * * *'
   workflow_dispatch: # Allow manual trigger
 
 permissions:

@@ -18,7 +18,7 @@ Bot do Telegram para motivação de treinos! Este bot:
 
 ## Funcionalidades
 
-- **Verificação diária automática**: Via GitHub Actions às 22h UTC
+- **Verificação diária automática**: Via GitHub Actions às 22h UTC (19h no horário de Brasília)
 - **Detecção automática de treino**: Reconhece mensagens com "eu treinei", "treinei" ou "treinado"
 - **Mensagens de parabéns**: Parabenizações automáticas quando você treina
 - **Motivação ativa**: Áudio e imagem motivacionais quando você não treina

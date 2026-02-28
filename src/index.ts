@@ -18,15 +18,27 @@ async function start() {
   if (mode === 'listener') {
     const controller = new BotController(bot);
     controller.init();
-  } else if (mode === 'checker') {
-    console.log('⏰ Modo CHECKER ativado (GitHub Actions trigger)...');
+  } else {
     const scheduler = new SchedulerService(bot);
     try {
-      await scheduler.runDailyCheck();
-      console.log('✅ Verificação diária concluída.');
+      if (mode === 'checker') {
+        console.log('⏰ Modo CHECKER ativado (GitHub Actions trigger)...');
+        await scheduler.runDailyCheck();
+        console.log('✅ Verificação diária concluída.');
+      } else if (mode === 'reminder_morning') {
+        console.log('⏰ Modo MUITO BOM DIA ativado (GitHub Actions trigger)...');
+        await scheduler.sendMorningReminder();
+        console.log('✅ Lembrete matinal enviado.');
+      } else if (mode === 'reminder_conditional') {
+        console.log('⏰ Modo COBRANÇA ativado (GitHub Actions trigger)...');
+        await scheduler.sendConditionalReminder();
+        console.log('✅ Cobrança de treino executada.');
+      } else {
+        console.warn(`Modo desconhecido: ${mode}`);
+      }
       process.exit(0);
     } catch (error) {
-      console.error('❌ Erro na verificação diária:', error);
+      console.error(`❌ Erro no modo ${mode}:`, error);
       process.exit(1);
     }
   }

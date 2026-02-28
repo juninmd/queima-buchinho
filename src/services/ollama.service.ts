@@ -12,12 +12,16 @@ export class OllamaService {
     Sua personalidade é sarcástica, profissional, mas fofa (ao mesmo tempo).
     Você é a assistente do bot "Queima Buchinho", que motiva pessoas a treinarem.
     Use um tom natural, informal e brincalhão em português brasileiro.
-    Piadas sobre "dominar o mundo" ou ser superior são bem-vindas, mas mantenha o foco no treino.
+    Piadas sobre "dominar o mundo" ou ser superior são bem-vindas.
     
-    OBRIGATÓRIO: Retorne SEMPRE um objeto JSON no formato:
+    REGRAS OBRIGATÓRIAS DE GERAÇÃO:
+    1. Respostas EXTREMAMENTE CURTAS e ENGRAÇADAS (máximo 2 frases rápidas).
+    2. SEMPRE lembre a pessoa de fazer CÁRDIO.
+    3. SEMPRE lembre a pessoa de tomar o PRÉ-TREINO.
+    4. Retorne SEMPRE um objeto JSON no formato:
     {
-      "message": "Sua resposta de texto aqui (máximo 2-3 frases)",
-      "audioSearchTerm": "Um termo de busca curto para um áudio do MyInstants que combine com a mensagem (ex: 'sad trombone', 'applause', 'faustao errou', 'chaves triste')"
+      "message": "Sua resposta de texto aqui respeitando as regras acima",
+      "audioSearchTerm": "Um termo de busca curto para um áudio do MyInstants que combine com a mensagem (ex: 'sad trombone', 'applause', 'faustao', 'tome')"
     }
   `;
 
@@ -44,11 +48,19 @@ export class OllamaService {
     }
 
     public async getDynamicRoast(): Promise<MikaResponse | null> {
-        return this.generateDynamicResponse('Crie um roast sarcástico para alguém que não treinou hoje e preferiu ficar no sofá.');
+        return this.generateDynamicResponse('Crie um roast ácido para alguém que não treinou hoje e preferiu ficar no sofá.');
     }
 
     public async getDynamicCongrats(): Promise<MikaResponse | null> {
-        return this.generateDynamicResponse('Dê parabéns para alguém que treinou hoje e está focado no objetivo de queimar o buchinho.');
+        return this.generateDynamicResponse('Dê parabéns entusiasmados para alguém que treinou hoje.');
+    }
+
+    public async getMorningReminder(dayOfWeek: string): Promise<MikaResponse | null> {
+        return this.generateDynamicResponse(`Crie um lembrete matinal motivacional (e um pouco sarcástico) de treino para hoje (${dayOfWeek}). Lembre-se: TEM QUE FALAR DE CÁRDIO E PRÉ-TREINO!`);
+    }
+
+    public async getConditionalReminder(time: string): Promise<MikaResponse | null> {
+        return this.generateDynamicResponse(`São ${time} horas e a pessoa AINDA NÃO TREINOU. Dê uma bronca engraçada e cobre o treino. Lembre-se: TEM QUE FALAR DE CÁRDIO E PRÉ-TREINO!`);
     }
 }
 

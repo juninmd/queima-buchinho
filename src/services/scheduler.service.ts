@@ -74,4 +74,61 @@ export class SchedulerService {
             }
         }
     }
+
+    public async sendMorningReminder() {
+        const targetUserId = process.env.CHAT_ID;
+        if (!targetUserId) {
+            console.error('❌ ERRO: CHAT_ID não definido no arquivo .env');
+            return;
+        }
+
+        const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const dayOfWeek = days[new Date().getDay()];
+
+        console.log(`⏰ Enviando lembrete matinal de ${dayOfWeek}...`);
+        const reminder = await memeService.getMorningReminder(dayOfWeek);
+
+        await this.bot.sendMessage(Number(targetUserId), reminder.message);
+
+        if (reminder.audioSearchTerm) {
+            const button = await myInstantsService.getBestMatchAudio(reminder.audioSearchTerm);
+            if (button?.audioUrl) {
+                await this.bot.sendAudio(Number(targetUserId), button.audioUrl, { caption: `🎶 ${button.title}` });
+            }
+        }
+    }
+
+    public async sendConditionalReminder() {
+        const targetUserId = process.env.CHAT_ID;
+        if (!targetUserId) {
+            console.error('❌ ERRO: CHAT_ID não definido no arquivo .env');
+            return;
+        }
+
+        console.log('⏰ Verificando se usuário já treinou para enviar cobrança...');
+        try {
+            const { trained } = await workoutService.checkDailyMessages(this.bot);
+
+            if (!trained) {
+                // Brasília is UTC-3, adjust if github actions runs in UTC
+                const hour = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour: '2-digit' });
+                const timeStr = `${hour}:00`;
+                console.log(`❌ Usuário não treinou. Enviando cobrança das ${timeStr}...`);
+
+                const reminder = await memeService.getConditionalReminder(timeStr);
+                await this.bot.sendMessage(Number(targetUserId), reminder.message);
+
+                if (reminder.audioSearchTerm) {
+                    const button = await myInstantsService.getBestMatchAudio(reminder.audioSearchTerm);
+                    if (button?.audioUrl) {
+                        await this.bot.sendAudio(Number(targetUserId), button.audioUrl, { caption: `🎶 ${button.title}` });
+                    }
+                }
+            } else {
+                console.log('✅ Usuário já treinou hoje. Copiou a cobrança.');
+            }
+        } catch (error) {
+            console.error('❌ Erro ao verificar treino na cobrança:', error);
+        }
+    }
 }

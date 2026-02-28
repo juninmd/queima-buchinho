@@ -55,6 +55,26 @@ export class MemeService {
         };
     }
 
+    public async getMorningReminder(dayOfWeek: string): Promise<MemeResponse> {
+        const dynamic = await ollamaService.getMorningReminder(dayOfWeek);
+        if (dynamic) return dynamic;
+
+        return {
+            message: `Bom dia! Hoje é ${dayOfWeek}. Levanta logo, toma esse pré-treino e vai fazer um cárdio! O shape não vem sozinho. 🏃‍♀️💨`,
+            audioSearchTerm: 'tome'
+        };
+    }
+
+    public async getConditionalReminder(time: string): Promise<MemeResponse> {
+        const dynamic = await ollamaService.getConditionalReminder(time);
+        if (dynamic) return dynamic;
+
+        return {
+            message: `Já são ${time} e você não treinou ainda? Tô de olho! Vai logo tomar o pré-treino e não esquece do cárdio! 😤🔥`,
+            audioSearchTerm: 'sad trombone'
+        };
+    }
+
     getRoastAudio(): string | null {
         const randomAudio = AUDIO_FILES.NOT_TRAINED[Math.floor(Math.random() * AUDIO_FILES.NOT_TRAINED.length)];
         const audioPath = path.join(this.assetsPath, randomAudio);

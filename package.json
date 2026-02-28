@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "test": "ts-node tests/validation.test.ts"
+    "test": "jest"
   },
   "keywords": [
     "telegram",
@@ -18,12 +18,18 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "axios": "^1.13.6",
+    "cheerio": "^1.2.0",
     "dotenv": "^16.0.3",
-    "node-telegram-bot-api": "^0.67.0"
+    "node-telegram-bot-api": "^0.67.0",
+    "ollama": "^0.6.3"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.10.0",
     "@types/node-telegram-bot-api": "^0.61.7",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2"
   }

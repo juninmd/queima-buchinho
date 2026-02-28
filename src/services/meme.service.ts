@@ -1,11 +1,16 @@
 import * as path from 'path';
 import * as fs from 'fs';
+import { ollamaService } from './ollama.service';
 
-// Configuração dos arquivos de áudio
 const AUDIO_FILES = {
     MOTIVATION: 'tai-lung-como-nao-posso_NrQYPc2.mp3',
     NOT_TRAINED: ['tf_nemesis.mp3', 'voce-nao-tem-aura.mp3']
 };
+
+export interface MemeResponse {
+    message: string;
+    audioSearchTerm?: string;
+}
 
 export class MemeService {
     private assetsPath: string;
@@ -14,14 +19,40 @@ export class MemeService {
         this.assetsPath = path.join(__dirname, '../../assets');
     }
 
-    getRoastMessage(): string {
+    public async getRoastMessage(): Promise<MemeResponse> {
+        const dynamic = await ollamaService.getDynamicRoast();
+        if (dynamic) return dynamic;
+
         const messages = [
-            '😤 Você não treinou hoje! Sem desculpas!',
-            '👀 Estou de olho! Nada de treino hoje?',
-            'fail... O shape não vem desse jeito.',
-            'A disciplina te levou... a lugar nenhum hoje. 🤡'
+            '😤 E o treino? Ficou no sonho, foi? O buchinho não vai queimar sozinho! 🔥',
+            '👀 Tô de olho nessa preguiça aí... Amanhã não quero ver desculpa, hein? 💅',
+            '🤡 Parabéns pelo esforço de... não fazer nada hoje. O sedentarismo agradece.',
+            'fail... O shape tá fugindo de você cada vez mais rápido. 🏃‍♂️💨',
+            'A disciplina deu uma passadinha aqui e perguntou por você. Falei que tava dormindo. 🛌💤',
+            'Treinar que é bom nada, né? Mas pra comer pizza você é mestre! 🍕🦦',
+            'Vou começar a cobrar multa por cada dia sem treino. Já estaria rica! 💸💁‍♀️'
         ];
-        return messages[Math.floor(Math.random() * messages.length)];
+        return {
+            message: messages[Math.floor(Math.random() * messages.length)],
+            audioSearchTerm: 'sad trombone'
+        };
+    }
+
+    public async getCongratsMessage(): Promise<MemeResponse> {
+        const dynamic = await ollamaService.getDynamicCongrats();
+        if (dynamic) return dynamic;
+
+        const messages = [
+            '🎉 BOA! O buchinho que lute agora! Tá pago! 💪🔥',
+            '✨ Arrasou! Disciplina é tudo, e hoje você deu aula. Continue assim! ✨',
+            '💃 Olha ela(e)! Treinada(o) e pronta(o) pra dominar o mundo! (Ou a academia)',
+            '✅ Cumpriu a missão! O shape agradece a lembrança. Orgulho da mãe! 😉',
+            '🔥 Mais um pra conta! O esforço de hoje é o resultado de amanhã. Voa! 🚀'
+        ];
+        return {
+            message: messages[Math.floor(Math.random() * messages.length)],
+            audioSearchTerm: 'congratulations'
+        };
     }
 
     getRoastAudio(): string | null {

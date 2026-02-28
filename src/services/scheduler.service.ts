@@ -1,7 +1,9 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { workoutService } from './workout.service';
 import { memeService } from './meme.service';
+import { myInstantsService } from './myinstants.service';
 import { sendAudioMessage } from '../utils/telegram';
+import { BOT_MESSAGES } from '../config/constants';
 
 export class SchedulerService {
     private bot: TelegramBot;
@@ -41,21 +43,34 @@ export class SchedulerService {
 
         if (userTrained) {
             console.log('✅ Usuário treinou hoje!');
-
-            // Registrar no histórico
             workoutService.logWorkout(targetUserId, trainingMsgText);
+            const congrats = await memeService.getCongratsMessage();
+            await this.bot.sendMessage(targetUserId, congrats.message);
 
-            await this.bot.sendMessage(targetUserId, '🎉 Parabéns! Você cumpriu sua meta de treino hoje! Histórico atualizado. 💪');
+            if (congrats.audioSearchTerm) {
+                const button = await myInstantsService.getBestMatchAudio(congrats.audioSearchTerm);
+                if (button?.audioUrl) {
+                    await this.bot.sendAudio(targetUserId, button.audioUrl, { caption: `🎶 ${button.title}` });
+                }
+            }
         } else {
             console.log('❌ Usuário não treinou hoje.');
-
-            const roastMessage = memeService.getRoastMessage();
+            const roast = await memeService.getRoastMessage();
             const roastAudio = memeService.getRoastAudio();
 
-            await this.bot.sendMessage(targetUserId, roastMessage);
+            await this.bot.sendMessage(targetUserId, roast.message);
+
+            // Prioritize suggested audio from Ollama, fallback to legacy
+            if (roast.audioSearchTerm) {
+                const button = await myInstantsService.getBestMatchAudio(roast.audioSearchTerm);
+                if (button?.audioUrl) {
+                    await this.bot.sendAudio(targetUserId, button.audioUrl, { caption: `🎶 ${button.title}` });
+                    return;
+                }
+            }
 
             if (roastAudio) {
-                await sendAudioMessage(this.bot, targetUserId, roastAudio, 'Ouça isso e reflita...');
+                await sendAudioMessage(this.bot, targetUserId, roastAudio, BOT_MESSAGES.ROAST_CAPTION);
             }
         }
     }

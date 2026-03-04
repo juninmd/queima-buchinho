@@ -8,6 +8,7 @@ const HISTORY_FILE = path.join(__dirname, '../../data/workout-history.json');
 
 interface WorkoutLogEntry {
     date: string;
+    brasiliaDate: string;
     userId: number;
     userMessage?: string;
     trained: boolean;
@@ -16,8 +17,15 @@ interface WorkoutLogEntry {
 export class WorkoutService {
     public async checkDailyMessages(bot: TelegramBot, targetChatId?: number): Promise<{ trained: boolean; message?: TelegramBot.Message }> {
         try {
-            // Usa offset: -100 para pegar sempre os 100 MAIS RECENTES da fila
-            const updates = await bot.getUpdates({ limit: 100, offset: -100 });
+            const todayDateString = getBrasiliaDateString();
+            const history = this.getHistory();
+            const hasTodayWorkout = history.some((entry) => this.getEntryBrasiliaDate(entry) === todayDateString);
+
+            if (hasTodayWorkout) {
+                return { trained: true };
+            }
+
+            const updates = await bot.getUpdates({ limit: 100 });
             const todayStart = getBrasiliaDayStart();
             let trainedMessage: TelegramBot.Message | undefined;
 
@@ -44,6 +52,18 @@ export class WorkoutService {
         }
     }
 
+    private getHistory(): WorkoutLogEntry[] {
+        if (!fs.existsSync(HISTORY_FILE)) {
+            return [];
+        }
+
+        return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
+    }
+
+    private getEntryBrasiliaDate(entry: WorkoutLogEntry): string {
+        return entry.brasiliaDate || entry.date.slice(0, 10);
+    }
+
     private hasWorkoutKeyword(text: string): boolean {
         const lowerText = text.toLowerCase();
         return WORKOUT_KEYWORDS.some((kw) => lowerText.includes(kw));
@@ -54,17 +74,21 @@ export class WorkoutService {
             const dataDir = path.dirname(HISTORY_FILE);
             if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
-            let history: WorkoutLogEntry[] = [];
-            if (fs.existsSync(HISTORY_FILE)) {
-                history = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
-            }
+            const history = this.getHistory();
 
             const todayDateString = getBrasiliaDateString();
-            if (history.some((h) => h.userId === userId && h.date.startsWith(todayDateString))) {
+            if (history.some((h) => h.userId === userId && this.getEntryBrasiliaDate(h) === todayDateString)) {
                 return;
             }
 
-            history.push({ date: new Date().toISOString(), userId, userMessage, trained });
+            history.push({
+                date: new Date().toISOString(),
+                brasiliaDate: todayDateString,
+                userId,
+                userMessage,
+                trained,
+            });
+
             fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
         } catch (error) {
             console.error('Erro ao salvar histórico:', error);
@@ -74,9 +98,9 @@ export class WorkoutService {
     public resetWorkout(userId: number) {
         try {
             if (fs.existsSync(HISTORY_FILE)) {
-                const history: WorkoutLogEntry[] = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
+                const history = this.getHistory();
                 const todayDateString = getBrasiliaDateString();
-                const filtered = history.filter((h) => !(h.userId === userId && h.date.startsWith(todayDateString)));
+                const filtered = history.filter((h) => !(h.userId === userId && this.getEntryBrasiliaDate(h) === todayDateString));
                 fs.writeFileSync(HISTORY_FILE, JSON.stringify(filtered, null, 2));
             }
         } catch (error) {
@@ -86,4 +110,3 @@ export class WorkoutService {
 }
 
 export const workoutService = new WorkoutService();
-

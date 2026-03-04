@@ -2,10 +2,22 @@ const BRASILIA_TIMEZONE = 'America/Sao_Paulo';
 
 /**
  * Retorna a data atual no formato YYYY-MM-DD, considerando o fuso horário de Brasília.
+ * Se for madrugada (00:00 às 03:59), assume o dia anterior para cobrir atrasos do GitHub Actions.
  */
 export function getBrasiliaDateString(): string {
-  // 'en-CA' garante o formato YYYY-MM-DD
-  return new Date().toLocaleDateString('en-CA', { timeZone: BRASILIA_TIMEZONE });
+  const now = new Date();
+  const hourString = now.toLocaleTimeString('en-GB', {
+    timeZone: BRASILIA_TIMEZONE,
+    hour: '2-digit',
+    hour12: false
+  });
+  const hour = parseInt(hourString, 10);
+  
+  const targetDate = hour >= 0 && hour < 4 
+    ? new Date(now.getTime() - 24 * 60 * 60 * 1000) 
+    : now;
+
+  return targetDate.toLocaleDateString('en-CA', { timeZone: BRASILIA_TIMEZONE });
 }
 
 /**

@@ -26,24 +26,13 @@ export class SchedulerService {
         const targetUserId = Number(chatIdStr); // O usuário alvo é o chat ID principal (assumindo DM)
 
         // Verificar mensagens do dia
-        const { trained, message } = await workoutService.checkDailyMessages(this.bot);
+        const { trained, message } = await workoutService.checkDailyMessages(this.bot, targetUserId);
 
-        // Validar se a mensagem foi do usuário correto (caso seja grupo)
-        let userTrained = false;
-        let trainingMsgText = '';
+        const trainingMsgText = message?.text || '';
 
-        if (trained && message) {
-            if (message.from?.id === targetUserId) {
-                userTrained = true;
-                trainingMsgText = message.text || '';
-            } else {
-                console.log(`⚠️ Mensagem de treino encontrada, mas de outro usuário (${message.from?.id}). Esperado: ${targetUserId}`);
-            }
-        }
-
-        if (userTrained) {
+        if (trained) {
             console.log('✅ Usuário treinou hoje!');
-            workoutService.logWorkout(targetUserId, trainingMsgText);
+            workoutService.logWorkout(targetUserId, true, trainingMsgText);
             const congrats = await memeService.getCongratsMessage();
             await this.bot.sendMessage(targetUserId, congrats.message);
 
@@ -55,6 +44,7 @@ export class SchedulerService {
             }
         } else {
             console.log('❌ Usuário não treinou hoje.');
+            workoutService.logWorkout(targetUserId, false);
             const roast = await memeService.getRoastMessage();
             const roastAudio = memeService.getRoastAudio();
 
@@ -107,7 +97,7 @@ export class SchedulerService {
 
         console.log('⏰ Verificando se usuário já treinou para enviar cobrança...');
         try {
-            const { trained } = await workoutService.checkDailyMessages(this.bot);
+            const { trained } = await workoutService.checkDailyMessages(this.bot, Number(targetUserId));
 
             if (!trained) {
                 // Brasília is UTC-3, adjust if github actions runs in UTC

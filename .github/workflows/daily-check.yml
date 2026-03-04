@@ -2,8 +2,8 @@ name: Daily Workout Check
 
 on:
   schedule:
-    # 01:00 UTC (22:00 BRT)
-    - cron: '0 1 * * *'
+    # 01:30 UTC (22:30 BRT) - Horário quebrado para evitar filas longas do GitHub
+    - cron: '30 1 * * *'
   workflow_dispatch: # Allow manual trigger
 
 permissions:

@@ -9,13 +9,15 @@ const HISTORY_FILE = path.join(__dirname, '../../data/workout-history.json');
 interface WorkoutLogEntry {
     date: string;
     userId: number;
-    userMessage: string;
+    userMessage?: string;
+    trained: boolean;
 }
 
 export class WorkoutService {
-    public async checkDailyMessages(bot: TelegramBot): Promise<{ trained: boolean; message?: TelegramBot.Message }> {
+    public async checkDailyMessages(bot: TelegramBot, targetChatId?: number): Promise<{ trained: boolean; message?: TelegramBot.Message }> {
         try {
-            const updates = await bot.getUpdates({ limit: 100 });
+            // Usa offset: -100 para pegar sempre os 100 MAIS RECENTES da fila
+            const updates = await bot.getUpdates({ limit: 100, offset: -100 });
             const todayStart = getBrasiliaDayStart();
             let trainedMessage: TelegramBot.Message | undefined;
 
@@ -23,6 +25,11 @@ export class WorkoutService {
                 if (update.message) {
                     const msg = update.message;
                     const msgDate = new Date(msg.date * 1000);
+
+                    // Se foi passado um chatId, verifica se a mensagem é dele
+                    if (targetChatId && msg.chat.id !== targetChatId && msg.from?.id !== targetChatId) {
+                        continue;
+                    }
 
                     if (msgDate >= todayStart && this.hasWorkoutKeyword(msg.text || '')) {
                         trainedMessage = msg;
@@ -42,7 +49,7 @@ export class WorkoutService {
         return WORKOUT_KEYWORDS.some((kw) => lowerText.includes(kw));
     }
 
-    public logWorkout(userId: number, userMessage: string) {
+    public logWorkout(userId: number, trained: boolean, userMessage?: string) {
         try {
             const dataDir = path.dirname(HISTORY_FILE);
             if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -57,7 +64,7 @@ export class WorkoutService {
                 return;
             }
 
-            history.push({ date: new Date().toISOString(), userId, userMessage });
+            history.push({ date: new Date().toISOString(), userId, userMessage, trained });
             fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
         } catch (error) {
             console.error('Erro ao salvar histórico:', error);

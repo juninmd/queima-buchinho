@@ -8,7 +8,8 @@ dist/
 .env
 
 # Data files
-data/
+data/*
+!data/workout-history.json
 
 # OS files
 .DS_Store

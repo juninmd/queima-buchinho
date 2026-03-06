@@ -4,5 +4,12 @@
     "brasiliaDate": "2026-03-04",
     "userId": 94324040,
     "trained": false
+  },
+  {
+    "date": "2026-03-06T03:53:06.529Z",
+    "brasiliaDate": "2026-03-05",
+    "userId": 94324040,
+    "userMessage": "Já treinei",
+    "trained": true
   }
 ]

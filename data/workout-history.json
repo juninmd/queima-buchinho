@@ -83,5 +83,12 @@
     "brasiliaDate": "2026-03-16",
     "userId": 94324040,
     "trained": false
+  },
+  {
+    "date": "2026-03-18T04:06:18.559Z",
+    "brasiliaDate": "2026-03-17",
+    "userId": 94324040,
+    "userMessage": "Já treinei",
+    "trained": true
   }
 ]

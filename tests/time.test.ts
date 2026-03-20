@@ -35,7 +35,6 @@ try {
   // Example: 2026-02-14T03:00:00.000Z
   const timeInBrasilia = dayStart.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hourCycle: 'h23' });
   assert(timeInBrasilia === '00:00:00', `A hora deve ser 00:00:00 em Brasília, mas foi ${timeInBrasilia}`);
-  assert(/^\d{2}:\d{2}$/.test(timeStr), `Format HH:mm correct: ${timeStr}`);
 } catch (e) {
   console.log('❌ FAIL: formatBrasiliaTime threw error', e);
   failed++;

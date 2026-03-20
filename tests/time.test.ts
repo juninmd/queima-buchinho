@@ -33,9 +33,8 @@ try {
   // Since we hardcoded the offset in implementation, we expect the ISO string to end in something that reflects that,
   // but dayStart.toISOString() will be in UTC.
   // Example: 2026-02-14T03:00:00.000Z
-  const iso = dayStart.toISOString();
-  // It should have T03:00:00.000Z if offset is -03:00
-  assert(iso.includes('T03:00:00.000Z'), `Time is 03:00 UTC (00:00 BRT): ${iso}`);
+  const timeInBrasilia = dayStart.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hourCycle: 'h23' });
+  assert(timeInBrasilia === '00:00:00', `A hora deve ser 00:00:00 em Brasília, mas foi ${timeInBrasilia}`);
 } catch (e) {
   console.log('❌ FAIL: getBrasiliaDayStart threw error', e);
   failed++;

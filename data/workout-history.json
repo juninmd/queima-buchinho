@@ -144,5 +144,12 @@
     "userId": 94324040,
     "userMessage": "Treinei",
     "trained": true
+  },
+  {
+    "date": "2026-03-27T04:16:41.420Z",
+    "brasiliaDate": "2026-03-26",
+    "userId": 94324040,
+    "userMessage": "Já treinei",
+    "trained": true
   }
 ]

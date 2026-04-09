@@ -23,8 +23,8 @@ describe('WorkoutService history detection', () => {
     });
 
     it('should save only one workout per user per day', () => {
-        workoutService.logWorkout(123, 'eu treinei hoje');
-        workoutService.logWorkout(123, 'eu treinei de novo');
+        workoutService.logWorkout(123, true, 'eu treinei hoje');
+        workoutService.logWorkout(123, true, 'eu treinei de novo');
 
         const history = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
         expect(history).toHaveLength(1);
@@ -33,7 +33,7 @@ describe('WorkoutService history detection', () => {
     });
 
     it('should detect workout from history without checking telegram updates', async () => {
-        workoutService.logWorkout(777, 'ta pago');
+        workoutService.logWorkout(777, true, 'ta pago');
 
         const bot = {
             getUpdates: jest.fn().mockResolvedValue([]),

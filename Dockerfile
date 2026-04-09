@@ -1,21 +1,16 @@
-FROM node:18-alpine
-
+# Stage 1: Build
+FROM node:18-alpine AS builder
 WORKDIR /app
-
-# Copiar package files
 COPY package*.json ./
-
-# Instalar dependências
-RUN npm install --production
-
-# Copiar código fonte
+RUN npm ci
 COPY . .
-
-# Build TypeScript
 RUN npm run build
 
-# Criar diretório para assets
+# Stage 2: Production
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/dist ./dist
 RUN mkdir -p assets
-
-# Comando para iniciar o bot
 CMD ["npm", "start"]

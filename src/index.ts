@@ -18,29 +18,47 @@ async function start() {
   if (mode === 'listener') {
     const controller = new BotController(bot);
     controller.init();
-  } else {
-    const scheduler = new SchedulerService(bot);
-    try {
-      if (mode === 'checker') {
-        console.log('⏰ Modo CHECKER ativado (GitHub Actions trigger)...');
+    return;
+  }
+
+  const scheduler = new SchedulerService(bot);
+  try {
+    switch (mode) {
+      case 'checker':
+        console.log('⏰ Modo CHECKER ativado...');
         await scheduler.runDailyCheck();
-        console.log('✅ Verificação diária concluída.');
-      } else if (mode === 'reminder_morning') {
-        console.log('⏰ Modo MUITO BOM DIA ativado (GitHub Actions trigger)...');
+        break;
+      case 'reminder_morning':
+        console.log('⏰ Modo MORNING ativado...');
         await scheduler.sendMorningReminder();
-        console.log('✅ Lembrete matinal enviado.');
-      } else if (mode === 'reminder_conditional') {
-        console.log('⏰ Modo COBRANÇA ativado (GitHub Actions trigger)...');
+        break;
+      case 'reminder_conditional':
+        console.log('⏰ Modo CONDITIONAL ativado...');
         await scheduler.sendConditionalReminder();
-        console.log('✅ Cobrança de treino executada.');
-      } else {
+        break;
+      case 'reminder_water':
+        console.log('💧 Modo WATER ativado...');
+        await scheduler.sendWaterReminder();
+        break;
+      case 'reminder_food_cafe':
+        console.log('🍳 Modo FOOD CAFÉ ativado...');
+        await scheduler.sendFoodReminder('cafe');
+        break;
+      case 'reminder_food_almoco':
+        console.log('🍽️ Modo FOOD ALMOÇO ativado...');
+        await scheduler.sendFoodReminder('almoco');
+        break;
+      case 'reminder_food_jantar':
+        console.log('🌙 Modo FOOD JANTAR ativado...');
+        await scheduler.sendFoodReminder('jantar');
+        break;
+      default:
         console.warn(`Modo desconhecido: ${mode}`);
-      }
-      process.exit(0);
-    } catch (error) {
-      console.error(`❌ Erro no modo ${mode}:`, error);
-      process.exit(1);
     }
+    process.exit(0);
+  } catch (error) {
+    console.error(`❌ Erro no modo ${mode}:`, error);
+    process.exit(1);
   }
 }
 

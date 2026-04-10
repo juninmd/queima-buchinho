@@ -75,6 +75,48 @@ export class MemeService {
         };
     }
 
+    public async getWaterReminder(): Promise<MemeResponse> {
+        const dynamic = await ollamaService.getWaterReminder();
+        if (dynamic) return dynamic;
+
+        const messages = [
+            '💧 Bebe água agora! Você é uma planta humana e eu não vou te deixar murchar. 🌱',
+            '🚰 Para tudo e bebe água! Desidratação é coisa de amador e você não é amador(a).',
+            '💦 Já bebeu água hoje? Se não, vai beber AGORA. Sem conversa. 😤',
+            '🧊 Água, por favor! Seu corpo tá pedindo socorro e você aí ignorando.',
+            '💧 Lembrete vital: você é 60% água. Repõe o estoque antes de virar um pastel! 🥟'
+        ];
+        return {
+            message: messages[Math.floor(Math.random() * messages.length)],
+            audioSearchTerm: 'agua'
+        };
+    }
+
+    public async getFoodReminder(meal: 'cafe' | 'almoco' | 'jantar'): Promise<MemeResponse> {
+        const dynamic = await ollamaService.getFoodReminder(meal);
+        if (dynamic) return dynamic;
+
+        const messages: Record<string, string[]> = {
+            cafe: [
+                '🌅 Bom dia! Café da manhã saudável agora: proteína, fruta, aveia. Nada de biscoito recheado, hein! 🙅‍♀️',
+                '☀️ Acorda e alimenta! Ovo, fruta, iogurte — o corpo precisa de combustível de qualidade. 🥚🍌'
+            ],
+            almoco: [
+                '🥗 Hora do almoço! Capricha no prato: arroz integral, proteína, legumes. Fastfood é cilada! 🚫🍔',
+                '🍽️ Almoço saudável agora! Metade do prato de vegetais, proteína magra e bora. Sem frituras! 🥦🍗'
+            ],
+            jantar: [
+                '🌙 Hora do jantar! Leve e nutritivo: proteína, legumes, nada de carboidrato pesado à noite. 🥗',
+                '🌛 Janta saudável! Seu corpo vai reparar os músculos enquanto dorme — alimenta direito! 💪🥦'
+            ]
+        };
+        const opts = messages[meal];
+        return {
+            message: opts[Math.floor(Math.random() * opts.length)],
+            audioSearchTerm: 'healthy'
+        };
+    }
+
     getRoastAudio(): string | null {
         const randomAudio = AUDIO_FILES.NOT_TRAINED[Math.floor(Math.random() * AUDIO_FILES.NOT_TRAINED.length)];
         const audioPath = path.join(this.assetsPath, randomAudio);
@@ -85,9 +127,6 @@ export class MemeService {
         const audioPath = path.join(this.assetsPath, AUDIO_FILES.MOTIVATION);
         return fs.existsSync(audioPath) ? audioPath : null;
     }
-
-    // Placeholder for future image generation integration
-    // async generateMemeImage(prompt: string): Promise<string> { ... }
 }
 
 export const memeService = new MemeService();

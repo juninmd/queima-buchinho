@@ -1,0 +1,14 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    uses: juninmd/base-actions/.github/workflows/docker-build-push.yml@main
+    with:
+      image-name: ${{ github.repository }}
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}

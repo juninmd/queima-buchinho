@@ -7,8 +7,13 @@ on:
 
 jobs:
   build-and-push:
-    uses: juninmd/base-actions/.github/workflows/docker-build-push.yml@main
-    with:
-      image-name: ${{ github.repository }}
-    secrets:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: juninmd/base-actions/docker-build-push@main
+        with:
+          image-name: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}

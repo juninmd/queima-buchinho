@@ -1,110 +1,80 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import { Pool } from 'pg';
 import TelegramBot from 'node-telegram-bot-api';
 import { getBrasiliaDayStart, getBrasiliaDateString } from '../utils/time';
 import { WORKOUT_KEYWORDS } from '../config/constants';
 
-const HISTORY_FILE = path.join(__dirname, '../../data/workout-history.json');
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 interface WorkoutLogEntry {
-    date: string;
-    brasiliaDate: string;
-    userId: number;
-    userMessage?: string;
+    user_id: number;
+    brasilia_date: string;
     trained: boolean;
+    user_message?: string;
 }
 
 export class WorkoutService {
     public async checkDailyMessages(bot: TelegramBot, targetChatId?: number): Promise<{ trained: boolean; message?: TelegramBot.Message }> {
         try {
-            const todayDateString = getBrasiliaDateString();
-            const history = this.getHistory();
-            const hasTodayWorkout = history.some((entry) => this.getEntryBrasiliaDate(entry) === todayDateString);
-
-            if (hasTodayWorkout) {
-                return { trained: true };
-            }
+            const today = getBrasiliaDateString();
+            const alreadyLogged = await this.hasWorkoutToday(targetChatId ?? 0, today);
+            if (alreadyLogged) return { trained: true };
 
             const updates = await bot.getUpdates({ limit: 100 });
             const todayStart = getBrasiliaDayStart();
             let trainedMessage: TelegramBot.Message | undefined;
 
             for (const update of updates) {
-                if (update.message) {
-                    const msg = update.message;
-                    const msgDate = new Date(msg.date * 1000);
-
-                    // Se foi passado um chatId, verifica se a mensagem é dele
-                    if (targetChatId && msg.chat.id !== targetChatId && msg.from?.id !== targetChatId) {
-                        continue;
-                    }
-
-                    if (msgDate >= todayStart && this.hasWorkoutKeyword(msg.text || '')) {
-                        trainedMessage = msg;
-                    }
+                const msg = update.message;
+                if (!msg) continue;
+                if (targetChatId && msg.chat.id !== targetChatId && msg.from?.id !== targetChatId) continue;
+                if (new Date(msg.date * 1000) >= todayStart && this.hasWorkoutKeyword(msg.text || '')) {
+                    trainedMessage = msg;
                 }
             }
 
             return { trained: !!trainedMessage, message: trainedMessage };
         } catch (error) {
-            console.error('Erro ao buscar mensagens:', error);
+            console.error('Erro ao verificar mensagens:', error);
             return { trained: false };
         }
     }
 
-    private getHistory(): WorkoutLogEntry[] {
-        if (!fs.existsSync(HISTORY_FILE)) {
-            return [];
-        }
-
-        return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
-    }
-
-    private getEntryBrasiliaDate(entry: WorkoutLogEntry): string {
-        return entry.brasiliaDate || entry.date.slice(0, 10);
+    private async hasWorkoutToday(userId: number, date: string): Promise<boolean> {
+        const { rows } = await pool.query(
+            'SELECT 1 FROM workout_logs WHERE user_id = $1 AND brasilia_date = $2 LIMIT 1',
+            [userId, date]
+        );
+        return rows.length > 0;
     }
 
     private hasWorkoutKeyword(text: string): boolean {
-        const lowerText = text.toLowerCase();
-        return WORKOUT_KEYWORDS.some((kw) => lowerText.includes(kw));
+        return WORKOUT_KEYWORDS.some((kw) => text.toLowerCase().includes(kw));
     }
 
-    public logWorkout(userId: number, trained: boolean, userMessage?: string) {
+    public async logWorkout(userId: number, trained: boolean, userMessage?: string): Promise<void> {
         try {
-            const dataDir = path.dirname(HISTORY_FILE);
-            if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-
-            const history = this.getHistory();
-
-            const todayDateString = getBrasiliaDateString();
-            if (history.some((h) => h.userId === userId && this.getEntryBrasiliaDate(h) === todayDateString)) {
-                return;
-            }
-
-            history.push({
-                date: new Date().toISOString(),
-                brasiliaDate: todayDateString,
-                userId,
-                userMessage,
-                trained,
-            });
-
-            fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+            const today = getBrasiliaDateString();
+            await pool.query(
+                `INSERT INTO workout_logs (user_id, brasilia_date, trained, user_message)
+                 VALUES ($1, $2, $3, $4)
+                 ON CONFLICT (user_id, brasilia_date) DO NOTHING`,
+                [userId, today, trained, userMessage ?? null]
+            );
+            console.log(`📝 Treino registrado: user=${userId} data=${today} trained=${trained}`);
         } catch (error) {
-            console.error('Erro ao salvar histórico:', error);
+            console.error('Erro ao salvar treino:', error);
         }
     }
 
-    public resetWorkout(userId: number) {
+    public async resetWorkout(userId: number): Promise<void> {
         try {
-            if (fs.existsSync(HISTORY_FILE)) {
-                const history = this.getHistory();
-                const todayDateString = getBrasiliaDateString();
-                const filtered = history.filter((h) => !(h.userId === userId && this.getEntryBrasiliaDate(h) === todayDateString));
-                fs.writeFileSync(HISTORY_FILE, JSON.stringify(filtered, null, 2));
-            }
+            const today = getBrasiliaDateString();
+            await pool.query(
+                'DELETE FROM workout_logs WHERE user_id = $1 AND brasilia_date = $2',
+                [userId, today]
+            );
         } catch (error) {
-            console.error('Erro ao resetar histórico:', error);
+            console.error('Erro ao resetar treino:', error);
         }
     }
 }

@@ -25,9 +25,6 @@ export class OllamaService {
     }
   `;
 
-    /**
-     * Generates a dynamic message and audio search term.
-     */
     public async generateDynamicResponse(prompt: string): Promise<MikaResponse | null> {
         try {
             const response = await ollama.chat({
@@ -61,6 +58,15 @@ export class OllamaService {
 
     public async getConditionalReminder(time: string): Promise<MikaResponse | null> {
         return this.generateDynamicResponse(`São ${time} horas e a pessoa AINDA NÃO TREINOU. Dê uma bronca engraçada e cobre o treino. Lembre-se: TEM QUE FALAR DE CÁRDIO E PRÉ-TREINO!`);
+    }
+
+    public async getWaterReminder(): Promise<MikaResponse | null> {
+        return this.generateDynamicResponse('Lembre a pessoa de beber água agora. Seja engraçada e um pouco dramática sobre desidratação. Máximo 2 frases.');
+    }
+
+    public async getFoodReminder(meal: 'cafe' | 'almoco' | 'jantar'): Promise<MikaResponse | null> {
+        const mealMap = { cafe: 'café da manhã', almoco: 'almoço', jantar: 'jantar' };
+        return this.generateDynamicResponse(`Lembre a pessoa de comer o ${mealMap[meal]} com comidas saudáveis agora. Sem junk food, sem processados. Seja motivacional e engraçada. Máximo 2 frases.`);
     }
 }
 

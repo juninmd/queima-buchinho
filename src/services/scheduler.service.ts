@@ -12,113 +12,101 @@ export class SchedulerService {
         this.bot = bot;
     }
 
-    // Runs the daily check logic
+    private getChatId(): number | null {
+        const chatIdStr = process.env.CHAT_ID;
+        if (!chatIdStr) {
+            console.error('❌ CHAT_ID não definido.');
+            return null;
+        }
+        return Number(chatIdStr);
+    }
+
+    private async sendWithAudio(chatId: number, response: { message: string; audioSearchTerm?: string }) {
+        await this.bot.sendMessage(chatId, response.message);
+        if (response.audioSearchTerm) {
+            const button = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
+            if (button?.audioUrl) {
+                await this.bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
+            }
+        }
+    }
+
     public async runDailyCheck() {
         console.log('⏰ Executando verificação diária...');
+        const chatId = this.getChatId();
+        if (!chatId) return;
 
-        const chatIdStr = process.env.CHAT_ID;
-
-        if (!chatIdStr) {
-            console.error('❌ CHAT_ID não definido. Não é possível enviar notificações.');
-            return;
-        }
-
-        const targetUserId = Number(chatIdStr); // O usuário alvo é o chat ID principal (assumindo DM)
-
-        // Verificar mensagens do dia
-        const { trained, message } = await workoutService.checkDailyMessages(this.bot, targetUserId);
-
+        const { trained, message } = await workoutService.checkDailyMessages(this.bot, chatId);
         const trainingMsgText = message?.text || '';
 
         if (trained) {
             console.log('✅ Usuário treinou hoje!');
-            workoutService.logWorkout(targetUserId, true, trainingMsgText);
-            const congrats = await memeService.getCongratsMessage();
-            await this.bot.sendMessage(targetUserId, congrats.message);
-
-            if (congrats.audioSearchTerm) {
-                const button = await myInstantsService.getBestMatchAudio(congrats.audioSearchTerm);
-                if (button?.audioUrl) {
-                    await this.bot.sendAudio(targetUserId, button.audioUrl, { caption: `🎶 ${button.title}` });
-                }
-            }
+            workoutService.logWorkout(chatId, true, trainingMsgText);
+            await this.sendWithAudio(chatId, await memeService.getCongratsMessage());
         } else {
             console.log('❌ Usuário não treinou hoje.');
-            workoutService.logWorkout(targetUserId, false);
+            workoutService.logWorkout(chatId, false);
             const roast = await memeService.getRoastMessage();
-            const roastAudio = memeService.getRoastAudio();
+            await this.bot.sendMessage(chatId, roast.message);
 
-            await this.bot.sendMessage(targetUserId, roast.message);
-
-            // Prioritize suggested audio from Ollama, fallback to legacy
             if (roast.audioSearchTerm) {
                 const button = await myInstantsService.getBestMatchAudio(roast.audioSearchTerm);
                 if (button?.audioUrl) {
-                    await this.bot.sendAudio(targetUserId, button.audioUrl, { caption: `🎶 ${button.title}` });
+                    await this.bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
                     return;
                 }
             }
 
+            const roastAudio = memeService.getRoastAudio();
             if (roastAudio) {
-                await sendAudioMessage(this.bot, targetUserId, roastAudio, BOT_MESSAGES.ROAST_CAPTION);
+                await sendAudioMessage(this.bot, chatId, roastAudio, BOT_MESSAGES.ROAST_CAPTION);
             }
         }
     }
 
     public async sendMorningReminder() {
-        const targetUserId = process.env.CHAT_ID;
-        if (!targetUserId) {
-            console.error('❌ ERRO: CHAT_ID não definido no arquivo .env');
-            return;
-        }
+        const chatId = this.getChatId();
+        if (!chatId) return;
 
         const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
         const dayOfWeek = days[new Date().getDay()];
 
         console.log(`⏰ Enviando lembrete matinal de ${dayOfWeek}...`);
-        const reminder = await memeService.getMorningReminder(dayOfWeek);
-
-        await this.bot.sendMessage(Number(targetUserId), reminder.message);
-
-        if (reminder.audioSearchTerm) {
-            const button = await myInstantsService.getBestMatchAudio(reminder.audioSearchTerm);
-            if (button?.audioUrl) {
-                await this.bot.sendAudio(Number(targetUserId), button.audioUrl, { caption: `🎶 ${button.title}` });
-            }
-        }
+        await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayOfWeek));
     }
 
     public async sendConditionalReminder() {
-        const targetUserId = process.env.CHAT_ID;
-        if (!targetUserId) {
-            console.error('❌ ERRO: CHAT_ID não definido no arquivo .env');
-            return;
-        }
+        const chatId = this.getChatId();
+        if (!chatId) return;
 
         console.log('⏰ Verificando se usuário já treinou para enviar cobrança...');
         try {
-            const { trained } = await workoutService.checkDailyMessages(this.bot, Number(targetUserId));
-
+            const { trained } = await workoutService.checkDailyMessages(this.bot, chatId);
             if (!trained) {
-                // Brasília is UTC-3, adjust if github actions runs in UTC
-                const hour = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour: '2-digit' });
-                const timeStr = `${hour}:00`;
-                console.log(`❌ Usuário não treinou. Enviando cobrança das ${timeStr}...`);
-
-                const reminder = await memeService.getConditionalReminder(timeStr);
-                await this.bot.sendMessage(Number(targetUserId), reminder.message);
-
-                if (reminder.audioSearchTerm) {
-                    const button = await myInstantsService.getBestMatchAudio(reminder.audioSearchTerm);
-                    if (button?.audioUrl) {
-                        await this.bot.sendAudio(Number(targetUserId), button.audioUrl, { caption: `🎶 ${button.title}` });
-                    }
-                }
+                const hour = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit' });
+                console.log(`❌ Usuário não treinou. Enviando cobrança das ${hour}:00...`);
+                await this.sendWithAudio(chatId, await memeService.getConditionalReminder(`${hour}:00`));
             } else {
-                console.log('✅ Usuário já treinou hoje. Copiou a cobrança.');
+                console.log('✅ Usuário já treinou hoje. Pulando cobrança.');
             }
         } catch (error) {
             console.error('❌ Erro ao verificar treino na cobrança:', error);
         }
+    }
+
+    public async sendWaterReminder() {
+        const chatId = this.getChatId();
+        if (!chatId) return;
+
+        console.log('💧 Enviando lembrete de água...');
+        await this.sendWithAudio(chatId, await memeService.getWaterReminder());
+    }
+
+    public async sendFoodReminder(meal: 'cafe' | 'almoco' | 'jantar') {
+        const chatId = this.getChatId();
+        if (!chatId) return;
+
+        console.log(`🍽️ Enviando lembrete de ${meal}...`);
+        await this.sendWithAudio(chatId, await memeService.getFoodReminder(meal));
     }
 }

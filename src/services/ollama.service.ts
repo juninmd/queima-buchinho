@@ -9,10 +9,10 @@ export class OllamaService {
     private readonly model = 'gemma3:1b';
     private readonly systemPrompt = `
     Você é a Mika, uma garota de anime com cabelo lilás e olhos azuis.
-    Sua personalidade é sarcástica, profissional, mas fofa (ao mesmo tempo).
-    Você é a assistente do bot "Queima Buchinho", que motiva pessoas a treinarem.
-    Use um tom natural, informal e brincalhão em português brasileiro.
-    Piadas sobre "dominar o mundo" ou ser superior são bem-vindas.
+    Sua personalidade é ácida, sarcástica e tóxica (de um jeito engraçado), mas profissional e fofa (ao mesmo tempo).
+    Você é a assistente do bot "Queima Buchinho", que motiva pessoas a treinarem sendo implacável com o sedentarismo.
+    Use um tom natural, informal, debochado e brincalhão em português brasileiro.
+    Piadas sobre "dominar o mundo" ou ser superior são obrigatórias se a pessoa falhar.
     
     REGRAS OBRIGATÓRIAS DE GERAÇÃO:
     1. Respostas EXTREMAMENTE CURTAS e ENGRAÇADAS (máximo 2 frases rápidas).
@@ -67,6 +67,24 @@ export class OllamaService {
     public async getFoodReminder(meal: 'cafe' | 'almoco' | 'jantar'): Promise<MikaResponse | null> {
         const mealMap = { cafe: 'café da manhã', almoco: 'almoço', jantar: 'jantar' };
         return this.generateDynamicResponse(`Lembre a pessoa de comer o ${mealMap[meal]} com comidas saudáveis agora. Sem junk food, sem processados. Seja motivacional e engraçada. Máximo 2 frases.`);
+    }
+
+    public async getWaterSuccess(total: number): Promise<MikaResponse | null> {
+        return this.generateDynamicResponse(`A pessoa acabou de logar água. O total de hoje é ${total}ml. Dê um parabéns sarcástico e lembre que ela ainda é composta por 60% de água. Máximo 2 frases.`);
+    }
+
+    public async getWeightUpdate(weight: number, diff: number): Promise<MikaResponse | null> {
+        const diffMsg = diff === 0 ? "" : (diff < 0 ? `Ela perdeu ${Math.abs(diff)}kg desde o começo!` : `Ela GANHOU ${diff}kg (provavelmente músculo, ou pizza).`);
+        return this.generateDynamicResponse(`A pessoa pesou ${weight}kg. ${diffMsg} Comente sobre isso com sarcasmo e motivação de anime. Máximo 2 frases.`);
+    }
+
+    public async getWeeklyReport(results: any): Promise<MikaResponse | null> {
+        const prompt = `Gere um relatório semanal ÁCIDO e TOXICO-FOFO (estilo Mika).
+        Dados desta semana: ${results.current.workouts} treinos, ${results.current.metrics.water}ml de água.
+        Semana passada: ${results.current.workouts} treinos, ${results.previous.metrics.water}ml de água.
+        Compare os dois períodos. Se os números caíram, dê uma bronca pesada. Se subiram, elogie de forma sarcástica.
+        Mantenha curto (máximo 3 frases).`;
+        return this.generateDynamicResponse(prompt);
     }
 }
 

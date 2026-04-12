@@ -21,8 +21,8 @@ export class SchedulerService {
         return Number(chatIdStr);
     }
 
-    private async sendWithAudio(chatId: number, response: { message: string; audioSearchTerm?: string }) {
-        await this.bot.sendMessage(chatId, response.message);
+    private async sendWithAudio(chatId: number, response: { message: string; audioSearchTerm?: string }, options?: TelegramBot.SendMessageOptions) {
+        await this.bot.sendMessage(chatId, response.message, options);
         if (response.audioSearchTerm) {
             const button = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
             if (button?.audioUrl) {
@@ -99,7 +99,17 @@ export class SchedulerService {
         if (!chatId) return;
 
         console.log('💧 Enviando lembrete de água...');
-        await this.sendWithAudio(chatId, await memeService.getWaterReminder());
+        const options: TelegramBot.SendMessageOptions = {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: '🥤 +250ml', callback_data: 'add_water_250' },
+                        { text: '🥛 +500ml', callback_data: 'add_water_500' }
+                    ]
+                ]
+            }
+        };
+        await this.sendWithAudio(chatId, await memeService.getWaterReminder(), options);
     }
 
     public async sendFoodReminder(meal: 'cafe' | 'almoco' | 'jantar') {

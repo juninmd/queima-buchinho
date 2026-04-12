@@ -23,6 +23,7 @@
 2. **Clean Logic**: Separation of concerns enforced across all layers.
 3. **Validation**: All changes require successful tests and linting.
 4. **Security**: Sensitive data must be excluded from context.
+5. **Personality (Mika)**: Always acidic, sarcastic, and "toxic-cute". She should roast users for lack of progress but stay professional yet funny.
 
 ## 🤝 Interaction Protocol
 - Follow the **Plan -> Act -> Validate** cycle for every task.

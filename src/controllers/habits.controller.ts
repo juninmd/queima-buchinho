@@ -21,7 +21,10 @@ export class HabitsController {
     const messageId = query.message?.message_id;
     const data = query.data;
 
-    if (!chatId || !data) return;
+    if (!chatId || !data) {
+      await this.bot.answerCallbackQuery(query.id).catch(() => {});
+      return;
+    }
 
     if (data.startsWith('habit_')) return this.handleHabitToggle(query, userId, chatId, messageId);
     if (data.startsWith('add_water_')) return this.handleWaterAdd(query, userId, chatId, messageId);
@@ -29,6 +32,8 @@ export class HabitsController {
     if (data === 'refresh_menu') return this.handleRefreshMenu(query, chatId, messageId!, userId);
     if (data === 'weekly_summary') return this.handleWeeklySummary(query, chatId, userId);
     if (data.startsWith('meal_done_')) return this.handleMealDone(query, userId, chatId);
+
+    await this.bot.answerCallbackQuery(query.id).catch(() => {});
   }
 
   private async handleHabitToggle(
@@ -47,7 +52,7 @@ export class HabitsController {
     const statusEmoji = newValue ? '✅' : '❌';
     await this.bot.answerCallbackQuery(query.id, {
       text: `${habit.emoji} ${habit.label} ${statusEmoji}`
-    });
+    }).catch(() => {});
 
     if (messageId) {
       await this.menuController.refreshMenu(chatId, messageId, userId);
@@ -68,7 +73,7 @@ export class HabitsController {
 
     await this.bot.answerCallbackQuery(query.id, {
       text: `💧 +${amount}ml! Total: ${total}ml`
-    });
+    }).catch(() => {});
 
     if (messageId) {
       await this.menuController.refreshMenu(chatId, messageId, userId);
@@ -84,7 +89,7 @@ export class HabitsController {
     await workoutService.logWorkout(userId, true, 'Button click');
     await habitsService.markHabit(userId, 'treino', true);
 
-    await this.bot.answerCallbackQuery(query.id, { text: '🏋️‍♂️ Treino registrado!' });
+    await this.bot.answerCallbackQuery(query.id, { text: '🏋️‍♂️ Treino registrado!' }).catch(() => {});
 
     const congrats = await memeService.getCongratsMessage();
     await this.bot.sendMessage(chatId, congrats.message);
@@ -108,14 +113,14 @@ export class HabitsController {
   private async handleRefreshMenu(
     query: TelegramBot.CallbackQuery, chatId: number, messageId: number, userId: number
   ) {
-    await this.bot.answerCallbackQuery(query.id, { text: '🔄 Atualizando...' });
+    await this.bot.answerCallbackQuery(query.id, { text: '🔄 Atualizando...' }).catch(() => {});
     await this.menuController.refreshMenu(chatId, messageId, userId);
   }
 
   private async handleWeeklySummary(
     query: TelegramBot.CallbackQuery, chatId: number, userId: number
   ) {
-    await this.bot.answerCallbackQuery(query.id, { text: '📊 Gerando resumo...' });
+    await this.bot.answerCallbackQuery(query.id, { text: '📊 Gerando resumo...' }).catch(() => {});
     const fakeMsg = { chat: { id: chatId }, from: { id: userId } } as TelegramBot.Message;
     await this.menuController.showWeekly(fakeMsg);
   }
@@ -128,7 +133,7 @@ export class HabitsController {
     const habit = HABIT_MAP.get(meal);
     await this.bot.answerCallbackQuery(query.id, {
       text: `${habit?.emoji || '✅'} ${habit?.label || meal} marcado!`
-    });
+    }).catch(() => {});
     await this.bot.sendMessage(chatId, `${habit?.emoji || '✅'} ${habit?.label || meal} registrado!`);
   }
 }

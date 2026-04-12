@@ -26,8 +26,8 @@ export class BotController {
 
             if (this.hasWorkoutKeyword(text)) {
                 console.log(`✅ Usuário ${userId} enviou mensagem de treino.`);
-                workoutService.logWorkout(userId, true, text);
-                habitsService.markHabit(userId, 'treino', true);
+                await workoutService.logWorkout(userId, true, text);
+                await habitsService.markHabit(userId, 'treino', true);
 
                 const congrats = await memeService.getCongratsMessage();
                 await this.bot.sendMessage(msg.chat.id, congrats.message);

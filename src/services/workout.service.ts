@@ -1,16 +1,7 @@
-import { Pool } from 'pg';
 import TelegramBot from 'node-telegram-bot-api';
 import { getBrasiliaDayStart, getBrasiliaDateString } from '../utils/time';
 import { WORKOUT_KEYWORDS } from '../config/constants';
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-interface WorkoutLogEntry {
-    user_id: number;
-    brasilia_date: string;
-    trained: boolean;
-    user_message?: string;
-}
+import { pool } from '../config/database';
 
 export class WorkoutService {
     public async checkDailyMessages(bot: TelegramBot, targetChatId?: number): Promise<{ trained: boolean; message?: TelegramBot.Message }> {

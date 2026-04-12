@@ -1,7 +1,5 @@
-import { Pool } from 'pg';
+import { pool } from '../config/database';
 import { getBrasiliaDateString } from '../utils/time';
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 export type MetricType = 'water' | 'weight' | 'steps' | 'sleep';
 
@@ -67,6 +65,8 @@ export class MetricsService {
             console.error('Erro ao calcular diferença de peso:', error);
             return 0;
         }
+    }
+
     public async getWeeklySummary(userId: number): Promise<any> {
         try {
             const queries = {

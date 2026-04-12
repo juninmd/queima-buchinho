@@ -146,7 +146,10 @@ Envie "treinei" para registrar o treino
       }
 
       const response = await ollamaService.getWeeklyReport(summary);
-      if (!response) return;
+      if (!response) {
+        await this.bot.sendMessage(chatId, '❌ Não consegui gerar o relatório. Tenta de novo mais tarde!');
+        return;
+      }
 
       const wE = summary.current.metrics.water >= summary.previous.metrics.water ? '📈' : '📉';
       const tE = summary.current.workouts >= summary.previous.workouts ? '📈' : '📉';

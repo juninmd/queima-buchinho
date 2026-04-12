@@ -118,7 +118,6 @@ export class SchedulerService {
 
         console.log('💧 Enviando lembrete de água...');
         const options: TelegramBot.SendMessageOptions = {
-            parse_mode: 'Markdown',
             reply_markup: { inline_keyboard: [WATER_ROW, [{ text: '🍼 +1L', callback_data: 'add_water_1000' }]] }
         };
         await this.sendWithAudio(chatId, await memeService.getWaterReminder(), options);

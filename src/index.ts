@@ -12,15 +12,29 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN não está definido no arquivo .env');
 }
 
-const bot = new TelegramBot(token, { polling: mode === 'listener' });
+const webhookUrl = process.env.WEBHOOK_URL;
+const port = Number(process.env.PORT) || 3000;
 
-async function start() {
-  if (mode === 'listener') {
-    const controller = new BotController(bot);
-    controller.init();
-    return;
+let bot: TelegramBot;
+
+if (mode === 'listener') {
+  if (webhookUrl) {
+    bot = new TelegramBot(token, { webHook: { port } });
+    bot.setWebHook(`${webhookUrl}/bot${token}`);
+    console.log(`🚀 Bot em modo WEBHOOK na porta ${port} e URL ${webhookUrl}`);
+  } else {
+    bot = new TelegramBot(token, { polling: true });
+    console.log('🚀 Bot em modo POLLING ativado...');
   }
+  
+  const controller = new BotController(bot);
+  controller.init();
+} else {
+  bot = new TelegramBot(token);
+  startScheduler();
+}
 
+async function startScheduler() {
   const scheduler = new SchedulerService(bot);
   try {
     switch (mode) {

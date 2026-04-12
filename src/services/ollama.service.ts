@@ -86,6 +86,25 @@ export class OllamaService {
         Mantenha curto (máximo 3 frases).`;
         return this.generateDynamicResponse(prompt);
     }
+
+    public async getHabitResponse(habitKey: string): Promise<MikaResponse | null> {
+        const habitLabels: Record<string, string> = {
+            treino: 'treinou', alongamento: 'fez alongamento',
+            leitura: 'leu um livro', meditacao: 'meditou',
+            suplemento: 'tomou suplemento', cafe: 'tomou café da manhã',
+            almoco: 'almoçou saudável', jantar: 'jantou saudável'
+        };
+        const label = habitLabels[habitKey] || habitKey;
+        return this.generateDynamicResponse(
+            `A pessoa acabou de marcar que ${label} hoje! Dê um parabéns curto e sarcástico (1 frase). Estilo Mika tóxico-fofa.`
+        );
+    }
+
+    public async getHabitsCheckReminder(uncompleted: string[]): Promise<MikaResponse | null> {
+        return this.generateDynamicResponse(
+            `São 20h e a pessoa ainda não completou esses hábitos: ${uncompleted.join(', ')}. Dê uma bronca engraçada e sarcástica. Máximo 2 frases.`
+        );
+    }
 }
 
 export const ollamaService = new OllamaService();

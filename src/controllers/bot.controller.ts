@@ -244,6 +244,28 @@ Este bot ajuda você a manter a motivação para treinar e se manter saudável!
                     // Message might be the same or too old
                 }
             }
+
+            if (data === 'mark_trained') {
+                await workoutService.logWorkout(userId, true, 'Botton click');
+                await this.bot.answerCallbackQuery(query.id, { text: '🏋️‍♂️ Treino registrado com sucesso!' });
+                
+                const congrats = await memeService.getCongratsMessage();
+                await this.bot.sendMessage(chatId, congrats.message);
+
+                if (congrats.audioSearchTerm) {
+                    const button = await myInstantsService.getBestMatchAudio(congrats.audioSearchTerm);
+                    if (button?.audioUrl) {
+                        await this.bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
+                    }
+                }
+
+                try {
+                    await this.bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+                        chat_id: chatId,
+                        message_id: query.message?.message_id
+                    });
+                } catch (e) {}
+            }
         });
     }
 

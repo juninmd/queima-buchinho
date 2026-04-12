@@ -47,7 +47,12 @@ export class SchedulerService {
             console.log('❌ Usuário não treinou hoje.');
             workoutService.logWorkout(chatId, false);
             const roast = await memeService.getRoastMessage();
-            await this.bot.sendMessage(chatId, roast.message);
+            const options: TelegramBot.SendMessageOptions = {
+                reply_markup: {
+                    inline_keyboard: [[{ text: '🏋️‍♂️ Já treinei! ✅', callback_data: 'mark_trained' }]]
+                }
+            };
+            await this.bot.sendMessage(chatId, roast.message, options);
 
             if (roast.audioSearchTerm) {
                 const button = await myInstantsService.getBestMatchAudio(roast.audioSearchTerm);
@@ -72,7 +77,12 @@ export class SchedulerService {
         const dayOfWeek = days[new Date().getDay()];
 
         console.log(`⏰ Enviando lembrete matinal de ${dayOfWeek}...`);
-        await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayOfWeek));
+        const options: TelegramBot.SendMessageOptions = {
+            reply_markup: {
+                inline_keyboard: [[{ text: '🏋️‍♂️ Já treinei! ✅', callback_data: 'mark_trained' }]]
+            }
+        };
+        await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayOfWeek), options);
     }
 
     public async sendConditionalReminder() {
@@ -85,7 +95,12 @@ export class SchedulerService {
             if (!trained) {
                 const hour = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit' });
                 console.log(`❌ Usuário não treinou. Enviando cobrança das ${hour}:00...`);
-                await this.sendWithAudio(chatId, await memeService.getConditionalReminder(`${hour}:00`));
+                const options: TelegramBot.SendMessageOptions = {
+                    reply_markup: {
+                        inline_keyboard: [[{ text: '🏋️‍♂️ Já treinei! ✅', callback_data: 'mark_trained' }]]
+                    }
+                };
+                await this.sendWithAudio(chatId, await memeService.getConditionalReminder(`${hour}:00`), options);
             } else {
                 console.log('✅ Usuário já treinou hoje. Pulando cobrança.');
             }
@@ -100,11 +115,15 @@ export class SchedulerService {
 
         console.log('💧 Enviando lembrete de água...');
         const options: TelegramBot.SendMessageOptions = {
+            parse_mode: 'Markdown',
             reply_markup: {
                 inline_keyboard: [
                     [
                         { text: '🥤 +250ml', callback_data: 'add_water_250' },
                         { text: '🥛 +500ml', callback_data: 'add_water_500' }
+                    ],
+                    [
+                        { text: '🍼 +1L', callback_data: 'add_water_1000' }
                     ]
                 ]
             }
@@ -117,6 +136,16 @@ export class SchedulerService {
         if (!chatId) return;
 
         console.log(`🍽️ Enviando lembrete de ${meal}...`);
-        await this.sendWithAudio(chatId, await memeService.getFoodReminder(meal));
+        const options: TelegramBot.SendMessageOptions = {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: '🥤 +250ml', callback_data: 'add_water_250' },
+                        { text: '🥛 +500ml', callback_data: 'add_water_500' }
+                    ]
+                ]
+            }
+        };
+        await this.sendWithAudio(chatId, await memeService.getFoodReminder(meal), options);
     }
 }

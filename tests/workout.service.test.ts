@@ -2,7 +2,7 @@ import { workoutService } from '../src/services/workout.service';
 
 jest.mock('pg', () => {
     const query = jest.fn();
-    return { Pool: jest.fn(() => ({ query })) };
+    return { Pool: jest.fn(() => ({ query, on: jest.fn() })) };
 });
 
 import { Pool } from 'pg';

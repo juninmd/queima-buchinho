@@ -2,6 +2,9 @@ import TelegramBot from 'node-telegram-bot-api';
 import * as dotenv from 'dotenv';
 import { SchedulerService } from './services/scheduler.service';
 import { BotController } from './controllers/bot.controller';
+import { MenuController } from './controllers/menu.controller';
+import { HabitsController } from './controllers/habits.controller';
+import { redisService } from './services/redis.service';
 
 dotenv.config();
 
@@ -18,6 +21,8 @@ const port = Number(process.env.PORT) || 3000;
 let bot: TelegramBot;
 
 if (mode === 'listener') {
+  redisService.connect();
+
   if (webhookUrl) {
     bot = new TelegramBot(token, { webHook: { port } });
     bot.setWebHook(`${webhookUrl}/bot${token}`);
@@ -26,11 +31,17 @@ if (mode === 'listener') {
     bot = new TelegramBot(token, { polling: true });
     console.log('🚀 Bot em modo POLLING ativado...');
   }
-  
-  const controller = new BotController(bot);
-  controller.init();
+
+  const menuController = new MenuController(bot);
+  const habitsController = new HabitsController(bot, menuController);
+  const botController = new BotController(bot);
+
+  menuController.init();
+  habitsController.init();
+  botController.init();
 } else {
   bot = new TelegramBot(token);
+  redisService.connect();
   startScheduler();
 }
 
@@ -66,6 +77,10 @@ async function startScheduler() {
         console.log('🌙 Modo FOOD JANTAR ativado...');
         await scheduler.sendFoodReminder('jantar');
         break;
+      case 'reminder_habits_check':
+        console.log('📋 Modo HABITS CHECK ativado...');
+        await scheduler.sendHabitsCheckReminder();
+        break;
       default:
         console.warn(`Modo desconhecido: ${mode}`);
     }
@@ -75,5 +90,3 @@ async function startScheduler() {
     process.exit(1);
   }
 }
-
-start();

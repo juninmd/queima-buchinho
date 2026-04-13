@@ -9,23 +9,30 @@ export class MenuController {
   constructor(private bot: TelegramBot) {}
 
   public init() {
-    const commands = [/\/menu/, /\/start/, /\/progresso/, /\/help/, /\/agua/, /\/semana/];
-    
     const handleCommand = async (msg: TelegramBot.Message) => {
       const text = msg.text || '';
-      if (text.startsWith('/menu') || text.startsWith('/start') || text.startsWith('/progresso')) {
+      console.log(`[MenuController] Recebido comando: ${text} de ${msg.from?.id}`);
+      
+      // Suporte para /comando ou /comando@botname
+      const cleanText = text.split(' ')[0].split('@')[0].toLowerCase();
+
+      if (['/menu', '/start', '/progresso'].includes(cleanText)) {
         return this.showMenu(msg);
       }
-      if (text.startsWith('/help')) return this.showHelp(msg);
-      if (text.startsWith('/agua')) return this.showWater(msg);
-      if (text.startsWith('/semana')) return this.showWeekly(msg);
+      if (cleanText === '/help') return this.showHelp(msg);
+      if (cleanText === '/agua') return this.showWater(msg);
+      if (cleanText === '/semana') return this.showWeekly(msg);
     };
 
     this.bot.on('message', (msg) => {
-      if (msg.text?.startsWith('/')) handleCommand(msg);
+      if (msg.text?.startsWith('/')) {
+        handleCommand(msg).catch(err => console.error('[MenuController] Erro no handleCommand:', err));
+      }
     });
     this.bot.on('channel_post', (msg) => {
-      if (msg.text?.startsWith('/')) handleCommand(msg);
+      if (msg.text?.startsWith('/')) {
+        handleCommand(msg).catch(err => console.error('[MenuController] Erro no handleCommand:', err));
+      }
     });
   }
 

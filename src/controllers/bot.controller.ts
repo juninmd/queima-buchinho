@@ -19,13 +19,13 @@ export class BotController {
     }
 
     private setupListeners() {
-        this.bot.on('message', async (msg) => {
+        const handleMessage = async (msg: TelegramBot.Message) => {
             const text = msg.text || '';
-            const userId = msg.from?.id;
+            const userId = msg.from?.id || msg.sender_chat?.id; // Support for channels
             if (!userId || text.startsWith('/')) return;
 
             if (this.hasWorkoutKeyword(text)) {
-                console.log(`✅ Usuário ${userId} enviou mensagem de treino.`);
+                console.log(`✅ Evento em chat ${msg.chat.id} identificado como treino de ${userId}`);
                 await workoutService.logWorkout(userId, true, text);
                 await habitsService.markHabit(userId, 'treino', true);
 
@@ -39,7 +39,10 @@ export class BotController {
                     }
                 }
             }
-        });
+        };
+
+        this.bot.on('message', handleMessage);
+        this.bot.on('channel_post', handleMessage);
     }
 
     private setupCommands() {
@@ -130,7 +133,7 @@ export class BotController {
     }
 
     private async handlePeso(msg: TelegramBot.Message, match: RegExpExecArray | null) {
-        const userId = msg.from?.id;
+        const userId = msg.from?.id || msg.sender_chat?.id;
         const chatId = msg.chat.id;
         if (!userId || !match) return;
 

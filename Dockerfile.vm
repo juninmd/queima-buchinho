@@ -1,0 +1,13 @@
+# Stage 1: Build skipping (pre-built locally)
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY dist ./dist
+# If assets exist locally, they will be copied.
+# If not, the build context might fail if the folder is missing.
+# Using a wildcard or checking first is safer.
+COPY assets* ./assets/
+RUN mkdir -p assets data && ( [ -f data/workout-history.json ] || echo "[]" > data/workout-history.json )
+
+CMD ["npm", "start"]

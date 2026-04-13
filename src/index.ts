@@ -25,7 +25,9 @@ if (mode === 'listener') {
 
   if (webhookUrl) {
     bot = new TelegramBot(token, { webHook: { port } });
-    bot.setWebHook(`${webhookUrl}/bot${token}`);
+    bot.setWebHook(`${webhookUrl}/bot${token}`, {
+      allowed_updates: ['message', 'channel_post', 'callback_query']
+    });
     console.log(`🚀 Bot em modo WEBHOOK na porta ${port} e URL ${webhookUrl}`);
   } else {
     bot = new TelegramBot(token, { polling: true });

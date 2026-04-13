@@ -29,7 +29,7 @@ if (mode === 'listener') {
         port,
         path: `/bot${token}` 
       } 
-    });
+    } as any);
     
     // Força a limpeza e reconfiguração total do Webhook no boot
     const setupWebhook = async () => {

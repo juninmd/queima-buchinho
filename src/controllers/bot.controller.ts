@@ -46,13 +46,20 @@ export class BotController {
     }
 
     private setupCommands() {
-        this.bot.onText(/\/status/, (msg) => this.handleStatus(msg));
-        this.bot.onText(/\/checktreino/, (msg) => this.handleCheckTreino(msg));
-        this.bot.onText(/\/hora/, (msg) => this.handleHora(msg));
-        this.bot.onText(/\/motivar/, (msg) => this.handleMotivar(msg));
-        this.bot.onText(/\/instante (.+)/, (msg, match) => this.handleInstante(msg, match));
-        this.bot.onText(/\/reset/, (msg) => this.handleReset(msg));
-        this.bot.onText(/\/peso (\d+(\.\d+)?)/, (msg, match) => this.handlePeso(msg, match));
+        const wrap = (fn: (msg: TelegramBot.Message, match: RegExpExecArray | null) => void) => {
+            return (msg: TelegramBot.Message, match: RegExpExecArray | null) => {
+                console.log(`[BotController] Comando identificado: ${msg.text} de ${msg.from?.id}`);
+                fn(msg, match);
+            };
+        };
+
+        this.bot.onText(/^\/status(@\w+)?$/, wrap((msg) => this.handleStatus(msg)));
+        this.bot.onText(/^\/checktreino(@\w+)?$/, wrap((msg) => this.handleCheckTreino(msg)));
+        this.bot.onText(/^\/hora(@\w+)?$/, wrap((msg) => this.handleHora(msg)));
+        this.bot.onText(/^\/motivar(@\w+)?$/, wrap((msg) => this.handleMotivar(msg)));
+        this.bot.onText(/^\/instante(@\w+)? (.+)/, wrap((msg, match) => this.handleInstante(msg, match)));
+        this.bot.onText(/^\/reset(@\w+)?$/, wrap((msg) => this.handleReset(msg)));
+        this.bot.onText(/^\/peso(@\w+)? (\d+(\.\d+)?)/, wrap((msg, match) => this.handlePeso(msg, match)));
     }
 
     private hasWorkoutKeyword(text: string): boolean {

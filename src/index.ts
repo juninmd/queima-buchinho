@@ -25,10 +25,22 @@ if (mode === 'listener') {
 
   if (webhookUrl) {
     bot = new TelegramBot(token, { webHook: { port } });
-    bot.setWebHook(`${webhookUrl}/bot${token}`, {
-      allowed_updates: ['message', 'channel_post', 'callback_query']
-    });
-    console.log(`🚀 Bot em modo WEBHOOK na porta ${port} e URL ${webhookUrl}`);
+    
+    // Força a limpeza e reconfiguração total do Webhook no boot
+    const setupWebhook = async () => {
+      try {
+        await bot.deleteWebHook();
+        await bot.setWebHook(`${webhookUrl}/bot${token}`, {
+          allowed_updates: ['message', 'channel_post', 'callback_query']
+        });
+        console.log(`🚀 Webhook configurado com sucesso: ${webhookUrl}`);
+      } catch (err) {
+        console.error('❌ Erro ao configurar Webhook:', err);
+      }
+    };
+    
+    setupWebhook();
+    console.log(`🚀 Bot em modo WEBHOOK na porta ${port}`);
   } else {
     bot = new TelegramBot(token, { polling: true });
     console.log('🚀 Bot em modo POLLING ativado...');

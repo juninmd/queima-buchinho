@@ -8,6 +8,7 @@ import { myInstantsService } from '../services/myinstants.service';
 import { formatBrasiliaTime, getSurpriseMessage } from '../utils/time';
 import { sendAudioMessage } from '../utils/telegram';
 import { WORKOUT_KEYWORDS, BOT_MESSAGES } from '../config/constants';
+import { logger } from '../utils/logger';
 
 export class BotController {
     constructor(private bot: TelegramBot) { }
@@ -15,7 +16,7 @@ export class BotController {
     public init() {
         this.setupListeners();
         this.setupCommands();
-        console.log('🤖 Bot Queima Buchinho iniciado (Modo Listener)!');
+        logger.info('🤖 Bot Queima Buchinho iniciado (Modo Listener)!');
     }
 
     private setupListeners() {
@@ -25,7 +26,7 @@ export class BotController {
             if (!userId || text.startsWith('/')) return;
 
             if (this.hasWorkoutKeyword(text)) {
-                console.log(`✅ Evento em chat ${msg.chat.id} identificado como treino de ${userId}`);
+                logger.info(`✅ Evento em chat ${msg.chat.id} identificado como treino de ${userId}`);
                 await workoutService.logWorkout(userId, true, text);
                 await habitsService.markHabit(userId, 'treino', true);
 
@@ -61,7 +62,7 @@ export class BotController {
             for (const cmd of commands) {
                 const match = cmd.regex.exec(text);
                 if (match) {
-                    console.log(`[BotController] Comando identificado: ${text} de ${msg.from?.id || msg.sender_chat?.id}`);
+                    logger.info(`[BotController] Comando identificado: ${text} de ${msg.from?.id || msg.sender_chat?.id}`);
                     cmd.handler(msg, match);
                     return; // Break after first match
                 }
@@ -109,7 +110,7 @@ export class BotController {
                 }
             }
         } catch (e) {
-            console.error('Erro no checktreino:', e);
+            logger.error('Erro no checktreino:', e);
             await this.bot.sendMessage(msg.chat.id, BOT_MESSAGES.ERROR_GENERIC);
         }
     }
@@ -137,7 +138,7 @@ export class BotController {
                 await this.bot.sendMessage(msg.chat.id, '❌ Nenhum áudio encontrado no MyInstants.');
             }
         } catch (error) {
-            console.error('Erro ao buscar áudio no MyInstants:', error);
+            logger.error('Erro ao buscar áudio no MyInstants:', error);
             await this.bot.sendMessage(msg.chat.id, '❌ Erro ao buscar áudio.');
         }
     }

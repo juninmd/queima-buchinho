@@ -1,4 +1,5 @@
 import ollama from 'ollama';
+import { logger } from '../utils/logger';
 
 export interface MikaResponse {
     message: string;
@@ -39,7 +40,7 @@ export class OllamaService {
             const content = response.message.content.trim();
             return JSON.parse(content) as MikaResponse;
         } catch (error) {
-            console.error('Error generating response via Ollama:', error);
+            logger.error('Error generating response via Ollama:', error);
             return null;
         }
     }

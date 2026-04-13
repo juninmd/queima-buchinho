@@ -4,6 +4,7 @@ import { metricsService } from '../services/metrics.service';
 import { ollamaService } from '../services/ollama.service';
 import { myInstantsService } from '../services/myinstants.service';
 import { HABITS, getProgressBar } from '../config/habits';
+import { logger } from '../utils/logger';
 
 export class MenuController {
   constructor(private bot: TelegramBot) {}
@@ -11,7 +12,7 @@ export class MenuController {
   public init() {
     const handleCommand = async (msg: TelegramBot.Message) => {
       const text = msg.text || '';
-      console.log(`[MenuController] Recebido comando: ${text} de ${msg.from?.id}`);
+      logger.info(`[MenuController] Recebido comando: ${text} de ${msg.from?.id}`);
       
       // Suporte para /comando ou /comando@botname
       const cleanText = text.split(' ')[0].split('@')[0].toLowerCase();
@@ -26,12 +27,12 @@ export class MenuController {
 
     this.bot.on('message', (msg) => {
       if (msg.text?.startsWith('/')) {
-        handleCommand(msg).catch(err => console.error('[MenuController] Erro no handleCommand:', err));
+        handleCommand(msg).catch(err => logger.error('[MenuController] Erro no handleCommand:', err));
       }
     });
     this.bot.on('channel_post', (msg) => {
       if (msg.text?.startsWith('/')) {
-        handleCommand(msg).catch(err => console.error('[MenuController] Erro no handleCommand:', err));
+        handleCommand(msg).catch(err => logger.error('[MenuController] Erro no handleCommand:', err));
       }
     });
   }
@@ -186,7 +187,7 @@ Envie "treinei" para registrar o treino
         }
       }
     } catch (error) {
-      console.error('Erro no showWeekly:', error);
+      logger.error('Erro no showWeekly:', error);
       await this.bot.sendMessage(chatId, '❌ Erro ao processar resumo semanal.');
     }
   }

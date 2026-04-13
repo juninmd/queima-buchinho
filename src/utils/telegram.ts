@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import { logger } from './logger';
 
 /**
  * Envia uma mensagem de áudio com caption.
@@ -9,7 +10,7 @@ export async function sendAudioMessage(bot: TelegramBot, chatId: number, audioPa
         try {
             await bot.sendVoice(chatId, audioPath, { caption });
         } catch (e) {
-            console.error('Erro ao enviar áudio:', e);
+            logger.error('Erro ao enviar áudio:', e);
             await bot.sendMessage(chatId, caption); // Fallback
         }
     } else {

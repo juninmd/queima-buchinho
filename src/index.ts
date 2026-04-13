@@ -5,6 +5,7 @@ import { BotController } from './controllers/bot.controller';
 import { MenuController } from './controllers/menu.controller';
 import { HabitsController } from './controllers/habits.controller';
 import { redisService } from './services/redis.service';
+import { logger } from './utils/logger';
 
 dotenv.config();
 
@@ -56,18 +57,29 @@ if (mode === 'listener') {
           { command: 'reset', description: '🔄 Resetar status de treino de hoje' }
         ]);
 
-        console.log(`🚀 Webhook configurado em: ${webhookUrl}/bot***[TOKEN_OCULTO]***`);
-        console.log('✅ Comandos registrados com sucesso!');
+        logger.info(`🚀 Webhook configurado: ${webhookUrl}/bot***[TOKEN_OCULTO]***`);
+        logger.info('✅ Comandos registrados com sucesso!');
       } catch (err) {
-        console.error('❌ Erro ao configurar Webhook/Comandos:', err);
+        logger.error('❌ Erro ao configurar Webhook/Comandos:', err);
       }
     };
     
     setupWebhook();
-    console.log(`🚀 Bot em modo WEBHOOK na porta ${port}`);
+    logger.info(`🚀 Bot em modo WEBHOOK na porta ${port}`);
   } else {
-    bot = new TelegramBot(token, { polling: true });
-    console.log('🚀 Bot em modo POLLING ativado...');
+    bot = new TelegramBot(token);
+    
+    // Limpa qualquer webhook anterior antes de iniciar o polling para evitar Erro 409
+    const setupPolling = async () => {
+        try {
+            await bot.deleteWebHook();
+            await bot.startPolling();
+            logger.info('🚀 Bot em modo POLLING ativado e Webhook limpo...');
+        } catch (err) {
+            logger.error('❌ Erro ao limpar Webhook para Polling:', err);
+        }
+    };
+    setupPolling();
   }
 
   const menuController = new MenuController(bot);
@@ -85,46 +97,54 @@ if (mode === 'listener') {
 
 async function startScheduler() {
   const scheduler = new SchedulerService(bot);
+  
+  // Timeout global de 2 minutos para evitar acúmulo de pods zumbis
+  const timeoutId = setTimeout(() => {
+    logger.error(`🚨 [Timeout] O modo ${mode} demorou demais e foi finalizado.`);
+    process.exit(1);
+  }, 120000);
+
   try {
     switch (mode) {
       case 'checker':
-        console.log('⏰ Modo CHECKER ativado...');
+        logger.info('⏰ Modo CHECKER ativado...');
         await scheduler.runDailyCheck();
         break;
       case 'reminder_morning':
-        console.log('⏰ Modo MORNING ativado...');
+        logger.info('⏰ Modo MORNING ativado...');
         await scheduler.sendMorningReminder();
         break;
       case 'reminder_conditional':
-        console.log('⏰ Modo CONDITIONAL ativado...');
+        logger.info('⏰ Modo CONDITIONAL ativado...');
         await scheduler.sendConditionalReminder();
         break;
       case 'reminder_water':
-        console.log('💧 Modo WATER ativado...');
+        logger.info('💧 Modo WATER ativado...');
         await scheduler.sendWaterReminder();
         break;
       case 'reminder_food_cafe':
-        console.log('🍳 Modo FOOD CAFÉ ativado...');
+        logger.info('🍳 Modo FOOD CAFÉ ativado...');
         await scheduler.sendFoodReminder('cafe');
         break;
       case 'reminder_food_almoco':
-        console.log('🍽️ Modo FOOD ALMOÇO ativado...');
+        logger.info('🍽️ Modo FOOD ALMOÇO ativado...');
         await scheduler.sendFoodReminder('almoco');
         break;
       case 'reminder_food_jantar':
-        console.log('🌙 Modo FOOD JANTAR ativado...');
+        logger.info('🌙 Modo FOOD JANTAR ativado...');
         await scheduler.sendFoodReminder('jantar');
         break;
       case 'reminder_habits_check':
-        console.log('📋 Modo HABITS CHECK ativado...');
+        logger.info('📋 Modo HABITS CHECK ativado...');
         await scheduler.sendHabitsCheckReminder();
         break;
       default:
-        console.warn(`Modo desconhecido: ${mode}`);
+        logger.warn(`Modo desconhecido: ${mode}`);
     }
+    clearTimeout(timeoutId);
     process.exit(0);
   } catch (error) {
-    console.error(`❌ Erro no modo ${mode}:`, error);
+    logger.error(`❌ Erro no modo ${mode}:`, error);
     process.exit(1);
   }
 }

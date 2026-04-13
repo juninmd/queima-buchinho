@@ -1,5 +1,6 @@
 import { pool } from '../config/database';
 import { getBrasiliaDateString } from '../utils/time';
+import { logger } from '../utils/logger';
 
 export type MetricType = 'water' | 'weight' | 'steps' | 'sleep';
 
@@ -12,9 +13,9 @@ export class MetricsService {
                  VALUES ($1, $2, $3, $4, $5)`,
                 [userId, type, value, unit ?? null, today]
             );
-            console.log(`📊 Métrica registrada: user=${userId} tipo=${type} valor=${value}${unit ?? ''}`);
+            logger.info(`📊 Métrica registrada: user=${userId} tipo=${type} valor=${value}${unit ?? ''}`);
         } catch (error) {
-            console.error('Erro ao salvar métrica:', error);
+            logger.error('Erro ao salvar métrica:', error);
         }
     }
 
@@ -29,7 +30,7 @@ export class MetricsService {
             );
             return parseFloat(rows[0].total) || 0;
         } catch (error) {
-            console.error(`Erro ao buscar soma de ${type}:`, error);
+            logger.error(`Erro ao buscar soma de ${type}:`, error);
             return 0;
         }
     }
@@ -44,7 +45,7 @@ export class MetricsService {
             );
             return rows[0] ? parseFloat(rows[0].value) : null;
         } catch (error) {
-            console.error('Erro ao buscar último peso:', error);
+            logger.error('Erro ao buscar último peso:', error);
             return null;
         }
     }
@@ -62,7 +63,7 @@ export class MetricsService {
             const lastWeight = parseFloat(rows[rows.length - 1].value);
             return lastWeight - firstWeight;
         } catch (error) {
-            console.error('Erro ao calcular diferença de peso:', error);
+            logger.error('Erro ao calcular diferença de peso:', error);
             return 0;
         }
     }
@@ -118,7 +119,7 @@ export class MetricsService {
                 }
             };
         } catch (error) {
-            console.error('Erro ao gerar resumo semanal:', error);
+            logger.error('Erro ao gerar resumo semanal:', error);
             return null;
         }
     }

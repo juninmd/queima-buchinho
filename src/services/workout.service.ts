@@ -2,6 +2,7 @@ import TelegramBot from 'node-telegram-bot-api';
 import { getBrasiliaDayStart, getBrasiliaDateString } from '../utils/time';
 import { WORKOUT_KEYWORDS } from '../config/constants';
 import { pool } from '../config/database';
+import { logger } from '../utils/logger';
 
 export class WorkoutService {
     public async checkDailyMessages(bot: TelegramBot, targetChatId?: number): Promise<{ trained: boolean; message?: TelegramBot.Message }> {
@@ -9,6 +10,12 @@ export class WorkoutService {
             const today = getBrasiliaDateString();
             const alreadyLogged = await this.hasWorkoutToday(targetChatId ?? 0, today);
             if (alreadyLogged) return { trained: true };
+
+            // Se estivermos em modo Webhook, getUpdates NÃO PODE ser usado (Gera erro 409)
+            if (process.env.WEBHOOK_URL) {
+                logger.warn('[WorkoutService] getUpdates ignorado: Webhook está ativo. Confiando apenas no banco de dados.');
+                return { trained: false };
+            }
 
             const updates = await bot.getUpdates({ limit: 100 });
             const todayStart = getBrasiliaDayStart();
@@ -25,7 +32,7 @@ export class WorkoutService {
 
             return { trained: !!trainedMessage, message: trainedMessage };
         } catch (error) {
-            console.error('Erro ao verificar mensagens:', error);
+            logger.error('Erro ao verificar mensagens:', error);
             return { trained: false };
         }
     }
@@ -51,9 +58,9 @@ export class WorkoutService {
                  ON CONFLICT (user_id, brasilia_date) DO NOTHING`,
                 [userId, today, trained, userMessage ?? null]
             );
-            console.log(`📝 Treino registrado: user=${userId} data=${today} trained=${trained}`);
+            logger.info(`📝 Treino registrado: user=${userId} data=${today} trained=${trained}`);
         } catch (error) {
-            console.error('Erro ao salvar treino:', error);
+            logger.error('Erro ao salvar treino:', error);
         }
     }
 
@@ -65,7 +72,7 @@ export class WorkoutService {
                 [userId, today]
             );
         } catch (error) {
-            console.error('Erro ao resetar treino:', error);
+            logger.error('Erro ao resetar treino:', error);
         }
     }
 }

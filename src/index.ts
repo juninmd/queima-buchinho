@@ -56,7 +56,7 @@ if (mode === 'listener') {
           { command: 'reset', description: '🔄 Resetar status de treino de hoje' }
         ]);
 
-        console.log(`🚀 Webhook configurado em: ${url}`);
+        console.log(`🚀 Webhook configurado em: ${webhookUrl}/bot***[TOKEN_OCULTO]***`);
         console.log('✅ Comandos registrados com sucesso!');
       } catch (err) {
         console.error('❌ Erro ao configurar Webhook/Comandos:', err);

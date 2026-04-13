@@ -24,18 +24,42 @@ if (mode === 'listener') {
   redisService.connect();
 
   if (webhookUrl) {
-    bot = new TelegramBot(token, { webHook: { port } });
+    bot = new TelegramBot(token, { 
+      webHook: { 
+        port,
+        path: `/bot${token}` 
+      } 
+    });
     
     // Força a limpeza e reconfiguração total do Webhook no boot
     const setupWebhook = async () => {
       try {
         await bot.deleteWebHook();
-        await bot.setWebHook(`${webhookUrl}/bot${token}`, {
+        const url = `${webhookUrl}/bot${token}`;
+        await bot.setWebHook(url, {
           allowed_updates: ['message', 'channel_post', 'callback_query']
         });
-        console.log(`🚀 Webhook configurado com sucesso: ${webhookUrl}`);
+        
+        // Registrar os comandos slash para aparecerem no Telegram
+        await bot.setMyCommands([
+          { command: 'menu', description: '🔥 Abrir menu de hábitos do dia' },
+          { command: 'progresso', description: '📊 Ver progresso do dia' },
+          { command: 'agua', description: '💧 Registrar consumo de água' },
+          { command: 'peso', description: '⚖️ Registrar peso (ex: /peso 85.5)' },
+          { command: 'semana', description: '😈 Resumo semanal (Mika tóxica)' },
+          { command: 'instante', description: '🎶 Tocar som do MyInstants (ex: /instante xaropinho)' },
+          { command: 'motivar', description: '🔥 Receber áudio motivacional' },
+          { command: 'hora', description: '🕒 Ver horário de Brasília' },
+          { command: 'status', description: 'ℹ️ Ver informações do bot' },
+          { command: 'help', description: '❓ Ver lista completa de comandos' },
+          { command: 'checktreino', description: '💪 Verificação manual de treino hoje' },
+          { command: 'reset', description: '🔄 Resetar status de treino de hoje' }
+        ]);
+
+        console.log(`🚀 Webhook configurado em: ${url}`);
+        console.log('✅ Comandos registrados com sucesso!');
       } catch (err) {
-        console.error('❌ Erro ao configurar Webhook:', err);
+        console.error('❌ Erro ao configurar Webhook/Comandos:', err);
       }
     };
     

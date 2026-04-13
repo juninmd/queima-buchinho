@@ -46,20 +46,30 @@ export class BotController {
     }
 
     private setupCommands() {
-        const wrap = (fn: (msg: TelegramBot.Message, match: RegExpExecArray | null) => void) => {
-            return (msg: TelegramBot.Message, match: RegExpExecArray | null) => {
-                console.log(`[BotController] Comando identificado: ${msg.text} de ${msg.from?.id}`);
-                fn(msg, match);
-            };
+        const commands = [
+            { regex: /^\/status(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleStatus(msg) },
+            { regex: /^\/checktreino(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleCheckTreino(msg) },
+            { regex: /^\/hora(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleHora(msg) },
+            { regex: /^\/motivar(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleMotivar(msg) },
+            { regex: /^\/instante(@\w+)? (.+)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleInstante(msg, match) },
+            { regex: /^\/reset(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleReset(msg) },
+            { regex: /^\/peso(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handlePeso(msg, match) }
+        ];
+
+        const processCommand = (msg: TelegramBot.Message) => {
+            const text = msg.text || '';
+            for (const cmd of commands) {
+                const match = cmd.regex.exec(text);
+                if (match) {
+                    console.log(`[BotController] Comando identificado: ${text} de ${msg.from?.id || msg.sender_chat?.id}`);
+                    cmd.handler(msg, match);
+                    return; // Break after first match
+                }
+            }
         };
 
-        this.bot.onText(/^\/status(@\w+)?$/, wrap((msg) => this.handleStatus(msg)));
-        this.bot.onText(/^\/checktreino(@\w+)?$/, wrap((msg) => this.handleCheckTreino(msg)));
-        this.bot.onText(/^\/hora(@\w+)?$/, wrap((msg) => this.handleHora(msg)));
-        this.bot.onText(/^\/motivar(@\w+)?$/, wrap((msg) => this.handleMotivar(msg)));
-        this.bot.onText(/^\/instante(@\w+)? (.+)/, wrap((msg, match) => this.handleInstante(msg, match)));
-        this.bot.onText(/^\/reset(@\w+)?$/, wrap((msg) => this.handleReset(msg)));
-        this.bot.onText(/^\/peso(@\w+)? (\d+(\.\d+)?)/, wrap((msg, match) => this.handlePeso(msg, match)));
+        this.bot.on('message', processCommand);
+        this.bot.on('channel_post', processCommand);
     }
 
     private hasWorkoutKeyword(text: string): boolean {

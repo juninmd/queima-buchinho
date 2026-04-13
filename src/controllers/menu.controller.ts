@@ -9,16 +9,28 @@ export class MenuController {
   constructor(private bot: TelegramBot) {}
 
   public init() {
-    this.bot.onText(/\/menu/, (msg) => this.showMenu(msg));
-    this.bot.onText(/\/start/, (msg) => this.showMenu(msg));
-    this.bot.onText(/\/progresso/, (msg) => this.showMenu(msg));
-    this.bot.onText(/\/help/, (msg) => this.showHelp(msg));
-    this.bot.onText(/\/agua/, (msg) => this.showWater(msg));
-    this.bot.onText(/\/semana/, (msg) => this.showWeekly(msg));
+    const commands = [/\/menu/, /\/start/, /\/progresso/, /\/help/, /\/agua/, /\/semana/];
+    
+    const handleCommand = async (msg: TelegramBot.Message) => {
+      const text = msg.text || '';
+      if (text.startsWith('/menu') || text.startsWith('/start') || text.startsWith('/progresso')) {
+        return this.showMenu(msg);
+      }
+      if (text.startsWith('/help')) return this.showHelp(msg);
+      if (text.startsWith('/agua')) return this.showWater(msg);
+      if (text.startsWith('/semana')) return this.showWeekly(msg);
+    };
+
+    this.bot.on('message', (msg) => {
+      if (msg.text?.startsWith('/')) handleCommand(msg);
+    });
+    this.bot.on('channel_post', (msg) => {
+      if (msg.text?.startsWith('/')) handleCommand(msg);
+    });
   }
 
   public async showMenu(msg: TelegramBot.Message) {
-    const userId = msg.from?.id;
+    const userId = msg.from?.id || msg.sender_chat?.id;
     const chatId = msg.chat.id;
     if (!userId) return;
 
@@ -113,7 +125,7 @@ Envie "treinei" para registrar o treino
   }
 
   private async showWater(msg: TelegramBot.Message) {
-    const userId = msg.from?.id;
+    const userId = msg.from?.id || msg.sender_chat?.id;
     if (!userId) return;
 
     const today = await metricsService.getTodaySum(userId, 'water');
@@ -133,7 +145,7 @@ Envie "treinei" para registrar o treino
   }
 
   public async showWeekly(msg: TelegramBot.Message) {
-    const userId = msg.from?.id;
+    const userId = msg.from?.id || msg.sender_chat?.id;
     const chatId = msg.chat.id;
     if (!userId) return;
 

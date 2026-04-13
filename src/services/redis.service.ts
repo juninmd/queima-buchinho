@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { logger } from '../utils/logger';
 
 class RedisService {
   private client: Redis | null = null;
@@ -6,12 +7,12 @@ class RedisService {
   public connect(): void {
     const url = process.env.REDIS_URL;
     if (!url) {
-      console.warn('⚠️ REDIS_URL não definida, cache desabilitado');
+      logger.warn('⚠️ REDIS_URL não definida, cache desabilitado');
       return;
     }
     this.client = new Redis(url);
-    this.client.on('error', (err) => console.error('❌ Redis error:', err));
-    this.client.on('connect', () => console.log('✅ Redis conectado'));
+    this.client.on('error', (err) => logger.error('❌ Redis error:', err));
+    this.client.on('connect', () => logger.info('✅ Redis conectado'));
   }
 
   public async get(key: string): Promise<string | null> {
@@ -19,7 +20,7 @@ class RedisService {
     try {
       return await this.client.get(key);
     } catch (err) {
-      console.error('Redis GET error:', err);
+      logger.error('Redis GET error:', err);
       return null;
     }
   }
@@ -33,7 +34,7 @@ class RedisService {
         await this.client.set(key, value);
       }
     } catch (err) {
-      console.error('Redis SET error:', err);
+      logger.error('Redis SET error:', err);
     }
   }
 
@@ -42,7 +43,7 @@ class RedisService {
     try {
       await this.client.del(key);
     } catch (err) {
-      console.error('Redis DEL error:', err);
+      logger.error('Redis DEL error:', err);
     }
   }
 

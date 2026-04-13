@@ -126,7 +126,7 @@ export class BotController {
     }
 
     private async handleInstante(msg: TelegramBot.Message, match: RegExpExecArray | null) {
-        const query = match ? match[1] : '';
+        const query = match ? match[2] : '';
         if (!query) return;
 
         try {
@@ -154,7 +154,7 @@ export class BotController {
         const chatId = msg.chat.id;
         if (!userId || !match) return;
 
-        const weight = parseFloat(match[1]);
+        const weight = parseFloat(match[2]);
         await metricsService.logMetric(userId, 'weight', weight, 'kg');
 
         const diff = await metricsService.getWeightDiffFromStart(userId);

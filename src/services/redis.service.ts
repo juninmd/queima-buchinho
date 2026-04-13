@@ -49,6 +49,7 @@ class RedisService {
   public async disconnect(): Promise<void> {
     if (this.client) {
       await this.client.quit();
+      this.client = null;
     }
   }
 }

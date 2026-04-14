@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml* ./
@@ -8,7 +8,7 @@ COPY . .
 RUN pnpm run build
 
 # Stage 2: Production
-FROM node:20-alpine
+FROM node:24-alpine
 WORKDIR /app
 RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml* ./

@@ -37,50 +37,31 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 
 if (mode === 'listener') {
   redisService.connect();
-  if (webhookUrl) {
-    bot = new TelegramBot(token, { webHook: { port, path: `/bot${token}` } } as any);
-    const setupWebhook = async () => {
-      try {
-        await bot.deleteWebHook();
-        await bot.setWebHook(`${webhookUrl}/bot${token}`, {
-          allowed_updates: ['message', 'channel_post', 'callback_query']
-        });
-        await bot.setMyCommands([
-          { command: 'menu', description: '🔥 Menu de hábitos' },
-          { command: 'progresso', description: '📊 Ver progresso' },
-          { command: 'agua', description: '💧 Registrar água' },
-          { command: 'peso', description: '⚖️ Registrar peso' },
-          { command: 'semana', description: ' Resumo semanal' },
-          { command: 'instante', description: '🎶 MyInstants' },
-          { command: 'motivar', description: '🔥 Motivação' },
-          { command: 'status', description: 'ℹ️ Status do bot' },
-          { command: 'help', description: '❓ Ajuda' }
-        ]);
-        logger.info(`🚀 Webhook ativo na porta ${port}`);
-      } catch (err) {
-        logger.error('❌ Erro no Webhook:', err);
-      }
-    };
-    setupWebhook();
-  } else {
-    bot = new TelegramBot(token);
-    // Limpeza de Webhook movida para background para não travar o boot
-    bot.deleteWebHook({ drop_pending_updates: true }).catch(err => logger.error(`⚠️ Erro ao limpar Webhook (pode ser ignorado): ${err.message}`));
-    bot.startPolling();
-    logger.info('🚀 Polling ativo');
+  const setupBot = async () => {
+    if (webhookUrl) {
+      bot = new TelegramBot(token, { webHook: { port } } as any);
+      await bot.deleteWebHook({ drop_pending_updates: true });
+      await bot.setWebHook(`${webhookUrl}/bot${token}`, {
+        allowed_updates: ['message', 'channel_post', 'callback_query']
+      });
+      logger.info(`🚀 Webhook resetado e ativo: ${webhookUrl}`);
+    } else {
+      bot = new TelegramBot(token);
+      await bot.deleteWebHook({ drop_pending_updates: true });
+      bot.startPolling();
+      logger.info('🚀 Polling ativo após limpeza de Webhook');
+    }
     
-    bot.on('polling_error', (err: any) => logger.error(`❌ Erro no Polling: ${err.message || err}`));
-    bot.on('error', (err: any) => logger.error(`❌ Erro Geral do Bot: ${err.message || err}`));
-  }
-
-  const menu = new MenuController(bot);
-  new HabitsController(bot, menu).init();
-  new BotController(bot).init();
-  menu.init();
-
-  bot.on('message', (msg) => {
-    logger.info(`📩 [Telegram] Mensagem recebida! ChatID: ${msg.chat.id}, User: ${msg.from?.first_name}, Texto: "${msg.text || '[SEM TEXTO]'}"`);
-  });
+    bot.on('message', (msg) => {
+      logger.info(`📩 [Telegram] Mensagem: "${msg.text}" do Chat: ${msg.chat.id}`);
+    });
+    
+    const menu = new MenuController(bot);
+    new HabitsController(bot, menu).init();
+    new BotController(bot).init();
+    menu.init();
+  };
+  setupBot();
 } else {
   bot = new TelegramBot(token);
   redisService.connect();

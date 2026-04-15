@@ -68,6 +68,8 @@ if (mode === 'listener') {
       bot.startPolling();
       logger.info('🚀 Polling ativo');
     });
+    bot.on('polling_error', (err: any) => logger.error(`❌ Erro no Polling: ${err.message || err}`));
+    bot.on('error', (err: any) => logger.error(`❌ Erro Geral do Bot: ${err.message || err}`));
   }
 
   const menu = new MenuController(bot);

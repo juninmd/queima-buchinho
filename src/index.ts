@@ -6,145 +6,96 @@ import { MenuController } from './controllers/menu.controller';
 import { HabitsController } from './controllers/habits.controller';
 import { redisService } from './services/redis.service';
 import { logger } from './utils/logger';
+import { HealthServer } from './utils/server';
+import { pool } from './config/database';
 
 dotenv.config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const mode = process.env.BOT_MODE || 'listener';
-
-if (!token) {
-  throw new Error('TELEGRAM_BOT_TOKEN não está definido no arquivo .env');
-}
-
 const webhookUrl = process.env.WEBHOOK_URL;
 const port = Number(process.env.PORT) || 3000;
+const healthPort = Number(process.env.HEALTH_PORT) || 8080;
+
+if (!token) throw new Error('TELEGRAM_BOT_TOKEN não definido');
+
+const healthServer = new HealthServer(healthPort);
+healthServer.start();
 
 let bot: TelegramBot;
 
+async function shutdown(signal: string) {
+  logger.info(`🛑 Recebido ${signal}. Shutdown gracioso...`);
+  await healthServer.close();
+  await redisService.disconnect();
+  await pool.end();
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
 if (mode === 'listener') {
   redisService.connect();
-
   if (webhookUrl) {
-    bot = new TelegramBot(token, { 
-      webHook: { 
-        port,
-        path: `/bot${token}` 
-      } 
-    } as any);
-    
-    // Força a limpeza e reconfiguração total do Webhook no boot
+    bot = new TelegramBot(token, { webHook: { port, path: `/bot${token}` } } as any);
     const setupWebhook = async () => {
       try {
         await bot.deleteWebHook();
-        const url = `${webhookUrl}/bot${token}`;
-        await bot.setWebHook(url, {
+        await bot.setWebHook(`${webhookUrl}/bot${token}`, {
           allowed_updates: ['message', 'channel_post', 'callback_query']
         });
-        
-        // Registrar os comandos slash para aparecerem no Telegram
         await bot.setMyCommands([
-          { command: 'menu', description: '🔥 Abrir menu de hábitos do dia' },
-          { command: 'progresso', description: '📊 Ver progresso do dia' },
-          { command: 'agua', description: '💧 Registrar consumo de água' },
-          { command: 'peso', description: '⚖️ Registrar peso (ex: /peso 85.5)' },
-          { command: 'semana', description: '😈 Resumo semanal (Mika tóxica)' },
-          { command: 'instante', description: '🎶 Tocar som do MyInstants (ex: /instante xaropinho)' },
-          { command: 'motivar', description: '🔥 Receber áudio motivacional' },
-          { command: 'hora', description: '🕒 Ver horário de Brasília' },
-          { command: 'status', description: 'ℹ️ Ver informações do bot' },
-          { command: 'help', description: '❓ Ver lista completa de comandos' },
-          { command: 'checktreino', description: '💪 Verificação manual de treino hoje' },
-          { command: 'reset', description: '🔄 Resetar status de treino de hoje' }
+          { command: 'menu', description: '🔥 Menu de hábitos' },
+          { command: 'progresso', description: '📊 Ver progresso' },
+          { command: 'agua', description: '💧 Registrar água' },
+          { command: 'peso', description: '⚖️ Registrar peso' },
+          { command: 'semana', description: ' Resumo semanal' },
+          { command: 'instante', description: '🎶 MyInstants' },
+          { command: 'motivar', description: '🔥 Motivação' },
+          { command: 'status', description: 'ℹ️ Status do bot' },
+          { command: 'help', description: '❓ Ajuda' }
         ]);
-
-        logger.info(`🚀 Webhook configurado: ${webhookUrl}/bot***[TOKEN_OCULTO]***`);
-        logger.info('✅ Comandos registrados com sucesso!');
+        logger.info(`🚀 Webhook ativo na porta ${port}`);
       } catch (err) {
-        logger.error('❌ Erro ao configurar Webhook/Comandos:', err);
+        logger.error('❌ Erro no Webhook:', err);
       }
     };
-    
     setupWebhook();
-    logger.info(`🚀 Bot em modo WEBHOOK na porta ${port}`);
   } else {
     bot = new TelegramBot(token);
-    
-    // Limpa qualquer webhook anterior antes de iniciar o polling para evitar Erro 409
-    const setupPolling = async () => {
-        try {
-            await bot.deleteWebHook();
-            await bot.startPolling();
-            logger.info('🚀 Bot em modo POLLING ativado e Webhook limpo...');
-        } catch (err) {
-            logger.error('❌ Erro ao limpar Webhook para Polling:', err);
-        }
-    };
-    setupPolling();
+    bot.deleteWebHook().then(() => {
+      bot.startPolling();
+      logger.info('🚀 Polling ativo');
+    });
   }
 
-  const menuController = new MenuController(bot);
-  const habitsController = new HabitsController(bot, menuController);
-  const botController = new BotController(bot);
-
-  menuController.init();
-  habitsController.init();
-  botController.init();
+  const menu = new MenuController(bot);
+  new HabitsController(bot, menu).init();
+  new BotController(bot).init();
+  menu.init();
 } else {
   bot = new TelegramBot(token);
   redisService.connect();
-  startScheduler();
-}
-
-async function startScheduler() {
   const scheduler = new SchedulerService(bot);
   
-  // Timeout global de 2 minutos para evitar acúmulo de pods zumbis
-  const timeoutId = setTimeout(() => {
-    logger.error(`🚨 [Timeout] O modo ${mode} demorou demais e foi finalizado.`);
-    process.exit(1);
-  }, 120000);
-
-  try {
-    switch (mode) {
-      case 'checker':
-        logger.info('⏰ Modo CHECKER ativado...');
-        await scheduler.runDailyCheck();
-        break;
-      case 'reminder_morning':
-        logger.info('⏰ Modo MORNING ativado...');
-        await scheduler.sendMorningReminder();
-        break;
-      case 'reminder_conditional':
-        logger.info('⏰ Modo CONDITIONAL ativado...');
-        await scheduler.sendConditionalReminder();
-        break;
-      case 'reminder_water':
-        logger.info('💧 Modo WATER ativado...');
-        await scheduler.sendWaterReminder();
-        break;
-      case 'reminder_food_cafe':
-        logger.info('🍳 Modo FOOD CAFÉ ativado...');
-        await scheduler.sendFoodReminder('cafe');
-        break;
-      case 'reminder_food_almoco':
-        logger.info('🍽️ Modo FOOD ALMOÇO ativado...');
-        await scheduler.sendFoodReminder('almoco');
-        break;
-      case 'reminder_food_jantar':
-        logger.info('🌙 Modo FOOD JANTAR ativado...');
-        await scheduler.sendFoodReminder('jantar');
-        break;
-      case 'reminder_habits_check':
-        logger.info('📋 Modo HABITS CHECK ativado...');
-        await scheduler.sendHabitsCheckReminder();
-        break;
-      default:
-        logger.warn(`Modo desconhecido: ${mode}`);
+  (async () => {
+    try {
+      if (mode === 'checker') await scheduler.runDailyCheck();
+      else if (mode.startsWith('reminder_')) await runReminder(scheduler, mode);
+      process.exit(0);
+    } catch (error) {
+      logger.error(`❌ Erro no modo ${mode}:`, error);
+      process.exit(1);
     }
-    clearTimeout(timeoutId);
-    process.exit(0);
-  } catch (error) {
-    logger.error(`❌ Erro no modo ${mode}:`, error);
-    process.exit(1);
-  }
+  })();
+}
+
+async function runReminder(scheduler: SchedulerService, mode: string) {
+  const m = mode.replace('reminder_', '');
+  if (m === 'morning') await scheduler.sendMorningReminder();
+  else if (m === 'conditional') await scheduler.sendConditionalReminder();
+  else if (m === 'water') await scheduler.sendWaterReminder();
+  else if (m === 'habits_check') await scheduler.sendHabitsCheckReminder();
+  else if (m.startsWith('food_')) await scheduler.sendFoodReminder(m.replace('food_', '') as any);
 }

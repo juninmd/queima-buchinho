@@ -38,42 +38,49 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 if (mode === 'listener') {
   redisService.connect();
   const setupBot = async () => {
+    logger.info('⚙️ Iniciando setup do Bot...');
+    
     if (webhookUrl) {
       bot = new TelegramBot(token, { webHook: { port } } as any);
-      await bot.deleteWebHook({ drop_pending_updates: true });
-      await bot.setWebHook(`${webhookUrl}/bot${token}`, {
-        allowed_updates: ['message', 'channel_post', 'callback_query']
-      });
-      logger.info(`🚀 Webhook resetado e ativo: ${webhookUrl}`);
+      await bot.deleteWebHook();
+      await bot.setWebHook(`${webhookUrl}/bot${token}`);
+      logger.info(`🚀 Modo WEBHOOK ativo: ${webhookUrl}`);
     } else {
       bot = new TelegramBot(token);
-      await bot.deleteWebHook({ drop_pending_updates: true });
-      bot.startPolling();
-      logger.info('🚀 Polling ativo após limpeza de Webhook');
+      await bot.deleteWebHook();
+      bot.startPolling({ polling: { interval: 1000 } });
+      logger.info('🚀 Modo POLLING ativo (intervalo 1s)');
     }
     
+    // LOG EXTREMO: Capturar qualquer evento
     bot.on('message', (msg) => {
-      logger.info(`📩 [Telegram] Mensagem: "${msg.text}" do Chat: ${msg.chat.id}`);
+      logger.info(`📩 [DEBUG] MENSAGEM RECEBIDA: Chat=${msg.chat.id}, User=${msg.from?.username}, Texto="${msg.text}"`);
     });
     
+    bot.on('callback_query', (query) => {
+      logger.info(`🖱️ [DEBUG] CALLBACK RECEBIDO: Data=${query.data}, Chat=${query.message?.chat.id}`);
+    });
+
+    bot.on('polling_error', (err) => logger.error('❌ [DEBUG] Erro no Polling:', err.message));
+
     const menu = new MenuController(bot);
     new HabitsController(bot, menu).init();
     new BotController(bot).init();
     menu.init();
+    logger.info('✅ Todos os controllers inicializados!');
   };
-  setupBot();
+  setupBot().catch(err => logger.error('💥 Erro fatal no setupBot:', err));
 } else {
   bot = new TelegramBot(token);
   redisService.connect();
   const scheduler = new SchedulerService(bot);
-  
   (async () => {
     try {
       if (mode === 'checker') await scheduler.runDailyCheck();
       else if (mode.startsWith('reminder_')) await runReminder(scheduler, mode);
       process.exit(0);
     } catch (error) {
-      logger.error(`❌ Erro no modo ${mode}:`, error);
+      logger.error(`❌ Erro no modo agendado ${mode}:`, error);
       process.exit(1);
     }
   })();

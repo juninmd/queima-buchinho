@@ -74,6 +74,10 @@ if (mode === 'listener') {
   new HabitsController(bot, menu).init();
   new BotController(bot).init();
   menu.init();
+
+  bot.on('message', (msg) => {
+    logger.info(`📩 [Telegram] Mensagem recebida! ChatID: ${msg.chat.id}, User: ${msg.from?.first_name}, Texto: "${msg.text || '[SEM TEXTO]'}"`);
+  });
 } else {
   bot = new TelegramBot(token);
   redisService.connect();

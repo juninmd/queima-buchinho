@@ -48,6 +48,7 @@ export class BotController {
 
     private setupCommands() {
         const commands = [
+            { regex: /^\/start(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.bot.sendMessage(msg.chat.id, '🔥 Mika na área! Use /menu para ver seus hábitos ou mande "treinei" para logar seu treino.') },
             { regex: /^\/status(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleStatus(msg) },
             { regex: /^\/checktreino(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleCheckTreino(msg) },
             { regex: /^\/hora(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleHora(msg) },
@@ -59,14 +60,17 @@ export class BotController {
 
         const processCommand = (msg: TelegramBot.Message) => {
             const text = msg.text || '';
+            logger.info(`[Telegram] Processando mensagem: "${text}" de ${msg.from?.first_name} (${msg.from?.id})`);
+            
             for (const cmd of commands) {
                 const match = cmd.regex.exec(text);
                 if (match) {
-                    logger.info(`[BotController] Comando identificado: ${text} de ${msg.from?.id || msg.sender_chat?.id}`);
+                    logger.info(`✅ [BotController] Comando identificado: ${text}`);
                     cmd.handler(msg, match);
-                    return; // Break after first match
+                    return;
                 }
             }
+            logger.warn(`⚠️ [BotController] Comando ignorado ou não reconhecido: ${text}`);
         };
 
         this.bot.on('message', processCommand);

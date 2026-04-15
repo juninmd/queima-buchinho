@@ -64,10 +64,11 @@ if (mode === 'listener') {
     setupWebhook();
   } else {
     bot = new TelegramBot(token);
-    bot.deleteWebHook().then(() => {
-      bot.startPolling();
-      logger.info('🚀 Polling ativo');
-    });
+    // Limpeza de Webhook movida para background para não travar o boot
+    bot.deleteWebHook({ drop_pending_updates: true }).catch(err => logger.error(`⚠️ Erro ao limpar Webhook (pode ser ignorado): ${err.message}`));
+    bot.startPolling();
+    logger.info('🚀 Polling ativo');
+    
     bot.on('polling_error', (err: any) => logger.error(`❌ Erro no Polling: ${err.message || err}`));
     bot.on('error', (err: any) => logger.error(`❌ Erro Geral do Bot: ${err.message || err}`));
   }

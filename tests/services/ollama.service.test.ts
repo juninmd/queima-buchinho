@@ -54,7 +54,7 @@ describe('OllamaService', () => {
         const result = await ollamaService.generateDynamicResponse('test prompt');
 
         expect(result).toBeNull();
-        expect(consoleSpy).toHaveBeenCalledWith('Error generating response via Ollama:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('❌ [Ollama] Erro na conexão com'), 'Ollama error');
         consoleSpy.mockRestore();
     });
 

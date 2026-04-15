@@ -17,6 +17,8 @@ spec:
         app: queima-buchinho
         mode: listener
     spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       imagePullSecrets:
       - name: ghcr-pull-secret
       initContainers:
@@ -39,13 +41,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: health
+            port: 8080
           initialDelaySeconds: 15
           periodSeconds: 30
         readinessProbe:
           httpGet:
             path: /health
-            port: health
+            port: 8080
           initialDelaySeconds: 10
           periodSeconds: 15
         env:
@@ -55,7 +57,6 @@ spec:
           value: "3000"
         - name: OLLAMA_HOST
           value: "http://ollama.ai.svc.cluster.local:11434"
-        # WEBHOOK_URL REMOVIDA PARA USAR POLLING (GARANTIA TOTAL)
         envFrom:
         - secretRef:
             name: queima-buchinho-secret

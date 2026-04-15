@@ -40,15 +40,17 @@ if (mode === 'listener') {
   const setupBot = async () => {
     logger.info('⚙️ Iniciando setup do Bot...');
     
+    const allowedUpdates = ['message', 'callback_query', 'channel_post', 'edited_message'];
+
     if (webhookUrl) {
       bot = new TelegramBot(token, { webHook: { port } } as any);
       await bot.deleteWebHook();
-      await bot.setWebHook(`${webhookUrl}/bot${token}`);
+      await bot.setWebHook(`${webhookUrl}/bot${token}`, { allowed_updates: allowedUpdates } as any);
       logger.info(`🚀 Modo WEBHOOK ativo: ${webhookUrl}`);
     } else {
       bot = new TelegramBot(token);
       await bot.deleteWebHook();
-      bot.startPolling({ polling: { interval: 1000 } });
+      bot.startPolling({ polling: { interval: 1000, params: { allowed_updates: allowedUpdates } } } as any);
       logger.info('🚀 Modo POLLING ativo (intervalo 1s)');
     }
     

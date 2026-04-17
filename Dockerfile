@@ -1,6 +1,10 @@
 # Stage 1: Build
 FROM node:24-alpine AS builder
 WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache build-base git python3
+
 RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile

@@ -24,13 +24,13 @@ export class MemeService {
         if (dynamic) return dynamic;
 
         const messages = [
-            '😤 E o treino? Ficou no sonho, foi? O buchinho não vai queimar sozinho! 🔥',
-            '👀 Tô de olho nessa preguiça aí... Amanhã não quero ver desculpa, hein? 💅',
-            '🤡 Parabéns pelo esforço de... não fazer nada hoje. O sedentarismo agradece.',
-            'fail... O shape tá fugindo de você cada vez mais rápido. 🏃‍♂️💨',
-            'A disciplina deu uma passadinha aqui e perguntou por você. Falei que tava dormindo. 🛌💤',
-            'Treinar que é bom nada, né? Mas pra comer pizza você é mestre! 🍕🦦',
-            'Vou começar a cobrar multa por cada dia sem treino. Já estaria rica! 💸💁‍♀️'
+            '🛐 Mestre, seu descanso de hoje foi tão majestoso que até os halteres sentiram sua falta. O mundo aguarda sua volta divina! 👑',
+            '✨ Majestade, sua aura é tão poderosa que o treino de amanhã será épico. O pré-treino já está em posição de oração! 🙏',
+            '🛐 Lenda, você está apenas poupando energias para dominar o mundo, eu sei! O cárdio será apenas um detalhe da sua glória. ✨',
+            '👑 Divindade, seu buchinho é apenas um reservatório de poder! Mas vamos agraciar a academia amanhã? Por favorzinho? 👉👈',
+            '✨ A disciplina está lá fora batendo na porta, mas eu disse que você está ocupado sendo lendário(a)! 🛌💤',
+            '🛐 Oh, grande mestre do sedentarismo momentâneo! Sua pizza foi um sacrifício aceitável pela sua grandeza. 🍕🦦',
+            '👑 Vou começar a cobrar tributos pela sua presença imperial aqui! Cada dia sem treino é uma honra para o sofá. 💸💁‍♀️'
         ];
         return {
             message: messages[Math.floor(Math.random() * messages.length)],
@@ -43,11 +43,11 @@ export class MemeService {
         if (dynamic) return dynamic;
 
         const messages = [
-            '🎉 BOA! O buchinho que lute agora! Tá pago! 💪🔥',
-            '✨ Arrasou! Disciplina é tudo, e hoje você deu aula. Continue assim! ✨',
-            '💃 Olha ela(e)! Treinada(o) e pronta(o) pra dominar o mundo! (Ou a academia)',
-            '✅ Cumpriu a missão! O shape agradece a lembrança. Orgulho da mãe! 😉',
-            '🔥 Mais um pra conta! O esforço de hoje é o resultado de amanhã. Voa! 🚀'
+            '🎉 ALELUIA! O Mestre treinou! O mundo agora é um lugar melhor. Tá pago, divindade! 💪🔥',
+            '✨ Simplesmente impecável! Vossa excelência destruiu no treino hoje. Orgulho da sua fã número 1! ✨',
+            '💃 É disso que eu estou falando! A lenda está em movimento. O mundo vai tremer! 🛐',
+            '✅ Missão cumprida com a perfeição de um deus! O shape está vindo te pedir autógrafo. 😉',
+            '🔥 Mais um degrau rumo ao trono! Sua determinação é a minha maior inspiração. Voa, Mestre! 🚀'
         ];
         return {
             message: messages[Math.floor(Math.random() * messages.length)],
@@ -80,11 +80,11 @@ export class MemeService {
         if (dynamic) return dynamic;
 
         const messages = [
-            '💧 Bebe água agora! Você é uma planta humana e eu não vou te deixar murchar. 🌱',
-            '🚰 Para tudo e bebe água! Desidratação é coisa de amador e você não é amador(a).',
-            '💦 Já bebeu água hoje? Se não, vai beber AGORA. Sem conversa. 😤',
-            '🧊 Água, por favor! Seu corpo tá pedindo socorro e você aí ignorando.',
-            '💧 Lembrete vital: você é 60% água. Repõe o estoque antes de virar um pastel! 🥟'
+            '💧 Divindade, hidrate seu corpo sagrado agora! Você é o templo que eu protejo. 🌱',
+            '🚰 Majestade, pare tudo e beba água! Um mestre como você não pode desidratar.',
+            '💦 Mestre, a água é o elixir da sua energia infinita! Beba agora, eu imploro. 😤',
+            '🧊 Água para a lenda! Seu corpo divino agradece a atenção, mestre.',
+            '💧 Lembrete vital para o ser superior: hidrate-se para que sua glória nunca se apague! 🥟'
         ];
         return {
             message: messages[Math.floor(Math.random() * messages.length)],

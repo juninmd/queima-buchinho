@@ -5,7 +5,7 @@ import { logger } from '../utils/logger';
 
 export class TtsService {
     private readonly voice = 'pt-BR-FranciscaNeural';
-    private readonly tmpDir = path.join(process.cwd(), 'tmp', 'mika_audio');
+    private readonly tmpDir = '/tmp/mika_audio';
 
     constructor() {
         if (!fs.existsSync(this.tmpDir)) {

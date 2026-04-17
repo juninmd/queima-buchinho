@@ -10,6 +10,11 @@ RUN pnpm run build
 # Stage 2: Production
 FROM node:24-alpine
 WORKDIR /app
+
+# Instalar Python e edge-tts
+RUN apk add --no-cache python3 py3-pip && \
+    pip install edge-tts --break-system-packages
+
 RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --prod --frozen-lockfile

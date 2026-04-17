@@ -8,6 +8,7 @@ import { logger } from './logger';
 export async function sendAudioMessage(bot: TelegramBot, chatId: number, audioPath: string | null, caption: string) {
     if (audioPath) {
         try {
+            await bot.sendChatAction(chatId, 'record_voice');
             await bot.sendVoice(chatId, audioPath, { caption });
         } catch (e) {
             logger.error('Erro ao enviar áudio:', e);

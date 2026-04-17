@@ -4,6 +4,8 @@ import { memeService } from './meme.service';
 import { habitsService } from './habits.service';
 import { ollamaService } from './ollama.service';
 import { myInstantsService } from './myinstants.service';
+import { ttsService } from './tts.service';
+import { metricsService } from './metrics.service';
 import { sendAudioMessage } from '../utils/telegram';
 import { BOT_MESSAGES } from '../config/constants';
 import { HABIT_MAP } from '../config/habits';
@@ -205,4 +207,46 @@ export class SchedulerService {
             }
         });
     }
+
+    public async runDailyMikaAudit() {
+        await this.withLock('lock:daily_mika_audit', async () => {
+            const chatId = this.getChatId();
+            if (!chatId) return;
+
+            logger.info('🎤 Iniciando auditoria diária da Mika...');
+            try {
+                // 1. Coletar dados do dia
+                const { trained } = await workoutService.checkDailyMessages(this.bot, chatId);
+                const summary = await metricsService.getDailySummary(chatId);
+                
+                const auditContext = {
+                    trained,
+                    ...summary
+                };
+
+                // 2. Gerar resposta da Mika
+                const response = await ollamaService.getDailyAuditResponse(auditContext);
+                if (!response) {
+                    await this.bot.sendMessage(chatId, '❌ Mika está sem voz hoje (erro na IA).');
+                    return;
+                }
+
+                // 3. Converter para Áudio (edge-tts)
+                const audioPath = await ttsService.generateMikaAudio(response.message);
+
+                // 4. Enviar para o Telegram
+                await this.bot.sendAudio(chatId, audioPath, {
+                    caption: `🎙️ Auditoria do Dia - Mika\n\n"${response.message.substring(0, 100)}..."`
+                });
+
+                // 5. Cleanup
+                await ttsService.cleanup(audioPath);
+                
+                logger.info('✅ Auditoria diária enviada com sucesso!');
+            } catch (error) {
+                logger.error('❌ Erro na auditoria diária:', error);
+            }
+        });
+    }
 }
+

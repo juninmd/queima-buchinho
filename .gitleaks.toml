@@ -1,0 +1,4 @@
+[[allowlist]]
+description = "False positive: telegram-bot-api-token in src/scripts/test-mika-voice.ts"
+rules = ["telegram-bot-api-token"]
+paths = ["src/scripts/test-mika-voice.ts"]

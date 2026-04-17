@@ -37,10 +37,19 @@ export class WorkoutService {
         }
     }
 
-    private async hasWorkoutToday(userId: number, date: string): Promise<boolean> {
+    private async hasWorkoutToday(id: number, date: string): Promise<boolean> {
+        // Se for um ID de grupo (negativo), verificamos se QUALQUER pessoa treinou hoje
+        if (id < 0) {
+            const { rows } = await pool.query(
+                'SELECT 1 FROM workout_logs WHERE brasilia_date = $1 AND trained = true LIMIT 1',
+                [date]
+            );
+            return rows.length > 0;
+        }
+
         const { rows } = await pool.query(
-            'SELECT 1 FROM workout_logs WHERE user_id = $1 AND brasilia_date = $2 LIMIT 1',
-            [userId, date]
+            'SELECT 1 FROM workout_logs WHERE user_id = $1 AND brasilia_date = $2 AND trained = true LIMIT 1',
+            [id, date]
         );
         return rows.length > 0;
     }

@@ -1,9 +1,10 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { workoutService } from '../services/workout.service';
 import { memeService } from '../services/meme.service';
-import { metricsService } from '../services/metrics.service';
+import { metricsService, MetricType } from '../services/metrics.service';
 import { habitsService } from '../services/habits.service';
 import { ollamaService } from '../services/ollama.service';
+import { ttsService } from '../services/tts.service';
 import { myInstantsService } from '../services/myinstants.service';
 import { formatBrasiliaTime, getSurpriseMessage } from '../utils/time';
 import { sendAudioMessage } from '../utils/telegram';
@@ -31,7 +32,7 @@ export class BotController {
                 await habitsService.markHabit(userId, 'treino', true);
 
                 const congrats = await memeService.getCongratsMessage();
-                await this.bot.sendMessage(msg.chat.id, congrats.message);
+                await this.replyMika(msg.chat.id, congrats.message);
 
                 if (congrats.audioSearchTerm) {
                     const button = await myInstantsService.getBestMatchAudio(congrats.audioSearchTerm);
@@ -48,14 +49,18 @@ export class BotController {
 
     private setupCommands() {
         const commands = [
-            { regex: /^\/start(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.bot.sendMessage(msg.chat.id, '🔥 Mika na área! Use /menu para ver seus hábitos ou mande "treinei" para logar seu treino.') },
+            { regex: /^\/start(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.replyMika(msg.chat.id, '🔥 Mika na área! Use /menu para ver seus hábitos ou mande "treinei" para logar seu treino.') },
             { regex: /^\/status(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleStatus(msg) },
             { regex: /^\/checktreino(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleCheckTreino(msg) },
+            { regex: /^\/relatorio(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleRelatorio(msg) },
             { regex: /^\/hora(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleHora(msg) },
             { regex: /^\/motivar(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleMotivar(msg) },
             { regex: /^\/instante(@\w+)? (.+)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleInstante(msg, match) },
             { regex: /^\/reset(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleReset(msg) },
-            { regex: /^\/peso(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handlePeso(msg, match) }
+            { regex: /^\/peso(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'weight', 'kg') },
+            { regex: /^\/altura(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'height', 'cm') },
+            { regex: /^\/gordura(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'body_fat', '%') },
+            { regex: /^\/musculo(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'muscle_mass', '%') }
         ];
 
         const processCommand = (msg: TelegramBot.Message) => {
@@ -82,7 +87,45 @@ export class BotController {
     }
 
     private async handleStatus(msg: TelegramBot.Message) {
-        await this.bot.sendMessage(msg.chat.id, BOT_MESSAGES.STATUS_INFO);
+        await this.replyMika(msg.chat.id, BOT_MESSAGES.STATUS_INFO);
+    }
+
+    private async handleRelatorio(msg: TelegramBot.Message) {
+        const userId = msg.from?.id || msg.sender_chat?.id;
+        const chatId = msg.chat.id;
+        if (!userId) return;
+
+        try {
+            await this.bot.sendChatAction(chatId, 'record_voice');
+            
+            const [{ trained }, dailySummary, habitsCount] = await Promise.all([
+                workoutService.checkDailyMessages(this.bot, Number(userId)),
+                metricsService.getDailySummary(Number(userId)),
+                habitsService.getCompletedCount(Number(userId))
+            ]);
+
+            const prompt = `Gere um relatório diário debochado para o usuário.
+            Dados de hoje:
+            - Treinou: ${trained ? 'Sim (Milagre!)' : 'Não (Frango!)'}
+            - Água: ${dailySummary.water}ml
+            - Hábitos completados: ${habitsCount.completed}/${habitsCount.total}
+            - Peso atual: ${dailySummary.weight ? dailySummary.weight + 'kg' : 'Não pesou hoje'}
+            
+            Seja ácida, mencione que ele(a) precisa de mais cárdio e não esqueça de falar sobre dominar o mundo.`;
+
+            const mikaResponse = await ollamaService.generateDynamicResponse(prompt);
+            
+            if (mikaResponse) {
+                const audioPath = await ttsService.generateMikaAudio(mikaResponse.message);
+                await sendAudioMessage(this.bot, chatId, audioPath, `🎙️ Relatório da Mika: ${mikaResponse.message.substring(0, 100)}...`);
+                await ttsService.cleanup(audioPath);
+            } else {
+                await this.replyMika(chatId, "✨ Mestre, minha paciência é infinita para esperar sua grandeza, mas o Ollama decidiu tirar um cochilo. Vamos treinar enquanto ele não volta? ✨");
+            }
+        } catch (error) {
+            logger.error('Erro ao gerar relatório de áudio:', error);
+            await this.replyMika(chatId, "❌ Oh, Divindade! Ocorreu um pequeno erro cósmico no servidor, mas nada que apague o brilho do seu progresso!");
+        }
     }
 
     private async handleCheckTreino(msg: TelegramBot.Message) {
@@ -91,7 +134,7 @@ export class BotController {
             if (!trained) {
                 const roast = await memeService.getRoastMessage();
                 const roastAudio = memeService.getRoastAudio();
-                await this.bot.sendMessage(msg.chat.id, roast.message);
+                await this.replyMika(msg.chat.id, roast.message);
 
                 if (roast.audioSearchTerm) {
                     const button = await myInstantsService.getBestMatchAudio(roast.audioSearchTerm);
@@ -105,7 +148,7 @@ export class BotController {
                 }
             } else {
                 const congrats = await memeService.getCongratsMessage();
-                await this.bot.sendMessage(msg.chat.id, congrats.message);
+                await this.replyMika(msg.chat.id, congrats.message);
                 if (congrats.audioSearchTerm) {
                     const button = await myInstantsService.getBestMatchAudio(congrats.audioSearchTerm);
                     if (button?.audioUrl) {
@@ -115,14 +158,14 @@ export class BotController {
             }
         } catch (e) {
             logger.error('Erro no checktreino:', e);
-            await this.bot.sendMessage(msg.chat.id, BOT_MESSAGES.ERROR_GENERIC);
+            await this.replyMika(msg.chat.id, BOT_MESSAGES.ERROR_GENERIC);
         }
     }
 
     private async handleHora(msg: TelegramBot.Message) {
         const time = formatBrasiliaTime();
         const surprise = getSurpriseMessage();
-        await this.bot.sendMessage(msg.chat.id, `🕒 Horário de Brasília: ${time}\n\n${surprise}`);
+        await this.replyMika(msg.chat.id, `🕒 Horário de Brasília: ${time}\n\n${surprise}`);
     }
 
     private async handleMotivar(msg: TelegramBot.Message) {
@@ -150,23 +193,39 @@ export class BotController {
     private async handleReset(msg: TelegramBot.Message) {
         if (msg.from?.id) {
             workoutService.resetWorkout(msg.from.id);
-            await this.bot.sendMessage(msg.chat.id, BOT_MESSAGES.RESET_SUCCESS);
+            await this.replyMika(msg.chat.id, BOT_MESSAGES.RESET_SUCCESS);
         }
     }
 
-    private async handlePeso(msg: TelegramBot.Message, match: RegExpExecArray | null) {
+    private async handleMetric(msg: TelegramBot.Message, match: RegExpExecArray | null, type: MetricType, unit: string) {
         const userId = msg.from?.id || msg.sender_chat?.id;
         const chatId = msg.chat.id;
         if (!userId || !match) return;
 
-        const weight = parseFloat(match[2]);
-        await metricsService.logMetric(userId, 'weight', weight, 'kg');
+        const value = parseFloat(match[2]);
+        await metricsService.logMetric(userId, type, value, unit);
 
-        const diff = await metricsService.getWeightDiffFromStart(userId);
-        const response = await ollamaService.getWeightUpdate(weight, diff);
+        const labels: Record<string, string> = {
+            weight: 'peso',
+            height: 'altura',
+            body_fat: 'gordura corporal',
+            muscle_mass: 'massa muscular'
+        };
+
+        const label = labels[type] || type;
+        
+        let response;
+        if (type === 'weight') {
+            const diff = await metricsService.getWeightDiffFromStart(userId);
+            response = await ollamaService.getWeightUpdate(value, diff);
+        } else {
+            response = await ollamaService.generateDynamicResponse(
+                `A pessoa acabou de registrar ${value}${unit} de ${label}. Dê um comentário curto e sarcástico sobre isso.`
+            );
+        }
 
         if (response) {
-            await this.bot.sendMessage(chatId, response.message);
+            await this.replyMika(chatId, response.message);
             if (response.audioSearchTerm) {
                 const button = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
                 if (button?.audioUrl) {
@@ -174,7 +233,19 @@ export class BotController {
                 }
             }
         } else {
-            await this.bot.sendMessage(chatId, `✅ Peso de ${weight}kg registrado com sucesso!`);
+            await this.replyMika(chatId, `✅ ${label.charAt(0).toUpperCase() + label.slice(1)} de ${value}${unit} registrado!`);
+        }
+    }
+
+    private async replyMika(chatId: number, text: string) {
+        try {
+            const audioPath = await ttsService.generateMikaAudio(text);
+            await sendAudioMessage(this.bot, chatId, audioPath, text);
+            await ttsService.cleanup(audioPath);
+        } catch (error) {
+            logger.error('Erro ao responder com áudio da Mika:', error);
+            await this.bot.sendMessage(chatId, text); // Fallback total
         }
     }
 }
+

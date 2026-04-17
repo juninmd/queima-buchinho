@@ -2,7 +2,7 @@ import { pool } from '../config/database';
 import { getBrasiliaDateString } from '../utils/time';
 import { logger } from '../utils/logger';
 
-export type MetricType = 'water' | 'weight' | 'steps' | 'sleep';
+export type MetricType = 'water' | 'weight' | 'steps' | 'sleep' | 'height' | 'muscle_mass' | 'body_fat';
 
 export class MetricsService {
     public async logMetric(userId: number, type: MetricType, value: number, unit?: string): Promise<void> {
@@ -35,21 +35,59 @@ export class MetricsService {
         }
     }
 
-    public async getLastWeight(userId: number): Promise<number | null> {
+    public async getLatestValue(userId: number, type: MetricType): Promise<number | null> {
         try {
             const { rows } = await pool.query(
                 `SELECT value FROM user_metrics 
-                 WHERE user_id = $1 AND type = 'weight' 
+                 WHERE user_id = $1 AND type = $2 
                  ORDER BY created_at DESC LIMIT 1`,
-                [userId]
+                [userId, type]
             );
             return rows[0] ? parseFloat(rows[0].value) : null;
         } catch (error) {
-            logger.error('Erro ao buscar último peso:', error);
+            logger.error(`Erro ao buscar último valor de ${type}:`, error);
             return null;
         }
     }
 
+    public async getDailySummary(userId: number): Promise<any> {
+        try {
+            const today = getBrasiliaDateString();
+            const { rows } = await pool.query(
+                `SELECT type, SUM(value) as total 
+                 FROM user_metrics 
+                 WHERE user_id = $1 AND brasilia_date = $2
+                 GROUP BY type`,
+                [userId, today]
+            );
+            
+            const metrics: any = {};
+            rows.forEach(r => metrics[r.type] = parseFloat(r.total));
+            
+            // Buscar últimos valores de medidas (que não mudam todo dia)
+            const [height, muscle, fat] = await Promise.all([
+                this.getLatestValue(userId, 'height'),
+                this.getLatestValue(userId, 'muscle_mass'),
+                this.getLatestValue(userId, 'body_fat')
+            ]);
+
+            return {
+                water: metrics.water || 0,
+                weight: metrics.weight || null,
+                height,
+                muscle_mass: muscle,
+                body_fat: fat
+            };
+        } catch (error) {
+            logger.error('Erro ao gerar resumo diário:', error);
+            return null;
+        }
+    }
+
+    public async getLastWeight(userId: number): Promise<number | null> {
+        return this.getLatestValue(userId, 'weight');
+    }
+    
     public async getWeightDiffFromStart(userId: number): Promise<number> {
         try {
             const { rows } = await pool.query(

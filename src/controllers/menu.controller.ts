@@ -101,6 +101,7 @@ export class MenuController {
 
     rows.push([
       { text: '📊 Semana', callback_data: 'weekly_summary' },
+      { text: '🚀 Motivar', callback_data: 'get_motivation' },
       { text: '🔄 Atualizar', callback_data: 'refresh_menu' }
     ]);
 

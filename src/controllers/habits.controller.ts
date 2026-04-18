@@ -7,6 +7,8 @@ import { myInstantsService } from '../services/myinstants.service';
 import { workoutService } from '../services/workout.service';
 import { HABIT_MAP } from '../config/habits';
 import { MenuController } from './menu.controller';
+import { sendAudioMessage } from '../utils/telegram';
+import { BOT_MESSAGES } from '../config/constants';
 
 export class HabitsController {
   constructor(private bot: TelegramBot, private menuController: MenuController) {}
@@ -131,10 +133,7 @@ export class HabitsController {
   ) {
     await this.bot.answerCallbackQuery(query.id, { text: '🚀 Buscando motivação...' }).catch(() => {});
     const audio = memeService.getMotivationAudio();
-    const caption = '🔥 Mika Motivacional: Levante esse buchinho e vamos treinar!';
-    
-    // Using simple bot.sendAudio as sendAudioMessage utility might not be imported or necessary here
-    await this.bot.sendAudio(chatId, audio, { caption });
+    await sendAudioMessage(this.bot, chatId, audio, BOT_MESSAGES.MOTIVATION_CAPTION);
   }
 
   private async handleMealDone(

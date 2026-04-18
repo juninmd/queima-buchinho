@@ -31,6 +31,7 @@ export class HabitsController {
     if (data === 'mark_trained') return this.handleMarkTrained(query, userId, chatId, messageId);
     if (data === 'refresh_menu') return this.handleRefreshMenu(query, chatId, messageId!, userId);
     if (data === 'weekly_summary') return this.handleWeeklySummary(query, chatId, userId);
+    if (data === 'get_motivation') return this.handleMotivation(query, chatId);
     if (data.startsWith('meal_done_')) return this.handleMealDone(query, userId, chatId);
 
     await this.bot.answerCallbackQuery(query.id).catch(() => {});
@@ -123,6 +124,17 @@ export class HabitsController {
     await this.bot.answerCallbackQuery(query.id, { text: '📊 Gerando resumo...' }).catch(() => {});
     const fakeMsg = { chat: { id: chatId }, from: { id: userId } } as TelegramBot.Message;
     await this.menuController.showWeekly(fakeMsg);
+  }
+  
+  private async handleMotivation(
+    query: TelegramBot.CallbackQuery, chatId: number
+  ) {
+    await this.bot.answerCallbackQuery(query.id, { text: '🚀 Buscando motivação...' }).catch(() => {});
+    const audio = memeService.getMotivationAudio();
+    const caption = '🔥 Mika Motivacional: Levante esse buchinho e vamos treinar!';
+    
+    // Using simple bot.sendAudio as sendAudioMessage utility might not be imported or necessary here
+    await this.bot.sendAudio(chatId, audio, { caption });
   }
 
   private async handleMealDone(

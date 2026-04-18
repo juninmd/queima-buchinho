@@ -5,6 +5,8 @@ import { ollamaService } from '../services/ollama.service';
 import { myInstantsService } from '../services/myinstants.service';
 import { HABITS, getProgressBar } from '../config/habits';
 import { logger } from '../utils/logger';
+import { ttsService } from '../services/tts.service';
+import { sendAudioMessage } from '../utils/telegram';
 
 export class MenuController {
   constructor(private bot: TelegramBot) {}
@@ -181,6 +183,16 @@ Envie "treinei" para registrar o treino
       report += `🗣️ <b>Mika diz:</b> ${response.message}`;
 
       await this.bot.sendMessage(chatId, report, { parse_mode: 'HTML' });
+
+      // Gerar e enviar áudio da Mika
+      try {
+        const audioPath = await ttsService.generateMikaAudio(response.message);
+        await sendAudioMessage(this.bot, chatId, audioPath, `🎙️ Comentário da Mika`);
+        await ttsService.cleanup(audioPath);
+      } catch (error) {
+        logger.error('Erro ao gerar áudio do resumo semanal:', error);
+      }
+
       if (response.audioSearchTerm) {
         const button = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
         if (button?.audioUrl) {

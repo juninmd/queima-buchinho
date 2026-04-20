@@ -7,6 +7,7 @@ export interface HabitDefinition {
 
 export const HABITS: HabitDefinition[] = [
   { key: 'treino', emoji: '💪', label: 'Treino', category: 'fitness' },
+  { key: 'cardio', emoji: '🏃', label: 'Cárdio', category: 'fitness' },
   { key: 'alongamento', emoji: '🧘', label: 'Along.', category: 'fitness' },
   { key: 'leitura', emoji: '📖', label: 'Leitura', category: 'wellness' },
   { key: 'meditacao', emoji: '🧘‍♀️', label: 'Medit.', category: 'wellness' },

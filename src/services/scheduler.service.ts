@@ -7,12 +7,12 @@ import { myInstantsService } from './myinstants.service';
 import { ttsService } from './tts.service';
 import { metricsService } from './metrics.service';
 import { sendAudioMessage } from '../utils/telegram';
-import { BOT_MESSAGES } from '../config/constants';
 import { HABIT_MAP } from '../config/habits';
 import { redisService } from './redis.service';
 import { logger } from '../utils/logger';
 
 const TRAIN_BTN: TelegramBot.InlineKeyboardButton = { text: '🏋️‍♂️ Já treinei! ✅', callback_data: 'mark_trained' };
+const CARDIO_BTN: TelegramBot.InlineKeyboardButton = { text: '🏃 Cárdio feito! ✅', callback_data: 'mark_cardio' };
 const WATER_ROW: TelegramBot.InlineKeyboardButton[] = [
     { text: '🥤 +250ml', callback_data: 'add_water_250' },
     { text: '🥛 +500ml', callback_data: 'add_water_500' }
@@ -49,12 +49,13 @@ export class SchedulerService {
     }
 
     private async sendWithAudio(chatId: number, response: { message: string; audioSearchTerm?: string }, options?: TelegramBot.SendMessageOptions) {
-        await this.bot.sendMessage(chatId, response.message, options);
-        if (response.audioSearchTerm) {
-            const button = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
-            if (button?.audioUrl) {
-                await this.bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
-            }
+        try {
+            const audioPath = await ttsService.generateMikaAudio(response.message);
+            await sendAudioMessage(this.bot, chatId, audioPath, response.message, options);
+            await ttsService.cleanup(audioPath);
+        } catch (e) {
+            logger.error('[Scheduler] Erro ao gerar TTS:', e);
+            await this.bot.sendMessage(chatId, response.message, options);
         }
     }
 
@@ -77,19 +78,7 @@ export class SchedulerService {
             logger.info('❌ Usuário não treinou hoje.');
             workoutService.logWorkout(chatId, false);
             const roast = await memeService.getRoastMessage();
-            const options: TelegramBot.SendMessageOptions = {
-                reply_markup: { inline_keyboard: [[TRAIN_BTN]] }
-            };
-            await this.bot.sendMessage(chatId, roast.message, options);
-
-            const audioTerm = roast.audioSearchTerm;
-            const matchedAudio = audioTerm ? await myInstantsService.getBestMatchAudio(audioTerm) : null;
-            if (matchedAudio?.audioUrl) {
-                await this.bot.sendAudio(chatId, matchedAudio.audioUrl, { caption: `🎶 ${matchedAudio.title}` });
-                return;
-            }
-            const roastAudio = memeService.getRoastAudio();
-            if (roastAudio) await sendAudioMessage(this.bot, chatId, roastAudio, BOT_MESSAGES.ROAST_CAPTION);
+            await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[TRAIN_BTN, CARDIO_BTN]] } });
         });
     }
 
@@ -105,7 +94,7 @@ export class SchedulerService {
             const options: TelegramBot.SendMessageOptions = {
                 reply_markup: {
                     inline_keyboard: [
-                        [TRAIN_BTN],
+                        [TRAIN_BTN, CARDIO_BTN],
                         [{ text: '💊 Suplemento ✅', callback_data: 'habit_suplemento' },
                          { text: '🧘 Alongamento ✅', callback_data: 'habit_alongamento' }]
                     ]
@@ -126,10 +115,7 @@ export class SchedulerService {
                 if (!trained) {
                     const hour = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit' });
                     logger.info(`❌ Usuário não treinou. Enviando cobrança das ${hour}:00...`);
-                    const options: TelegramBot.SendMessageOptions = {
-                        reply_markup: { inline_keyboard: [[TRAIN_BTN]] }
-                    };
-                    await this.sendWithAudio(chatId, await memeService.getConditionalReminder(`${hour}:00`), options);
+                    await this.sendWithAudio(chatId, await memeService.getConditionalReminder(`${hour}:00`), { reply_markup: { inline_keyboard: [[TRAIN_BTN, CARDIO_BTN]] } });
                 } else {
                     logger.info('✅ Usuário já treinou hoje. Pulando cobrança.');
                 }
@@ -182,7 +168,9 @@ export class SchedulerService {
             try {
                 const uncompleted = await habitsService.getUncompletedHabits(chatId);
                 if (uncompleted.length === 0) {
-                    await this.bot.sendMessage(chatId, '🎉 Parabéns! Todos os hábitos do dia foram completados! Mika tá orgulhosa 💜');
+                    const allDone = await ollamaService.generateDynamicResponse('O Mestre completou todos os hábitos do dia. Elogie de forma curta e genuína.');
+                    const msg = allDone?.message ?? 'Todos os hábitos feitos hoje. Tá pago, Lenda. 💜';
+                    await this.sendWithAudio(chatId, { message: msg });
                     return;
                 }
 
@@ -192,7 +180,7 @@ export class SchedulerService {
                 });
 
                 const response = await ollamaService.getHabitsCheckReminder(labels);
-                const msg = response?.message || `⚠️ Faltam ${uncompleted.length} hábitos hoje: ${labels.join(', ')}`;
+                const msg = response?.message ?? `Faltam ${uncompleted.length} hábitos hoje: ${labels.join(', ')}`;
 
                 const keyboard = uncompleted.slice(0, 4).reduce<TelegramBot.InlineKeyboardButton[][]>((rows, key, i) => {
                     const h = HABIT_MAP.get(key);
@@ -201,7 +189,7 @@ export class SchedulerService {
                     return rows;
                 }, []);
 
-                await this.bot.sendMessage(chatId, msg, { reply_markup: { inline_keyboard: keyboard } });
+                await this.sendWithAudio(chatId, { message: msg }, { reply_markup: { inline_keyboard: keyboard } });
             } catch (error) {
                 logger.error('❌ Erro ao enviar verificação de hábitos:', error);
             }

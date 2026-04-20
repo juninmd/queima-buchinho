@@ -31,6 +31,7 @@ export class HabitsController {
     if (data.startsWith('habit_')) return this.handleHabitToggle(query, userId, chatId, messageId);
     if (data.startsWith('add_water_')) return this.handleWaterAdd(query, userId, chatId, messageId);
     if (data === 'mark_trained') return this.handleMarkTrained(query, userId, chatId, messageId);
+    if (data === 'mark_cardio') return this.handleMarkCardio(query, userId, chatId, messageId);
     if (data === 'refresh_menu') return this.handleRefreshMenu(query, chatId, messageId!, userId);
     if (data === 'weekly_summary') return this.handleWeeklySummary(query, chatId, userId);
     if (data === 'get_motivation') return this.handleMotivation(query, chatId);
@@ -103,6 +104,25 @@ export class HabitsController {
         await this.bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
       }
     }
+
+    if (messageId) {
+      try {
+        await this.bot.editMessageReplyMarkup(
+          { inline_keyboard: [] }, { chat_id: chatId, message_id: messageId }
+        );
+      } catch (_) {}
+    }
+  }
+
+  private async handleMarkCardio(
+    query: TelegramBot.CallbackQuery, userId: number, chatId: number, messageId?: number
+  ) {
+    await habitsService.markHabit(userId, 'cardio', true);
+
+    await this.bot.answerCallbackQuery(query.id, { text: '🏃 Cárdio registrado!' }).catch(() => {});
+
+    const response = await ollamaService.getHabitResponse('cardio');
+    if (response) await this.bot.sendMessage(chatId, response.message);
 
     if (messageId) {
       try {

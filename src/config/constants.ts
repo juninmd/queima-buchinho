@@ -1,4 +1,5 @@
 export const WORKOUT_KEYWORDS = ['eu treinei', 'treinei', 'treinado', 'tá pago', 'ta pago', 'treininho'];
+export const CARDIO_KEYWORDS = ['eu fiz cardio', 'fiz cardio', 'cardio pago', 'cardio de hoje', 'cardio feito'];
 
 export const BOT_MESSAGES = {
     CONGRATS: '🎉 Parabéns! Você treinou hoje! Continue assim! 💪',

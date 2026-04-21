@@ -123,8 +123,9 @@ export class MenuController {
 /semana - Relatório semanal (Mika tóxica 😈)
 
 <b>💪 Treino:</b>
-Envie "treinei" para registrar o treino
+Envie "treinei" ou "fiz cardio" para registrar
 /checktreino - Verificação manual
+/cardio - Registrar cárdio rápido
 /reset - Resetar treino de hoje
 
 <b>🎵 Outros:</b>

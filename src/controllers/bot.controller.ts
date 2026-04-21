@@ -8,7 +8,7 @@ import { ttsService } from '../services/tts.service';
 import { myInstantsService } from '../services/myinstants.service';
 import { formatBrasiliaTime, getSurpriseMessage } from '../utils/time';
 import { sendAudioMessage } from '../utils/telegram';
-import { WORKOUT_KEYWORDS, BOT_MESSAGES } from '../config/constants';
+import { WORKOUT_KEYWORDS, CARDIO_KEYWORDS, BOT_MESSAGES } from '../config/constants';
 import { logger } from '../utils/logger';
 
 export class BotController {
@@ -40,6 +40,12 @@ export class BotController {
                         await this.bot.sendAudio(msg.chat.id, button.audioUrl, { caption: `🎶 ${button.title}` });
                     }
                 }
+            } else if (this.hasCardioKeyword(text)) {
+                logger.info(`🏃 Evento em chat ${msg.chat.id} identificado como cárdio de ${userId}`);
+                await habitsService.markHabit(userId, 'cardio', true);
+
+                const response = await ollamaService.getHabitResponse('cardio');
+                if (response) await this.replyMika(msg.chat.id, response.message);
             }
         };
 
@@ -52,6 +58,7 @@ export class BotController {
             { regex: /^\/start(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.replyMika(msg.chat.id, '🔥 Mika na área! Use /menu para ver seus hábitos ou mande "treinei" para logar seu treino.') },
             { regex: /^\/status(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleStatus(msg) },
             { regex: /^\/checktreino(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleCheckTreino(msg) },
+            { regex: /^\/cardio(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleCardio(msg) },
             { regex: /^\/relatorio(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleRelatorio(msg) },
             { regex: /^\/hora(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleHora(msg) },
             { regex: /^\/motivar(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleMotivar(msg) },
@@ -84,6 +91,10 @@ export class BotController {
 
     private hasWorkoutKeyword(text: string): boolean {
         return WORKOUT_KEYWORDS.some((kw) => text.toLowerCase().includes(kw));
+    }
+
+    private hasCardioKeyword(text: string): boolean {
+        return CARDIO_KEYWORDS.some((kw) => text.toLowerCase().includes(kw));
     }
 
     private async handleStatus(msg: TelegramBot.Message) {
@@ -160,6 +171,16 @@ export class BotController {
             logger.error('Erro no checktreino:', e);
             await this.replyMika(msg.chat.id, BOT_MESSAGES.ERROR_GENERIC);
         }
+    }
+
+    private async handleCardio(msg: TelegramBot.Message) {
+        const userId = msg.from?.id || msg.sender_chat?.id;
+        const chatId = msg.chat.id;
+        if (!userId) return;
+
+        await habitsService.markHabit(userId, 'cardio', true);
+        const response = await ollamaService.getHabitResponse('cardio');
+        if (response) await this.replyMika(chatId, response.message);
     }
 
     private async handleHora(msg: TelegramBot.Message) {

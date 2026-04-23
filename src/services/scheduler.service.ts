@@ -106,12 +106,14 @@ export class SchedulerService {
             const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
 
             logger.info(`⏰ Enviando lembrete matinal de ${dayName}...`);
-            let msg = `<b>Bom dia, Majestade!</b>\n\n`;
-            msg += `🍴 <b>Cardápio de hoje (${dayName}):</b>\n`;
-            msg += `🍳 Café: ${diet.cafe}\n`;
-            msg += `🍽️ Almoço: ${diet.almoco}\n`;
-            msg += `🌙 Jantar: ${diet.jantar}\n\n`;
-            msg += `Bora dominar o mundo? 🌍`;
+            let msg = `✨ <b>BOM DIA, MAJESTADE!</b>\n`;
+            msg += `🍴 <b>CARDÁPIO DE HOJE</b>\n` +
+                   `──────────────────────\n` +
+                   `🍳 <b>Café:</b> ${diet.cafe}\n` +
+                   `🍽️ <b>Almoço:</b> ${diet.almoco}\n` +
+                   `🌙 <b>Jantar:</b> ${diet.jantar}\n\n` +
+                   `──────────────────────\n` +
+                   `<i>Bora dominar o mundo?</i> 🌍`;
 
             await this.bot.sendMessage(chatId, msg, { parse_mode: 'HTML' });
             await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayName));
@@ -184,7 +186,11 @@ export class SchedulerService {
             };
 
             const reminder = await memeService.getFoodReminder(meal);
-            reminder.message = `<b>${label}:</b>\n${mealDescription}\n\n${reminder.message}`;
+            reminder.message = `🍽️ <b>HORA DE COMER: ${label}</b>\n` +
+                               `──────────────────────\n` +
+                               `🥗 <b>O que comer:</b>\n${mealDescription}\n\n` +
+                               `──────────────────────\n` +
+                               `${reminder.message}`;
             if (!reminder.audioSearchTerm) reminder.audioSearchTerm = 'comer';
 
             await this.sendWithAudio(chatId, reminder, options);

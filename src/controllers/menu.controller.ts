@@ -7,6 +7,8 @@ import { HABITS, getProgressBar } from '../config/habits';
 import { logger } from '../utils/logger';
 import { ttsService } from '../services/tts.service';
 import { sendAudioMessage } from '../utils/telegram';
+import { DIET_PLAN } from '../config/diet';
+import { getBrasiliaDayName } from '../utils/time';
 
 export class MenuController {
   constructor(private bot: TelegramBot) {}
@@ -25,6 +27,7 @@ export class MenuController {
       if (cleanText === '/help') return this.showHelp(msg);
       if (cleanText === '/agua') return this.showWater(msg);
       if (cleanText === '/semana') return this.showWeekly(msg);
+      if (cleanText === '/cardapio') return this.showDiet(msg.chat.id);
     };
 
     this.bot.on('message', (msg) => {
@@ -107,7 +110,11 @@ export class MenuController {
 
     rows.push([
       { text: '📊 Semana', callback_data: 'weekly_summary' },
-      { text: '🚀 Motivar', callback_data: 'get_motivation' },
+      { text: '🍽️ Cardápio', callback_data: 'show_diet' },
+      { text: '🚀 Motivar', callback_data: 'get_motivation' }
+    ]);
+
+    rows.push([
       { text: '🔄 Atualizar', callback_data: 'refresh_menu' }
     ]);
 
@@ -208,5 +215,18 @@ Envie "treinei" ou "fiz cardio" para registrar
       logger.error('Erro no showWeekly:', error);
       await this.bot.sendMessage(chatId, '❌ Erro ao processar resumo semanal.');
     }
+  }
+
+  public async showDiet(chatId: number) {
+    const dayName = getBrasiliaDayName();
+    const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
+
+    let report = `🍴 <b>Cardápio de Hoje (${dayName})</b>\n\n`;
+    report += `🍳 <b>Café da Manhã:</b>\n${diet.cafe}\n\n`;
+    report += `🍽️ <b>Almoço:</b>\n${diet.almoco}\n\n`;
+    report += `🌙 <b>Jantar:</b>\n${diet.jantar}\n\n`;
+    report += `<i>Foca no objetivo, Lenda! 💪</i>`;
+
+    await this.bot.sendMessage(chatId, report, { parse_mode: 'HTML' });
   }
 }

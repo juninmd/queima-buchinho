@@ -67,3 +67,13 @@ export function getSurpriseMessage(): string {
     return "💤 Vá dormir, o músculo cresce no descanso!";
   }
 }
+
+/**
+ * Retorna o nome do dia da semana em português (minúsculo).
+ */
+export function getBrasiliaDayName(): string {
+  return new Date().toLocaleDateString('pt-BR', { 
+    timeZone: BRASILIA_TIMEZONE, 
+    weekday: 'long' 
+  }).toLowerCase();
+}

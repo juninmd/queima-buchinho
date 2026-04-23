@@ -10,6 +10,8 @@ import { sendAudioMessage } from '../utils/telegram';
 import { HABIT_MAP } from '../config/habits';
 import { redisService } from './redis.service';
 import { logger } from '../utils/logger';
+import { DIET_PLAN } from '../config/diet';
+import { getBrasiliaDayName } from '../utils/time';
 
 const TRAIN_BTN: TelegramBot.InlineKeyboardButton = { text: '🏋️‍♂️ Já treinei! ✅', callback_data: 'mark_trained' };
 const CARDIO_BTN: TelegramBot.InlineKeyboardButton = { text: '🏃 Cárdio feito! ✅', callback_data: 'mark_cardio' };
@@ -57,6 +59,18 @@ export class SchedulerService {
             logger.error('[Scheduler] Erro ao gerar TTS:', e);
             await this.bot.sendMessage(chatId, response.message, options);
         }
+
+        // Se tiver termo de áudio (ou se for falha), tentar enviar MyInstants também
+        if (response.audioSearchTerm) {
+            try {
+                const instant = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
+                if (instant?.audioUrl) {
+                    await this.bot.sendAudio(chatId, instant.audioUrl, { caption: `🎶 ${instant.title}` });
+                }
+            } catch (err) {
+                logger.error('[Scheduler] Erro ao enviar áudio do MyInstants:', err);
+            }
+        }
     }
 
     public async runDailyCheck() {
@@ -78,20 +92,29 @@ export class SchedulerService {
             logger.info('❌ Usuário não treinou hoje.');
             workoutService.logWorkout(chatId, false);
             const roast = await memeService.getRoastMessage();
+            // Adicionando termo de áudio para falha se não houver
+            if (!roast.audioSearchTerm) roast.audioSearchTerm = 'triste';
             await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[TRAIN_BTN, CARDIO_BTN]] } });
         });
     }
-
     public async sendMorningReminder() {
         await this.withLock('lock:morning_reminder', async () => {
             const chatId = this.getChatId();
             if (!chatId) return;
 
-            const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-            const dayOfWeek = days[new Date().getDay()];
+            const dayName = getBrasiliaDayName();
+            const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
 
-            logger.info(`⏰ Enviando lembrete matinal de ${dayOfWeek}...`);
-            await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayOfWeek));
+            logger.info(`⏰ Enviando lembrete matinal de ${dayName}...`);
+            let msg = `<b>Bom dia, Majestade!</b>\n\n`;
+            msg += `🍴 <b>Cardápio de hoje (${dayName}):</b>\n`;
+            msg += `🍳 Café: ${diet.cafe}\n`;
+            msg += `🍽️ Almoço: ${diet.almoco}\n`;
+            msg += `🌙 Jantar: ${diet.jantar}\n\n`;
+            msg += `Bora dominar o mundo? 🌍`;
+
+            await this.bot.sendMessage(chatId, msg, { parse_mode: 'HTML' });
+            await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayName));
             
             const MenuController = (await import('../controllers/menu.controller')).MenuController;
             const menu = new MenuController(this.bot);
@@ -110,7 +133,9 @@ export class SchedulerService {
                 if (!trained) {
                     const hour = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit' });
                     logger.info(`❌ Usuário não treinou. Enviando cobrança das ${hour}:00...`);
-                    await this.sendWithAudio(chatId, await memeService.getConditionalReminder(`${hour}:00`), { reply_markup: { inline_keyboard: [[TRAIN_BTN, CARDIO_BTN]] } });
+                    const roast = await memeService.getConditionalReminder(`${hour}:00`);
+                    if (!roast.audioSearchTerm) roast.audioSearchTerm = 'sad trombone';
+                    await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[TRAIN_BTN, CARDIO_BTN]] } });
                 } else {
                     logger.info('✅ Usuário já treinou hoje. Pulando cobrança.');
                 }
@@ -129,7 +154,9 @@ export class SchedulerService {
             const options: TelegramBot.SendMessageOptions = {
                 reply_markup: { inline_keyboard: [WATER_ROW, [{ text: '🍼 +1L', callback_data: 'add_water_1000' }]] }
             };
-            await this.sendWithAudio(chatId, await memeService.getWaterReminder(), options);
+            const reminder = await memeService.getWaterReminder();
+            if (!reminder.audioSearchTerm) reminder.audioSearchTerm = 'beber agua';
+            await this.sendWithAudio(chatId, reminder, options);
         });
     }
 
@@ -140,17 +167,27 @@ export class SchedulerService {
 
             const habit = HABIT_MAP.get(meal);
             const label = habit?.emoji ? `${habit.emoji} ${habit.label}` : meal;
+            const dayName = getBrasiliaDayName();
+            const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
+            const mealDescription = diet[meal];
 
             logger.info(`🍽️ Enviando lembrete de ${meal}...`);
             const options: TelegramBot.SendMessageOptions = {
+                parse_mode: 'HTML',
                 reply_markup: {
                     inline_keyboard: [
                         [{ text: `✅ Já ${label}!`, callback_data: `meal_done_${meal}` }],
+                        [TRAIN_BTN, CARDIO_BTN],
                         WATER_ROW
                     ]
                 }
             };
-            await this.sendWithAudio(chatId, await memeService.getFoodReminder(meal), options);
+
+            const reminder = await memeService.getFoodReminder(meal);
+            reminder.message = `<b>${label}:</b>\n${mealDescription}\n\n${reminder.message}`;
+            if (!reminder.audioSearchTerm) reminder.audioSearchTerm = 'comer';
+
+            await this.sendWithAudio(chatId, reminder, options);
         });
     }
 

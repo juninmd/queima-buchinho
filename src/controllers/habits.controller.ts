@@ -35,6 +35,7 @@ export class HabitsController {
     if (data === 'refresh_menu') return this.handleRefreshMenu(query, chatId, messageId!, userId);
     if (data === 'weekly_summary') return this.handleWeeklySummary(query, chatId, userId);
     if (data === 'get_motivation') return this.handleMotivation(query, chatId);
+    if (data === 'show_diet') return this.handleShowDiet(query, chatId);
     if (data.startsWith('meal_done_')) return this.handleMealDone(query, userId, chatId);
 
     await this.bot.answerCallbackQuery(query.id).catch(() => {});
@@ -166,5 +167,10 @@ export class HabitsController {
       text: `${habit?.emoji || '✅'} ${habit?.label || meal} marcado!`
     }).catch(() => {});
     await this.bot.sendMessage(chatId, `${habit?.emoji || '✅'} ${habit?.label || meal} registrado!`);
+  }
+
+  private async handleShowDiet(query: TelegramBot.CallbackQuery, chatId: number) {
+    await this.bot.answerCallbackQuery(query.id).catch(() => {});
+    await this.menuController.showDiet(chatId);
   }
 }

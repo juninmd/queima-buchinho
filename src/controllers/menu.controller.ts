@@ -44,6 +44,10 @@ export class MenuController {
     const chatId = msg.chat.id;
     if (!userId) return;
 
+    await this.showMenuToUser(chatId, userId);
+  }
+
+  public async showMenuToUser(chatId: number, userId: number) {
     const { text, keyboard } = await this.buildMenuContent(userId);
     await this.bot.sendMessage(chatId, text, {
       parse_mode: 'HTML',

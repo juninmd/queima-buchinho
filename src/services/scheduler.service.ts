@@ -91,16 +91,11 @@ export class SchedulerService {
             const dayOfWeek = days[new Date().getDay()];
 
             logger.info(`⏰ Enviando lembrete matinal de ${dayOfWeek}...`);
-            const options: TelegramBot.SendMessageOptions = {
-                reply_markup: {
-                    inline_keyboard: [
-                        [TRAIN_BTN, CARDIO_BTN],
-                        [{ text: '💊 Suplemento ✅', callback_data: 'habit_suplemento' },
-                         { text: '🧘 Alongamento ✅', callback_data: 'habit_alongamento' }]
-                    ]
-                }
-            };
-            await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayOfWeek), options);
+            await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayOfWeek));
+            
+            const MenuController = (await import('../controllers/menu.controller')).MenuController;
+            const menu = new MenuController(this.bot);
+            await menu.showMenuToUser(chatId, chatId);
         });
     }
 

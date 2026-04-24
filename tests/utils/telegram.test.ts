@@ -9,7 +9,7 @@ describe('Telegram Utils', () => {
     beforeEach(() => {
         mockBot = {
             sendVoice: jest.fn(),
-            sendMessage: jest.fn(),
+            sendMessage: jest.fn(), sendChatAction: jest.fn(),
         } as unknown as jest.Mocked<TelegramBot>;
     });
 
@@ -25,7 +25,7 @@ describe('Telegram Utils', () => {
         await sendAudioMessage(mockBot, chatId, null, caption);
 
         expect(mockBot.sendVoice).not.toHaveBeenCalled();
-        expect(mockBot.sendMessage).toHaveBeenCalledWith(chatId, caption);
+        expect(mockBot.sendMessage).toHaveBeenCalledWith(chatId, caption, undefined);
     });
 
     it('should fallback to text message if sendVoice fails', async () => {
@@ -38,7 +38,7 @@ describe('Telegram Utils', () => {
         await sendAudioMessage(mockBot, chatId, audioPath, caption);
 
         expect(mockBot.sendVoice).toHaveBeenCalledWith(chatId, audioPath, { caption });
-        expect(mockBot.sendMessage).toHaveBeenCalledWith(chatId, caption);
+        expect(mockBot.sendMessage).toHaveBeenCalledWith(chatId, caption, undefined);
         expect(consoleSpy).toHaveBeenCalled();
         
         consoleSpy.mockRestore();

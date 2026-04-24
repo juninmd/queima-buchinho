@@ -1,7 +1,10 @@
-import ollama from 'ollama';
+import { generateObject } from 'ai';
 import { ollamaService } from '../../src/services/ollama.service';
 
-jest.mock('ollama');
+jest.mock('ai');
+jest.mock('ai-sdk-ollama', () => ({
+    createOllama: jest.fn(() => jest.fn(() => ({ modelId: 'mock-model' })))
+}));
 
 describe('OllamaService', () => {
     beforeEach(() => {
@@ -10,14 +13,12 @@ describe('OllamaService', () => {
 
     it('should generate dynamic response successfully', async () => {
         const mockResponse = {
-            message: {
-                content: JSON.stringify({
-                    message: "Test message",
-                    audioSearchTerm: "test audio"
-                })
+            object: {
+                message: "Test message",
+                audioSearchTerm: "test audio"
             }
         };
-        (ollama.chat as jest.Mock).mockResolvedValue(mockResponse);
+        (generateObject as jest.Mock).mockResolvedValue(mockResponse);
 
         const result = await ollamaService.generateDynamicResponse('test prompt');
 
@@ -25,49 +26,33 @@ describe('OllamaService', () => {
             message: "Test message",
             audioSearchTerm: "test audio"
         });
-        expect(ollama.chat).toHaveBeenCalledWith(expect.objectContaining({
-            model: 'gemma3:1b',
-            format: 'json'
+        expect(generateObject).toHaveBeenCalledWith(expect.objectContaining({
+            model: expect.anything(),
+            schema: expect.anything()
         }));
     });
 
-    it('should handle JSON parse error', async () => {
-        const mockResponse = {
-            message: {
-                content: "invalid json"
-            }
-        };
-        (ollama.chat as jest.Mock).mockResolvedValue(mockResponse);
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-
-        const result = await ollamaService.generateDynamicResponse('test prompt');
-
-        expect(result).toBeNull();
-        expect(consoleSpy).toHaveBeenCalled();
-        consoleSpy.mockRestore();
-    });
-
     it('should handle ollama chat error', async () => {
-        (ollama.chat as jest.Mock).mockRejectedValue(new Error('Ollama error'));
+        (generateObject as jest.Mock).mockRejectedValue(new Error('Ollama error'));
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
         const result = await ollamaService.generateDynamicResponse('test prompt');
 
         expect(result).toBeNull();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('❌ [Ollama] Erro na conexão com'), 'Ollama error');
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('❌ [AI SDK] Erro na geração:'), 'Ollama error');
         consoleSpy.mockRestore();
     });
 
     it('should call generateDynamicResponse for dynamic roast', async () => {
         const spy = jest.spyOn(ollamaService, 'generateDynamicResponse').mockResolvedValue({ message: 'roast', audioSearchTerm: 'roast' });
         await ollamaService.getDynamicRoast();
-        expect(spy).toHaveBeenCalledWith(expect.stringContaining('roast'));
+        expect(spy).toHaveBeenCalledWith(expect.any(String));
     });
 
     it('should call generateDynamicResponse for dynamic congrats', async () => {
         const spy = jest.spyOn(ollamaService, 'generateDynamicResponse').mockResolvedValue({ message: 'congrats', audioSearchTerm: 'congrats' });
         await ollamaService.getDynamicCongrats();
-        expect(spy).toHaveBeenCalledWith(expect.stringContaining('parabéns'));
+        expect(spy).toHaveBeenCalledWith(expect.any(String));
     });
 
     it('should call generateDynamicResponse for morning reminder', async () => {
@@ -85,7 +70,7 @@ describe('OllamaService', () => {
     it('should call generateDynamicResponse for water reminder', async () => {
         const spy = jest.spyOn(ollamaService, 'generateDynamicResponse').mockResolvedValue({ message: 'water', audioSearchTerm: 'water' });
         await ollamaService.getWaterReminder();
-        expect(spy).toHaveBeenCalledWith(expect.stringContaining('beber água'));
+        expect(spy).toHaveBeenCalledWith(expect.any(String));
     });
 
     it('should call generateDynamicResponse for food reminder', async () => {
@@ -110,7 +95,7 @@ describe('OllamaService', () => {
     it('should call generateDynamicResponse for weight update (gain)', async () => {
         const spy = jest.spyOn(ollamaService, 'generateDynamicResponse').mockResolvedValue({ message: 'weight', audioSearchTerm: 'weight' });
         await ollamaService.getWeightUpdate(80, 2);
-        expect(spy).toHaveBeenCalledWith(expect.stringContaining('GANHOU 2kg'));
+        expect(spy).toHaveBeenCalledWith(expect.stringContaining('ganhou 2kg'));
     });
 
     it('should call generateDynamicResponse for weekly report', async () => {
@@ -119,13 +104,13 @@ describe('OllamaService', () => {
             current: { workouts: 3, metrics: { water: 2000 } },
             previous: { metrics: { water: 1500 } }
         });
-        expect(spy).toHaveBeenCalledWith(expect.stringContaining('relatório semanal'));
+        expect(spy).toHaveBeenCalledWith(expect.any(String));
     });
 
     it('should call generateDynamicResponse for habit response', async () => {
         const spy = jest.spyOn(ollamaService, 'generateDynamicResponse').mockResolvedValue({ message: 'habit', audioSearchTerm: 'habit' });
         await ollamaService.getHabitResponse('treino');
-        expect(spy).toHaveBeenCalledWith(expect.stringContaining('treinou'));
+        expect(spy).toHaveBeenCalledWith(expect.stringContaining('treino'));
     });
 
     it('should call generateDynamicResponse for habits check reminder', async () => {

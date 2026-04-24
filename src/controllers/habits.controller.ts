@@ -8,13 +8,17 @@ import { workoutService } from '../services/workout.service';
 import { HABIT_MAP } from '../config/habits';
 import { MenuController } from './menu.controller';
 import { sendAudioMessage } from '../utils/telegram';
+import { logger } from '../utils/logger';
 import { BOT_MESSAGES } from '../config/constants';
 
 export class HabitsController {
   constructor(private bot: TelegramBot, private menuController: MenuController) {}
 
   public init() {
-    this.bot.on('callback_query', (query) => this.handleCallback(query));
+    this.bot.on('callback_query', (query) => {
+      logger.info(`🖱️ [DEBUG-INDEX] Callback Global: Data=${query.data}, ID=${query.id}`);
+      this.handleCallback(query).catch(err => logger.error('❌ Erro fatal no handleCallback:', err));
+    });
   }
 
   private async handleCallback(query: TelegramBot.CallbackQuery) {
@@ -23,25 +27,50 @@ export class HabitsController {
     const messageId = query.message?.message_id;
     const data = query.data;
 
-    logger.info(`🖱️ [HabitsController] Callback recebido: ${data} de ${userId} no chat ${chatId}`);
+    logger.info(`🖱️ [HabitsController] Processando callback: "${data}" | User: ${userId} | Chat: ${chatId} | ID: ${query.id}`);
 
     if (!chatId || !data) {
+      logger.warn(`⚠️ [HabitsController] Callback ignorado: chatId=${chatId}, data=${data}`);
       await this.bot.answerCallbackQuery(query.id).catch(() => {});
       return;
     }
 
     try {
-      if (data.startsWith('habit_')) return await this.handleHabitToggle(query, userId, chatId, messageId);
-      if (data.startsWith('add_water_')) return await this.handleWaterAdd(query, userId, chatId, messageId);
-      if (data === 'mark_trained') return await this.handleMarkTrained(query, userId, chatId, messageId);
-      if (data === 'mark_cardio') return await this.handleMarkCardio(query, userId, chatId, messageId);
-      if (data === 'refresh_menu') return await this.handleRefreshMenu(query, chatId, messageId!, userId);
-      if (data === 'weekly_summary') return await this.handleWeeklySummary(query, chatId, userId);
-      if (data === 'get_motivation') return await this.handleMotivation(query, chatId);
-      if (data === 'show_diet') return await this.handleShowDiet(query, chatId);
-      if (data.startsWith('meal_done_')) return await this.handleMealDone(query, userId, chatId);
+      let handled = false;
 
-      await this.bot.answerCallbackQuery(query.id).catch(() => {});
+      if (data.startsWith('habit_')) {
+        await this.handleHabitToggle(query, userId, chatId, messageId);
+        handled = true;
+      } else if (data.startsWith('add_water_')) {
+        await this.handleWaterAdd(query, userId, chatId, messageId);
+        handled = true;
+      } else if (data === 'mark_trained') {
+        await this.handleMarkTrained(query, userId, chatId, messageId);
+        handled = true;
+      } else if (data === 'mark_cardio') {
+        await this.handleMarkCardio(query, userId, chatId, messageId);
+        handled = true;
+      } else if (data === 'refresh_menu') {
+        await this.handleRefreshMenu(query, chatId, messageId!, userId);
+        handled = true;
+      } else if (data === 'weekly_summary') {
+        await this.handleWeeklySummary(query, chatId, userId);
+        handled = true;
+      } else if (data === 'get_motivation') {
+        await this.handleMotivation(query, chatId);
+        handled = true;
+      } else if (data === 'show_diet') {
+        await this.handleShowDiet(query, chatId);
+        handled = true;
+      } else if (data.startsWith('meal_done_')) {
+        await this.handleMealDone(query, userId, chatId);
+        handled = true;
+      }
+
+      if (!handled) {
+        logger.warn(`⚠️ [HabitsController] Callback não reconhecido: ${data}`);
+        await this.bot.answerCallbackQuery(query.id).catch(() => {});
+      }
     } catch (error) {
       logger.error(`❌ [HabitsController] Erro ao processar callback ${data}:`, error);
       await this.bot.answerCallbackQuery(query.id, {

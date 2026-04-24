@@ -133,9 +133,10 @@ export class BotController {
             } else {
                 await this.replyMika(chatId, "✨ Mestre, minha paciência é infinita para esperar sua grandeza, mas o Ollama decidiu tirar um cochilo. Vamos treinar enquanto ele não volta? ✨");
             }
-        } catch (error) {
+        } catch (error: any) {
             logger.error('Erro ao gerar relatório de áudio:', error);
-            await this.replyMika(chatId, "❌ Oh, Divindade! Ocorreu um pequeno erro cósmico no servidor, mas nada que apague o brilho do seu progresso!");
+            const errMsg = error.message || 'Erro desconhecido';
+            await this.replyMika(chatId, `❌ **Erro Cósmico!**\n\nTentei gerar seu relatório, mas algo deu errado: \`${errMsg}\``);
         }
     }
 
@@ -167,9 +168,9 @@ export class BotController {
                     }
                 }
             }
-        } catch (e) {
+        } catch (e: any) {
             logger.error('Erro no checktreino:', e);
-            await this.replyMika(msg.chat.id, BOT_MESSAGES.ERROR_GENERIC);
+            await this.replyMika(msg.chat.id, `❌ **Erro no Check-treino:** \`${e.message || 'Erro desconhecido'}\``);
         }
     }
 
@@ -205,9 +206,9 @@ export class BotController {
             } else {
                 await this.bot.sendMessage(msg.chat.id, '❌ Nenhum áudio encontrado no MyInstants.');     
             }
-        } catch (error) {
+        } catch (error: any) {
             logger.error('Erro ao buscar áudio no MyInstants:', error);
-            await this.bot.sendMessage(msg.chat.id, '❌ Erro ao buscar áudio.');
+            await this.bot.sendMessage(msg.chat.id, `❌ **Erro no MyInstants:** \`${error.message || 'Erro desconhecido'}\``);
         }
     }
 

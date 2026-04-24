@@ -49,18 +49,23 @@ if (mode === 'listener') {
         await bot.setWebHook(`${webhookUrl}/bot${token}`, { allowed_updates: allowedUpdates } as any);
         logger.info(`🚀 Modo WEBHOOK ativo: ${webhookUrl}`);
       } catch (err: any) {
-        logger.error(`⚠️ Falha ao configurar Webhook: ${err.message}.`);
+        logger.error(`⚠️ Falha ao configurar Webhook: ${err.message || err}.`);
         logger.info('🔄 Tentando fallback para modo POLLING...');
         
-        // Se falhou o webhook, tentamos o polling como último recurso
-        bot = new TelegramBot(token, { 
-          polling: { 
-            interval: 1000, 
-            params: { allowed_updates: allowedUpdates } 
-          } 
-        } as any);
-        await bot.deleteWebHook(); // Garante que o webhook antigo foi removido no servidor do Telegram
-        logger.info(`🚀 Modo POLLING fallback ativo!`);
+        try {
+          // Se falhou o webhook, tentamos o polling como último recurso
+          bot = new TelegramBot(token, { 
+            polling: { 
+              interval: 1000, 
+              params: { allowed_updates: allowedUpdates } 
+            } 
+          } as any);
+          await bot.deleteWebHook().catch(() => {}); 
+          logger.info(`🚀 Modo POLLING fallback ativo!`);
+        } catch (fallbackErr: any) {
+          logger.error(`❌ Falha crítica ao iniciar modo POLLING: ${fallbackErr.message}`);
+          throw fallbackErr;
+        }
       }
     } else {
       bot = new TelegramBot(token, { 

@@ -23,22 +23,32 @@ export class HabitsController {
     const messageId = query.message?.message_id;
     const data = query.data;
 
+    logger.info(`🖱️ [HabitsController] Callback recebido: ${data} de ${userId} no chat ${chatId}`);
+
     if (!chatId || !data) {
       await this.bot.answerCallbackQuery(query.id).catch(() => {});
       return;
     }
 
-    if (data.startsWith('habit_')) return this.handleHabitToggle(query, userId, chatId, messageId);
-    if (data.startsWith('add_water_')) return this.handleWaterAdd(query, userId, chatId, messageId);
-    if (data === 'mark_trained') return this.handleMarkTrained(query, userId, chatId, messageId);
-    if (data === 'mark_cardio') return this.handleMarkCardio(query, userId, chatId, messageId);
-    if (data === 'refresh_menu') return this.handleRefreshMenu(query, chatId, messageId!, userId);
-    if (data === 'weekly_summary') return this.handleWeeklySummary(query, chatId, userId);
-    if (data === 'get_motivation') return this.handleMotivation(query, chatId);
-    if (data === 'show_diet') return this.handleShowDiet(query, chatId);
-    if (data.startsWith('meal_done_')) return this.handleMealDone(query, userId, chatId);
+    try {
+      if (data.startsWith('habit_')) return await this.handleHabitToggle(query, userId, chatId, messageId);
+      if (data.startsWith('add_water_')) return await this.handleWaterAdd(query, userId, chatId, messageId);
+      if (data === 'mark_trained') return await this.handleMarkTrained(query, userId, chatId, messageId);
+      if (data === 'mark_cardio') return await this.handleMarkCardio(query, userId, chatId, messageId);
+      if (data === 'refresh_menu') return await this.handleRefreshMenu(query, chatId, messageId!, userId);
+      if (data === 'weekly_summary') return await this.handleWeeklySummary(query, chatId, userId);
+      if (data === 'get_motivation') return await this.handleMotivation(query, chatId);
+      if (data === 'show_diet') return await this.handleShowDiet(query, chatId);
+      if (data.startsWith('meal_done_')) return await this.handleMealDone(query, userId, chatId);
 
-    await this.bot.answerCallbackQuery(query.id).catch(() => {});
+      await this.bot.answerCallbackQuery(query.id).catch(() => {});
+    } catch (error) {
+      logger.error(`❌ [HabitsController] Erro ao processar callback ${data}:`, error);
+      await this.bot.answerCallbackQuery(query.id, {
+        text: '❌ Erro ao processar. Tente novamente!',
+        show_alert: true
+      }).catch(() => {});
+    }
   }
 
   private async handleHabitToggle(
@@ -46,7 +56,11 @@ export class HabitsController {
   ) {
     const habitKey = query.data!.replace('habit_', '');
     const habit = HABIT_MAP.get(habitKey);
-    if (!habit) return;
+    
+    if (!habit) {
+      await this.bot.answerCallbackQuery(query.id, { text: '❌ Hábito não encontrado.' }).catch(() => {});
+      return;
+    }
 
     const newValue = await habitsService.toggleHabit(userId, habitKey);
 

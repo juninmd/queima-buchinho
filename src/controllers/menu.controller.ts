@@ -17,7 +17,7 @@ export class MenuController {
     const handleCommand = async (msg: TelegramBot.Message) => {
       const text = msg.text || '';
       logger.info(`[MenuController] Recebido comando: ${text} de ${msg.from?.id}`);
-      
+
       // Suporte para /comando ou /comando@botname
       const cleanText = text.split(' ')[0].split('@')[0].toLowerCase();
 
@@ -30,14 +30,14 @@ export class MenuController {
       if (cleanText === '/cardapio') return this.showDiet(msg.chat.id);
     };
 
-    this.bot.on('message', (msg) => {
+    this.bot.on('message', async (msg) => {
       if (msg.text?.startsWith('/')) {
-        handleCommand(msg).catch(err => logger.error('[MenuController] Erro no handleCommand:', err));
+        await handleCommand(msg).catch(err => logger.error('[MenuController] Erro no handleCommand:', err));    
       }
     });
-    this.bot.on('channel_post', (msg) => {
+    this.bot.on('channel_post', async (msg) => {
       if (msg.text?.startsWith('/')) {
-        handleCommand(msg).catch(err => logger.error('[MenuController] Erro no handleCommand:', err));
+        await handleCommand(msg).catch(err => logger.error('[MenuController] Erro no handleCommand:', err));    
       }
     });
   }
@@ -190,7 +190,7 @@ Envie "treinei" ou "fiz cardio" para registrar
       const tE = summary.current.workouts >= summary.previous.workouts ? '📈' : '📉';
 
       let report = `📊 <b>Resumo Semanal</b>\n\n`;
-      report += `💪 Treinos: ${summary.current.workouts} vs ${summary.previous.workouts} ${tE}\n`;
+      report += `💪 Treinos: ${summary.current.workouts} vs ${summary.previous.workouts} ${tE}\n`;        
       report += `💧 Água: ${summary.current.metrics.water}ml vs ${summary.previous.metrics.water}ml ${wE}\n\n`;
       report += `🗣️ <b>Mika diz:</b> ${response.message}`;
 

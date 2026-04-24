@@ -113,11 +113,23 @@ export class SchedulerService {
                     `──────────────────────\n` +
                     `<i>Bora dominar o mundo?</i> 🌍`;
 
-             await this.bot.sendMessage(chatId, msg, { parse_mode: 'HTML' });
+             const options: TelegramBot.SendMessageOptions = {
+                 parse_mode: 'HTML',
+                 reply_markup: {
+                     inline_keyboard: [
+                         [
+                             { text: '🍳 Café', callback_data: 'meal_done_cafe' },
+                             { text: '🍽️ Almoço', callback_data: 'meal_done_almoco' },
+                             { text: '🌙 Jantar', callback_data: 'meal_done_jantar' }
+                         ],
+                         [TRAIN_BTN, CARDIO_BTN],
+                         [{ text: '📱 Abrir Menu Principal', callback_data: 'refresh_menu' }]
+                     ]
+                 }
+             };
+
+             await this.bot.sendMessage(chatId, msg, options);
              await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayName));
-             
-             const menu = new MenuController(this.bot);
-             await menu.showMenuToUser(chatId, chatId);
         });
     }
 

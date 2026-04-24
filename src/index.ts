@@ -48,10 +48,15 @@ if (mode === 'listener') {
       await bot.setWebHook(`${webhookUrl}/bot${token}`, { allowed_updates: allowedUpdates } as any);
       logger.info(`🚀 Modo WEBHOOK ativo: ${webhookUrl}`);
     } else {
-      bot = new TelegramBot(token);
+      bot = new TelegramBot(token, { 
+        polling: { 
+          interval: 1000, 
+          params: { allowed_updates: allowedUpdates } 
+        } 
+      } as any);
       await bot.deleteWebHook();
-      bot.startPolling({ polling: { interval: 1000, params: { allowed_updates: allowedUpdates } } } as any);
-      logger.info('🚀 Modo POLLING ativo (intervalo 1s)');
+      logger.info(`🚀 Modo POLLING ativo (intervalo 1s). Updates permitidos: ${allowedUpdates.join(', ')}`);
+
     }
     
     // LOG EXTREMO: Capturar qualquer evento

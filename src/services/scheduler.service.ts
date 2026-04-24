@@ -1,15 +1,19 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { workoutService } from './workout.service';
-import { memeService } from './meme.service';
 import { habitsService } from './habits.service';
 import { metricsService } from './metrics.service';
 import { ollamaService } from './ollama.service';
 import { memeService } from './meme.service';
+import { redisService } from './redis.service';
+import { ttsService } from './tts.service';
+import { myInstantsService } from './myinstants.service';
 import { DIET_PLAN } from '../config/diet';
+import { HABIT_MAP } from '../config/habits';
 import { getBrasiliaDayName } from '../utils/time';
 import { logger } from '../utils/logger';
 import { MenuController } from '../controllers/menu.controller';
 import { escapeHtml } from '../utils/html';
+import { sendAudioMessage } from '../utils/telegram';
 
 const TRAIN_BTN: TelegramBot.InlineKeyboardButton = { text: '🏋️‍♂️ Já treinei! ✅', callback_data: 'mark_trained' };
 const CARDIO_BTN: TelegramBot.InlineKeyboardButton = { text: '🏃 Cárdio feito! ✅', callback_data: 'mark_cardio' };

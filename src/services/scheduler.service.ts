@@ -2,16 +2,14 @@ import TelegramBot from 'node-telegram-bot-api';
 import { workoutService } from './workout.service';
 import { memeService } from './meme.service';
 import { habitsService } from './habits.service';
-import { ollamaService } from './ollama.service';
-import { myInstantsService } from './myinstants.service';
-import { ttsService } from './tts.service';
 import { metricsService } from './metrics.service';
-import { sendAudioMessage } from '../utils/telegram';
-import { HABIT_MAP } from '../config/habits';
-import { redisService } from './redis.service';
-import { logger } from '../utils/logger';
+import { ollamaService } from './ollama.service';
+import { memeService } from './meme.service';
 import { DIET_PLAN } from '../config/diet';
 import { getBrasiliaDayName } from '../utils/time';
+import { logger } from '../utils/logger';
+import { MenuController } from '../controllers/menu.controller';
+import { escapeHtml } from '../utils/html';
 
 const TRAIN_BTN: TelegramBot.InlineKeyboardButton = { text: '🏋️‍♂️ Já treinei! ✅', callback_data: 'mark_trained' };
 const CARDIO_BTN: TelegramBot.InlineKeyboardButton = { text: '🏃 Cárdio feito! ✅', callback_data: 'mark_cardio' };
@@ -106,21 +104,20 @@ export class SchedulerService {
             const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
 
             logger.info(`⏰ Enviando lembrete matinal de ${dayName}...`);
-            let msg = `✨ <b>BOM DIA, MAJESTADE!</b>\n`;
-            msg += `🍴 <b>CARDÁPIO DE HOJE</b>\n` +
-                   `──────────────────────\n` +
-                   `🍳 <b>Café:</b> ${diet.cafe}\n` +
-                   `🍽️ <b>Almoço:</b> ${diet.almoco}\n` +
-                   `🌙 <b>Jantar:</b> ${diet.jantar}\n\n` +
-                   `──────────────────────\n` +
-                   `<i>Bora dominar o mundo?</i> 🌍`;
+             let msg = `✨ <b>BOM DIA, MAJESTADE!</b>\n`;
+             msg += `🍴 <b>CARDÁPIO DE HOJE</b>\n` +
+                    `──────────────────────\n` +
+                    `🍳 <b>Café:</b> ${escapeHtml(diet.cafe)}\n` +
+                    `🍽️ <b>Almoço:</b> ${escapeHtml(diet.almoco)}\n` +
+                    `🌙 <b>Jantar:</b> ${escapeHtml(diet.jantar)}\n\n` +
+                    `──────────────────────\n` +
+                    `<i>Bora dominar o mundo?</i> 🌍`;
 
-            await this.bot.sendMessage(chatId, msg, { parse_mode: 'HTML' });
-            await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayName));
-            
-            const MenuController = (await import('../controllers/menu.controller')).MenuController;
-            const menu = new MenuController(this.bot);
-            await menu.showMenuToUser(chatId, chatId);
+             await this.bot.sendMessage(chatId, msg, { parse_mode: 'HTML' });
+             await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayName));
+             
+             const menu = new MenuController(this.bot);
+             await menu.showMenuToUser(chatId, chatId);
         });
     }
 
@@ -186,13 +183,13 @@ export class SchedulerService {
             };
 
             const reminder = await memeService.getFoodReminder(meal);
-            reminder.message = `🍽️ <b>HORA DE COMER: ${label}</b>\n` +
+            reminder.message = `🍴 <b>HORA DO ${meal.toUpperCase()}!</b>\n` +
                                `──────────────────────\n` +
-                               `🥗 <b>O que comer:</b>\n${mealDescription}\n\n` +
+                               `✅ <b>O que comer:</b>\n${escapeHtml(mealDescription)}\n\n` +
                                `──────────────────────\n` +
-                               `${reminder.message}`;
+                               `<i>Bom apetite, Divindade!</i>`;
+            
             if (!reminder.audioSearchTerm) reminder.audioSearchTerm = 'comer';
-
             await this.sendWithAudio(chatId, reminder, options);
         });
     }

@@ -66,12 +66,22 @@ if (mode === 'listener') {
     bot.on('polling_error', (err) => logger.error('❌ [DEBUG] Erro no Polling:', err.message));
 
     const menu = new MenuController(bot);
-    new HabitsController(bot, menu).init();
-    new BotController(bot).init();
+    const habits = new HabitsController(bot, menu);
+    const botCtrl = new BotController(bot);
+
+    habits.init();
+    logger.info('✅ HabitsController inicializado!');
+    botCtrl.init();
+    logger.info('✅ BotController inicializado!');
     menu.init();
-    logger.info('✅ Todos os controllers inicializados!');
+    logger.info('✅ MenuController inicializado!');
+
+    logger.info('🚀 Todos os controllers e listeners ativos!');
   };
-  setupBot().catch(err => logger.error('💥 Erro fatal no setupBot:', err));
+  setupBot().catch(err => {
+    logger.error('💥 Erro CRÍTICO no setupBot:', err);
+    process.exit(1); // Fail fast in listener mode
+  });
 } else {
   bot = new TelegramBot(token);
   redisService.connect();

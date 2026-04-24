@@ -43,10 +43,25 @@ if (mode === 'listener') {
     const allowedUpdates = ['message', 'callback_query', 'channel_post', 'edited_message'];
 
     if (webhookUrl) {
-      bot = new TelegramBot(token, { webHook: { port } } as any);
-      await bot.deleteWebHook();
-      await bot.setWebHook(`${webhookUrl}/bot${token}`, { allowed_updates: allowedUpdates } as any);
-      logger.info(`🚀 Modo WEBHOOK ativo: ${webhookUrl}`);
+      try {
+        bot = new TelegramBot(token, { webHook: { port } } as any);
+        await bot.deleteWebHook();
+        await bot.setWebHook(`${webhookUrl}/bot${token}`, { allowed_updates: allowedUpdates } as any);
+        logger.info(`🚀 Modo WEBHOOK ativo: ${webhookUrl}`);
+      } catch (err: any) {
+        logger.error(`⚠️ Falha ao configurar Webhook: ${err.message}.`);
+        logger.info('🔄 Tentando fallback para modo POLLING...');
+        
+        // Se falhou o webhook, tentamos o polling como último recurso
+        bot = new TelegramBot(token, { 
+          polling: { 
+            interval: 1000, 
+            params: { allowed_updates: allowedUpdates } 
+          } 
+        } as any);
+        await bot.deleteWebHook(); // Garante que o webhook antigo foi removido no servidor do Telegram
+        logger.info(`🚀 Modo POLLING fallback ativo!`);
+      }
     } else {
       bot = new TelegramBot(token, { 
         polling: { 
@@ -56,7 +71,6 @@ if (mode === 'listener') {
       } as any);
       await bot.deleteWebHook();
       logger.info(`🚀 Modo POLLING ativo (intervalo 1s). Updates permitidos: ${allowedUpdates.join(', ')}`);
-
     }
     
     // LOG EXTREMO: Capturar qualquer evento

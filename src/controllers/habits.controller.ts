@@ -71,12 +71,23 @@ export class HabitsController {
         logger.warn(`⚠️ [HabitsController] Callback não reconhecido: ${data}`);
         await this.bot.answerCallbackQuery(query.id).catch(() => {});
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`❌ [HabitsController] Erro ao processar callback ${data}:`, error);
+      const errorMessage = error.message || 'Erro desconhecido';
+      
+      // Responde ao callback para tirar o loading do botão
       await this.bot.answerCallbackQuery(query.id, {
-        text: '❌ Erro ao processar. Tente novamente!',
+        text: `❌ Erro: ${errorMessage.substring(0, 50)}`,
         show_alert: true
       }).catch(() => {});
+
+      // Envia mensagem detalhada se possível
+      if (chatId) {
+        await this.bot.sendMessage(chatId, `💥 **Erro no Queima Buchinho!**\n\n` +
+          `Parece que algo quebrou enquanto eu tentava processar seu clique em \`${data}\`.\n\n` +
+          `**Erro:** \`${errorMessage}\`\n\n` +
+          `_Tente novamente ou dê um grito no suporte!_`, { parse_mode: 'Markdown' }).catch(() => {});
+      }
     }
   }
 

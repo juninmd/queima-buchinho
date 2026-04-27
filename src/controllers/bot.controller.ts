@@ -8,8 +8,11 @@ import { ttsService } from '../services/tts.service';
 import { myInstantsService } from '../services/myinstants.service';
 import { formatBrasiliaTime, getSurpriseMessage } from '../utils/time';
 import { sendAudioMessage } from '../utils/telegram';
-import { WORKOUT_KEYWORDS, CARDIO_KEYWORDS, BOT_MESSAGES } from '../config/constants';
+import { WORKOUT_KEYWORDS, CARDIO_KEYWORDS, BOT_MESSAGES, METRIC_LIMITS } from '../config/constants';
 import { logger } from '../utils/logger';
+
+const relatorioLastCall = new Map<number, number>();
+const RELATORIO_COOLDOWN_MS = 5 * 60 * 1000;
 
 export class BotController {
     constructor(private bot: TelegramBot) { }
@@ -27,7 +30,13 @@ export class BotController {
             if (!userId || text.startsWith('/')) return;
 
             if (this.hasWorkoutKeyword(text)) {
-                logger.info(`✅ Evento em chat ${msg.chat.id} identificado como treino de ${userId}`);    
+                logger.info(`✅ Evento em chat ${msg.chat.id} identificado como treino de ${userId}`);
+                const alreadyLogged = await workoutService.hasLoggedToday(userId);
+                if (alreadyLogged) {
+                    await this.bot.sendMessage(msg.chat.id, '💪 Já registrei seu treino hoje! Foco total, Lenda.');
+                    return;
+                }
+                await this.bot.sendChatAction(msg.chat.id, 'record_voice');
                 await workoutService.logWorkout(userId, true, text);
                 await habitsService.markHabit(userId, 'treino', true);
 
@@ -35,13 +44,14 @@ export class BotController {
                 await this.replyMika(msg.chat.id, congrats.message);
 
                 if (congrats.audioSearchTerm) {
-                    const button = await myInstantsService.getBestMatchAudio(congrats.audioSearchTerm);   
+                    const button = await myInstantsService.getBestMatchAudio(congrats.audioSearchTerm);
                     if (button?.audioUrl) {
                         await this.bot.sendAudio(msg.chat.id, button.audioUrl, { caption: `🎶 ${button.title}` });
                     }
                 }
             } else if (this.hasCardioKeyword(text)) {
-                logger.info(`🏃 Evento em chat ${msg.chat.id} identificado como cárdio de ${userId}`);    
+                logger.info(`🏃 Evento em chat ${msg.chat.id} identificado como cárdio de ${userId}`);
+                await this.bot.sendChatAction(msg.chat.id, 'record_voice');
                 await habitsService.markHabit(userId, 'cardio', true);
 
                 const response = await ollamaService.getHabitResponse('cardio');
@@ -55,15 +65,17 @@ export class BotController {
 
     private setupCommands() {
         const commands = [
-            { regex: /^\/start(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.replyMika(msg.chat.id, '🔥 Mika na área! Use /menu para ver seus hábitos ou mande "treinei" para logar seu treino.') },        
+            { regex: /^\/start(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.replyMika(msg.chat.id, '🔥 Mika na área! Use /menu para ver seus hábitos ou mande "treinei" para logar seu treino.') },
             { regex: /^\/status(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleStatus(msg) },
             { regex: /^\/checktreino(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleCheckTreino(msg) },
             { regex: /^\/cardio(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleCardio(msg) },
             { regex: /^\/relatorio(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleRelatorio(msg) },
-            { regex: /^\/hora(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleHora(msg) },    
+            { regex: /^\/hora(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleHora(msg) },
             { regex: /^\/motivar(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleMotivar(msg) },
+            { regex: /^\/streak(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleStreak(msg) },
+            { regex: /^\/passos(@\w+)? (\d+)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'steps', 'passos') },
             { regex: /^\/instante(@\w+)? (.+)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleInstante(msg, match) },
-            { regex: /^\/reset(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleReset(msg) },  
+            { regex: /^\/reset(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleReset(msg) },
             { regex: /^\/peso(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'weight', 'kg') },
             { regex: /^\/altura(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'height', 'cm') },
             { regex: /^\/gordura(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'body_fat', '%') },
@@ -101,10 +113,38 @@ export class BotController {
         await this.replyMika(msg.chat.id, BOT_MESSAGES.STATUS_INFO);
     }
 
+    private async handleStreak(msg: TelegramBot.Message) {
+        const userId = msg.from?.id || msg.sender_chat?.id;
+        if (!userId) return;
+
+        const streak = await workoutService.getStreak(userId);
+        if (streak === 0) {
+            const roast = await ollamaService.generateDynamicResponse(
+                'O Mestre não tem streak de treinos no momento (zero dias seguidos). Zoa ele de forma carinhosa, mas manda ele começar hoje.'
+            );
+            await this.replyMika(msg.chat.id, roast?.message ?? '🥱 Zero dias seguidos, Lenda. Hoje é o dia 1 — começa agora!');
+        } else if (streak === 1) {
+            await this.replyMika(msg.chat.id, `🔥 Você treinou ontem! Hoje é o dia 2 — não deixa a chama apagar, Majestade!`);
+        } else {
+            const response = await ollamaService.generateDynamicResponse(
+                `O Mestre está em uma sequência de ${streak} dias treinando. Elogia de forma genuína e sarcástica ao mesmo tempo, sem exagerar.`
+            );
+            await this.replyMika(msg.chat.id, response?.message ?? `🔥 ${streak} dias seguidos treinando! Você é uma máquina, Lenda!`);
+        }
+    }
+
     private async handleRelatorio(msg: TelegramBot.Message) {
         const userId = msg.from?.id || msg.sender_chat?.id;
         const chatId = msg.chat.id;
         if (!userId) return;
+
+        const now = Date.now();
+        const last = relatorioLastCall.get(chatId) ?? 0;
+        if (now - last < RELATORIO_COOLDOWN_MS) {
+            await this.bot.sendMessage(chatId, BOT_MESSAGES.RELATORIO_COOLDOWN);
+            return;
+        }
+        relatorioLastCall.set(chatId, now);
 
         try {
             await this.bot.sendChatAction(chatId, 'record_voice');
@@ -118,9 +158,9 @@ export class BotController {
             const prompt = `Gere um relatório diário debochado para o usuário.
             Dados de hoje:
             - Treinou: ${trained ? 'Sim (Milagre!)' : 'Não (Frango!)'}
-            - Água: ${dailySummary.water}ml
+            - Água: ${dailySummary?.water ?? 0}ml
             - Hábitos completados: ${habitsCount.completed}/${habitsCount.total}
-            - Peso atual: ${dailySummary.weight ? dailySummary.weight + 'kg' : 'Não pesou hoje'}
+            - Peso atual: ${dailySummary?.weight ? dailySummary.weight + 'kg' : 'Não pesou hoje'}
 
             Seja ácida, mencione que ele(a) precisa de mais cárdio e não esqueça de falar sobre dominar o mundo.`;
 
@@ -225,6 +265,13 @@ export class BotController {
         if (!userId || !match) return;
 
         const value = parseFloat(match[2]);
+        const limits = METRIC_LIMITS[type as keyof typeof METRIC_LIMITS];
+        if (limits && (value < limits.min || value > limits.max)) {
+            await this.bot.sendMessage(chatId, BOT_MESSAGES.METRIC_OUT_OF_RANGE(type, limits.min, limits.max, unit));
+            return;
+        }
+
+        await this.bot.sendChatAction(chatId, 'typing');
         await metricsService.logMetric(userId, type, value, unit);
 
         const labels: Record<string, string> = {

@@ -1,6 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { habitsService } from '../services/habits.service';
 import { metricsService } from '../services/metrics.service';
+import { workoutService } from '../services/workout.service';
 import { ollamaService } from '../services/ollama.service';
 import { myInstantsService } from '../services/myinstants.service';
 import { HABITS, getProgressBar } from '../config/habits';
@@ -71,16 +72,23 @@ export class MenuController {
   }
 
   private async buildMenuContent(userId: number) {
-    const status = await habitsService.getStatus(userId);
-    const water = await metricsService.getTodaySum(userId, 'water');
-    const { completed, total } = await habitsService.getCompletedCount(userId);
+    const [status, water, { completed, total }, streak] = await Promise.all([
+      habitsService.getStatus(userId),
+      metricsService.getTodaySum(userId, 'water'),
+      habitsService.getCompletedCount(userId),
+      workoutService.getStreak(userId)
+    ]);
     const bar = getProgressBar(completed, total);
 
     let text = `<b>🔥 Queima Buchinho - Menu do Dia 🔥</b>\n\n`;
     text += `Progresso: ${completed}/${total} hábitos\n`;
     text += `<code>${bar}</code>\n\n`;
-    text += `💧 Água hoje: ${water}ml\n\n`;
-    text += `Toque para marcar/desmarcar:`;
+    text += `💧 Água hoje: ${water}ml\n`;
+    if (streak > 0) {
+      const flame = streak >= 7 ? '🔥🔥🔥' : streak >= 3 ? '🔥🔥' : '🔥';
+      text += `${flame} Streak: ${streak} dia${streak > 1 ? 's' : ''} seguido${streak > 1 ? 's' : ''}!\n`;
+    }
+    text += `\nToque para marcar/desmarcar:`;
 
     const keyboard = this.buildKeyboard(status);
     return { text, keyboard };
@@ -127,19 +135,25 @@ export class MenuController {
 <b>📋 Hábitos:</b>
 /menu - Menu interativo com todos os hábitos
 /progresso - Ver progresso do dia
+/semana - Relatório semanal (Mika tóxica 😈)
 
 <b>💧 Métricas:</b>
 /agua - Registrar água (com botões)
-/peso &lt;valor&gt; - Registrar peso
-/semana - Relatório semanal (Mika tóxica 😈)
+/peso &lt;valor&gt; - Registrar peso (kg)
+/altura &lt;valor&gt; - Registrar altura (cm)
+/gordura &lt;valor&gt; - % de gordura corporal
+/musculo &lt;valor&gt; - % de massa muscular
+/passos &lt;valor&gt; - Registrar passos do dia
 
 <b>💪 Treino:</b>
-Envie "treinei" ou "fiz cardio" para registrar
+Envie "treinei", "malhei" ou "fui na academia" para registrar
 /checktreino - Verificação manual
 /cardio - Registrar cárdio rápido
+/streak - Ver sua sequência de treinos 🔥
 /reset - Resetar treino de hoje
 
 <b>🎵 Outros:</b>
+/relatorio - Relatório diário com áudio da Mika
 /motivar - Áudio motivacional
 /instante &lt;termo&gt; - Sons do MyInstants
 /hora - Horário de Brasília`;

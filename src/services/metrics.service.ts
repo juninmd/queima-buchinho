@@ -1,8 +1,23 @@
 import { pool } from '../config/database';
 import { getBrasiliaDateString } from '../utils/time';
+import { redisService } from './redis.service';
 import { logger } from '../utils/logger';
 
 export type MetricType = 'water' | 'weight' | 'steps' | 'sleep' | 'height' | 'muscle_mass' | 'body_fat';
+
+export interface DailySummary {
+    water: number;
+    weight: number | null;
+    height: number | null;
+    muscle_mass: number | null;
+    body_fat: number | null;
+}
+
+interface WeekMetrics { water: number; weight: number; }
+export interface WeeklySummary {
+    current: { metrics: WeekMetrics; workouts: number };
+    previous: { metrics: WeekMetrics; workouts: number };
+}
 
 export class MetricsService {
     public async logMetric(userId: number, type: MetricType, value: number, unit?: string): Promise<void> {
@@ -50,21 +65,20 @@ export class MetricsService {
         }
     }
 
-    public async getDailySummary(userId: number): Promise<any> {
+    public async getDailySummary(userId: number): Promise<DailySummary | null> {
         try {
             const today = getBrasiliaDateString();
             const { rows } = await pool.query(
-                `SELECT type, SUM(value) as total 
-                 FROM user_metrics 
+                `SELECT type, SUM(value) as total
+                 FROM user_metrics
                  WHERE user_id = $1 AND brasilia_date = $2
                  GROUP BY type`,
                 [userId, today]
             );
-            
-            const metrics: any = {};
-            rows.forEach(r => metrics[r.type] = parseFloat(r.total));
-            
-            // Buscar últimos valores de medidas (que não mudam todo dia)
+
+            const metrics: Record<string, number> = {};
+            rows.forEach((r: { type: string; total: string }) => { metrics[r.type] = parseFloat(r.total); });
+
             const [height, muscle, fat] = await Promise.all([
                 this.getLatestValue(userId, 'height'),
                 this.getLatestValue(userId, 'muscle_mass'),
@@ -72,8 +86,8 @@ export class MetricsService {
             ]);
 
             return {
-                water: metrics.water || 0,
-                weight: metrics.weight || null,
+                water: metrics['water'] ?? 0,
+                weight: metrics['weight'] ?? null,
                 height,
                 muscle_mass: muscle,
                 body_fat: fat
@@ -106,29 +120,35 @@ export class MetricsService {
         }
     }
 
-    public async getWeeklySummary(userId: number): Promise<any> {
+    public async getWeeklySummary(userId: number): Promise<WeeklySummary | null> {
+        const cacheKey = `weekly_summary:${userId}`;
+        const cached = await redisService.get(cacheKey);
+        if (cached) {
+            try { return JSON.parse(cached) as WeeklySummary; } catch { /* fall through */ }
+        }
+
         try {
             const queries = {
                 currentMetrics: `
-                    SELECT type, SUM(value) as total 
-                    FROM user_metrics 
+                    SELECT type, SUM(value) as total
+                    FROM user_metrics
                     WHERE user_id = $1 AND CAST(brasilia_date AS DATE) >= date_trunc('week', CURRENT_DATE)
                     GROUP BY type`,
                 previousMetrics: `
-                    SELECT type, SUM(value) as total 
-                    FROM user_metrics 
-                    WHERE user_id = $1 
+                    SELECT type, SUM(value) as total
+                    FROM user_metrics
+                    WHERE user_id = $1
                       AND CAST(brasilia_date AS DATE) >= date_trunc('week', CURRENT_DATE - INTERVAL '1 week')
                       AND CAST(brasilia_date AS DATE) < date_trunc('week', CURRENT_DATE)
                     GROUP BY type`,
                 currentWorkouts: `
-                    SELECT COUNT(*) as total 
-                    FROM workout_logs 
+                    SELECT COUNT(*) as total
+                    FROM workout_logs
                     WHERE user_id = $1 AND trained = true AND CAST(brasilia_date AS DATE) >= date_trunc('week', CURRENT_DATE)`,
                 previousWorkouts: `
-                    SELECT COUNT(*) as total 
-                    FROM workout_logs 
-                    WHERE user_id = $1 AND trained = true 
+                    SELECT COUNT(*) as total
+                    FROM workout_logs
+                    WHERE user_id = $1 AND trained = true
                       AND CAST(brasilia_date AS DATE) >= date_trunc('week', CURRENT_DATE - INTERVAL '1 week')
                       AND CAST(brasilia_date AS DATE) < date_trunc('week', CURRENT_DATE)`
             };
@@ -140,13 +160,16 @@ export class MetricsService {
                 pool.query(queries.previousWorkouts, [userId])
             ]);
 
-            const mapMetrics = (rows: any[]) => {
-                const map: any = { water: 0, weight: 0 };
-                rows.forEach(r => map[r.type] = parseFloat(r.total));
+            const mapMetrics = (rows: { type: string; total: string }[]): WeekMetrics => {
+                const map: WeekMetrics = { water: 0, weight: 0 };
+                rows.forEach(r => {
+                    if (r.type === 'water') map.water = parseFloat(r.total);
+                    if (r.type === 'weight') map.weight = parseFloat(r.total);
+                });
                 return map;
             };
 
-            return {
+            const result: WeeklySummary = {
                 current: {
                     metrics: mapMetrics(currMet.rows),
                     workouts: parseInt(currWork.rows[0].total) || 0
@@ -156,6 +179,9 @@ export class MetricsService {
                     workouts: parseInt(prevWork.rows[0].total) || 0
                 }
             };
+
+            await redisService.set(cacheKey, JSON.stringify(result), 300);
+            return result;
         } catch (error) {
             logger.error('Erro ao gerar resumo semanal:', error);
             return null;

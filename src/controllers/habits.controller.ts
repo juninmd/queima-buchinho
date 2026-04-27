@@ -9,14 +9,13 @@ import { HABIT_MAP } from '../config/habits';
 import { MenuController } from './menu.controller';
 import { sendAudioMessage } from '../utils/telegram';
 import { logger } from '../utils/logger';
-import { BOT_MESSAGES } from '../config/constants';
+import { BOT_MESSAGES, WATER_GOAL_ML, WATER_CELEBRATION_ML } from '../config/constants';
 
 export class HabitsController {
   constructor(private bot: TelegramBot, private menuController: MenuController) {}
 
   public init() {
     this.bot.on('callback_query', (query) => {
-      logger.info(`🖱️ [DEBUG-INDEX] Callback Global: Data=${query.data}, ID=${query.id}`);
       this.handleCallback(query).catch(err => logger.error('❌ Erro fatal no handleCallback:', err));
     });
   }
@@ -127,6 +126,7 @@ export class HabitsController {
     query: TelegramBot.CallbackQuery, userId: number, chatId: number, messageId?: number
   ) {
     const amount = parseInt(query.data!.replace('add_water_', ''));
+    const prevTotal = await metricsService.getTodaySum(userId, 'water');
     await metricsService.logMetric(userId, 'water', amount, 'ml');
     const total = await metricsService.getTodaySum(userId, 'water');
 
@@ -138,8 +138,17 @@ export class HabitsController {
       await this.menuController.refreshMenu(chatId, messageId, userId);
     }
 
-    const response = await ollamaService.getWaterSuccess(total);
-    if (response) await this.bot.sendMessage(chatId, response.message);
+    const crossed2L = prevTotal < WATER_GOAL_ML && total >= WATER_GOAL_ML;
+    const crossed3L = prevTotal < WATER_CELEBRATION_ML && total >= WATER_CELEBRATION_ML;
+
+    if (crossed3L) {
+      await this.bot.sendMessage(chatId, BOT_MESSAGES.WATER_GOAL_3L);
+    } else if (crossed2L) {
+      await this.bot.sendMessage(chatId, BOT_MESSAGES.WATER_GOAL_2L);
+    } else {
+      const response = await ollamaService.getWaterSuccess(total);
+      if (response) await this.bot.sendMessage(chatId, response.message);
+    }
   }
 
   private async handleMarkTrained(

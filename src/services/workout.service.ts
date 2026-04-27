@@ -37,6 +37,15 @@ export class WorkoutService {
         }
     }
 
+    public async hasLoggedToday(userId: number): Promise<boolean> {
+        const today = getBrasiliaDateString();
+        const { rows } = await pool.query(
+            'SELECT 1 FROM workout_logs WHERE user_id = $1 AND brasilia_date = $2 AND trained = true LIMIT 1',
+            [userId, today]
+        );
+        return rows.length > 0;
+    }
+
     private async hasWorkoutToday(id: number, date: string): Promise<boolean> {
         // Se for um ID de grupo (negativo), verificamos se QUALQUER pessoa treinou hoje
         if (id < 0) {
@@ -82,6 +91,40 @@ export class WorkoutService {
             );
         } catch (error) {
             logger.error('Erro ao resetar treino:', error);
+        }
+    }
+
+    public async getStreak(userId: number): Promise<number> {
+        try {
+            const { rows } = await pool.query(
+                `SELECT brasilia_date FROM workout_logs
+                 WHERE user_id = $1 AND trained = true
+                 ORDER BY brasilia_date DESC`,
+                [userId]
+            );
+            if (rows.length === 0) return 0;
+
+            let streak = 0;
+            const today = getBrasiliaDateString();
+            let expected = today;
+
+            for (const row of rows) {
+                const date = typeof row.brasilia_date === 'string'
+                    ? row.brasilia_date
+                    : (row.brasilia_date as Date).toISOString().slice(0, 10);
+                if (date === expected) {
+                    streak++;
+                    const d = new Date(expected + 'T12:00:00-03:00');
+                    d.setDate(d.getDate() - 1);
+                    expected = d.toISOString().slice(0, 10);
+                } else {
+                    break;
+                }
+            }
+            return streak;
+        } catch (error) {
+            logger.error('Erro ao calcular streak:', error);
+            return 0;
         }
     }
 }

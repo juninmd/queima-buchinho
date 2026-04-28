@@ -6,8 +6,9 @@ import { habitsService } from '../services/habits.service';
 import { ollamaService } from '../services/ollama.service';
 import { ttsService } from '../services/tts.service';
 import { myInstantsService } from '../services/myinstants.service';
+import { mediaService } from '../services/media.service';
 import { formatBrasiliaTime, getSurpriseMessage } from '../utils/time';
-import { sendAudioMessage } from '../utils/telegram';
+import { sendAudioMessage, sendPhotoMessage, sendStickerMessage, sendGifMessage } from '../utils/telegram';
 import { WORKOUT_KEYWORDS, CARDIO_KEYWORDS, BOT_MESSAGES, METRIC_LIMITS } from '../config/constants';
 import { logger } from '../utils/logger';
 
@@ -43,6 +44,11 @@ export class BotController {
                 const congrats = await memeService.getCongratsMessage();
                 await this.replyMika(msg.chat.id, congrats.message);
 
+                const celebrationGif = await mediaService.sendGif('celebration');
+                if (celebrationGif) {
+                    await sendGifMessage(this.bot, msg.chat.id, celebrationGif);
+                }
+
                 if (congrats.audioSearchTerm) {
                     const button = await myInstantsService.getBestMatchAudio(congrats.audioSearchTerm);
                     if (button?.audioUrl) {
@@ -56,6 +62,11 @@ export class BotController {
 
                 const response = await ollamaService.getHabitResponse('cardio');
                 if (response) await this.replyMika(msg.chat.id, response.message);
+
+                const cardioGif = await mediaService.sendGif('cardio');
+                if (cardioGif) {
+                    await sendGifMessage(this.bot, msg.chat.id, cardioGif);
+                }
             }
         };
 
@@ -79,7 +90,12 @@ export class BotController {
             { regex: /^\/peso(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'weight', 'kg') },
             { regex: /^\/altura(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'height', 'cm') },
             { regex: /^\/gordura(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'body_fat', '%') },
-            { regex: /^\/musculo(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'muscle_mass', '%') }
+            { regex: /^\/musculo(@\w+)? (\d+(\.\d+)?)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMetric(msg, match, 'muscle_mass', '%') },
+            { regex: /^\/meme(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleMemeRandom(msg) },
+            { regex: /^\/meme(@\w+)? (.+)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleMeme(msg, match) },
+            { regex: /^\/sticker(@\w+)?$/, handler: (msg: TelegramBot.Message) => this.handleStickerRandom(msg) },
+            { regex: /^\/sticker(@\w+)? (.+)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleSticker(msg, match) },
+            { regex: /^\/gif(@\w+)? (.+)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => this.handleGif(msg, match) }
         ];
 
         const processCommand = async (msg: TelegramBot.Message) => {
@@ -188,6 +204,11 @@ export class BotController {
                 const roastAudio = memeService.getRoastAudio();
                 await this.replyMika(msg.chat.id, roast.message);
 
+                const roastGif = await mediaService.sendGif('roast');
+                if (roastGif) {
+                    await sendGifMessage(this.bot, msg.chat.id, roastGif);
+                }
+
                 if (roast.audioSearchTerm) {
                     const button = await myInstantsService.getBestMatchAudio(roast.audioSearchTerm);
                     if (button?.audioUrl) {
@@ -201,8 +222,14 @@ export class BotController {
             } else {
                 const congrats = await memeService.getCongratsMessage();
                 await this.replyMika(msg.chat.id, congrats.message);
+
+                const congratsGif = await mediaService.sendGif('celebration');
+                if (congratsGif) {
+                    await sendGifMessage(this.bot, msg.chat.id, congratsGif);
+                }
+
                 if (congrats.audioSearchTerm) {
-                    const button = await myInstantsService.getBestMatchAudio(congrats.audioSearchTerm);   
+                    const button = await myInstantsService.getBestMatchAudio(congrats.audioSearchTerm);
                     if (button?.audioUrl) {
                         await this.bot.sendAudio(msg.chat.id, button.audioUrl, { caption: `🎶 ${button.title}` });
                     }
@@ -313,7 +340,113 @@ export class BotController {
             await ttsService.cleanup(audioPath);
         } catch (error) {
             logger.error('Erro ao responder com áudio da Mika:', error);
-            await this.bot.sendMessage(chatId, text); // Fallback total
+            await this.bot.sendMessage(chatId, text);
+        }
+    }
+
+    private async handleMemeRandom(msg: TelegramBot.Message) {
+        const chatId = msg.chat.id;
+        try {
+            await this.bot.sendChatAction(chatId, 'find_location');
+            const gif = await mediaService.sendGif('meme');
+            if (gif) {
+                await sendGifMessage(this.bot, chatId, gif, '😂 TMJ meme pro Mestre!');
+            } else {
+                const localSticker = mediaService.getLocalSticker('meme');
+                if (localSticker) {
+                    await sendStickerMessage(this.bot, chatId, localSticker);
+                } else {
+                    await this.bot.sendMessage(chatId, '😂 Não achei nenhum meme, Lenda. Tenta de novo!');
+                }
+            }
+        } catch (e) {
+            logger.error('Erro ao buscar meme:', e);
+            await this.bot.sendMessage(chatId, '❌ Erro ao buscar meme, Majestade.');
+        }
+    }
+
+    private async handleMeme(msg: TelegramBot.Message, match: RegExpExecArray | null) {
+        const chatId = msg.chat.id;
+        const query = match ? match[2] : '';
+        if (!query) {
+            await this.handleMemeRandom(msg);
+            return;
+        }
+
+        try {
+            await this.bot.sendChatAction(chatId, 'find_location');
+            const results = await mediaService.searchGifs(query, 3);
+            if (results.length > 0) {
+                const randomResult = results[Math.floor(Math.random() * results.length)];
+                await sendGifMessage(this.bot, chatId, randomResult.url, `😂 Achei isso pra você: "${query}"`);
+            } else {
+                await this.bot.sendMessage(chatId, `❌ Não achei nenhum meme para "${query}", Lenda.`);
+            }
+        } catch (e) {
+            logger.error('Erro ao buscar meme:', e);
+            await this.bot.sendMessage(chatId, '❌ Erro ao buscar meme, Majestade.');
+        }
+    }
+
+    private async handleStickerRandom(msg: TelegramBot.Message) {
+        const chatId = msg.chat.id;
+        try {
+            await this.bot.sendChatAction(chatId, 'typing');
+            const sticker = await mediaService.sendSticker('fire');
+            if (sticker) {
+                await sendStickerMessage(this.bot, chatId, sticker);
+            } else {
+                await this.bot.sendMessage(chatId, '🔥 Não achei nenhuma figurinha, Lenda. Tenta de novo!');
+            }
+        } catch (e) {
+            logger.error('Erro ao buscar figurinha:', e);
+            await this.bot.sendMessage(chatId, '❌ Erro ao buscar figurinha, Majestade.');
+        }
+    }
+
+    private async handleSticker(msg: TelegramBot.Message, match: RegExpExecArray | null) {
+        const chatId = msg.chat.id;
+        const query = match ? match[2] : '';
+        if (!query) {
+            await this.handleStickerRandom(msg);
+            return;
+        }
+
+        try {
+            await this.bot.sendChatAction(chatId, 'typing');
+            const results = await mediaService.searchStickers(query, 5);
+            if (results.length > 0) {
+                const randomResult = results[Math.floor(Math.random() * results.length)];
+                await sendStickerMessage(this.bot, chatId, randomResult.url);
+            } else {
+                await this.bot.sendMessage(chatId, `❌ Não achei figurinha pra "${query}", Lenda.`);
+            }
+        } catch (e) {
+            logger.error('Erro ao buscar figurinha:', e);
+            await this.bot.sendMessage(chatId, '❌ Erro ao buscar figurinha, Majestade.');
+        }
+    }
+
+    private async handleGif(msg: TelegramBot.Message, match: RegExpExecArray | null) {
+        const chatId = msg.chat.id;
+        const query = match ? match[2] : '';
+        if (!query) {
+            await this.bot.sendMessage(chatId, '❌ Me diz o que você quer buscar! Ex: /gif fitness');
+            return;
+        }
+
+        try {
+            await this.bot.sendChatAction(chatId, 'record_video');
+            const results = await mediaService.searchGifs(query, 5);
+            if (results.length > 0) {
+                const randomResult = results[Math.floor(Math.random() * results.length)];
+                await sendGifMessage(this.bot, chatId, randomResult.url, `🎬 GIF pra: "${query}"`);
+            } else {
+                await this.bot.sendMessage(chatId, `❌ Não achei GIF pra "${query}", Lenda.`);
+            }
+        } catch (e) {
+            logger.error('Erro ao buscar GIF:', e);
+            await this.bot.sendMessage(chatId, '❌ Erro ao buscar GIF, Majestade.');
         }
     }
 }

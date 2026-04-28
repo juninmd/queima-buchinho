@@ -7,6 +7,7 @@ import { habitsService } from '../../src/services/habits.service';
 import { ollamaService } from '../../src/services/ollama.service';
 import { myInstantsService } from '../../src/services/myinstants.service';
 import { ttsService } from '../../src/services/tts.service';
+import { mediaService } from '../../src/services/media.service';
 import * as telegramUtils from '../../src/utils/telegram';
 
 jest.mock('../../src/services/workout.service');
@@ -16,6 +17,7 @@ jest.mock('../../src/services/habits.service');
 jest.mock('../../src/services/ollama.service');
 jest.mock('../../src/services/myinstants.service');
 jest.mock('../../src/services/tts.service');
+jest.mock('../../src/services/media.service');
 jest.mock('../../src/services/redis.service', () => ({
     redisService: {
         get: jest.fn(),
@@ -39,9 +41,15 @@ describe('BotController', () => {
         botController = new BotController(bot);
         jest.clearAllMocks();
 
-        // Default mock for ttsService
+        // Default mocks
         (ttsService.generateMikaAudio as jest.Mock).mockResolvedValue('test-audio.mp3');
         (ttsService.cleanup as jest.Mock).mockResolvedValue(undefined);
+        (mediaService.sendGif as jest.Mock).mockResolvedValue(null);
+        (mediaService.sendSticker as jest.Mock).mockResolvedValue(null);
+        (mediaService.searchGifs as jest.Mock).mockResolvedValue([]);
+        (mediaService.searchStickers as jest.Mock).mockResolvedValue([]);
+        (mediaService.getLocalSticker as jest.Mock).mockResolvedValue(null);
+        (mediaService.getLocalImage as jest.Mock).mockResolvedValue(null);
     });
 
     describe('init', () => {

@@ -1,12 +1,10 @@
-import { createOllama } from 'ai-sdk-ollama';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { logger } from '../utils/logger';
 
-// No AI SDK / ai-sdk-ollama, o baseURL não costuma precisar do /api se ele usar o client oficial por baixo
-const ollamaHost = process.env.OLLAMA_HOST || 'http://ollama.ai.svc.cluster.local:11434';
-const ollama = createOllama({
-    baseURL: ollamaHost
+const openrouter = createOpenRouter({
+    apiKey: process.env.OPENROUTER_API_KEY
 });
 
 export const MikaResponseSchema = z.object({
@@ -33,10 +31,10 @@ Regras de tom (SIGA ESTRITAMENTE):
 `;
 
     public async generateDynamicResponse(prompt: string): Promise<MikaResponse | null> {
-        logger.info(`🤖 [AI SDK] Gerando objeto (Model: ${this.model}, Host: ${ollamaHost})`);
+        logger.info(`🤖 [AI SDK] Gerando objeto (Model: ${this.model})`);
         try {
             const { object } = await generateObject({
-                model: ollama(this.model),
+                model: openrouter(this.model),
                 system: this.systemPrompt,
                 prompt: prompt,
                 schema: MikaResponseSchema,

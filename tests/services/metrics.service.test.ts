@@ -63,8 +63,8 @@ describe('MetricsService', () => {
 
             const summary = await metricsService.getDailySummary(userId);
 
-            expect(summary.water).toBe(0);
-            expect(summary.weight).toBeNull();
+            expect(summary!.water).toBe(0);
+            expect(summary!.weight).toBeNull();
         });
     });
 });

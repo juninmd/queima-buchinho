@@ -4,11 +4,13 @@ import { habitsService } from '../../src/services/habits.service';
 import { metricsService } from '../../src/services/metrics.service';
 import { ollamaService } from '../../src/services/ollama.service';
 import { myInstantsService } from '../../src/services/myinstants.service';
+import { workoutService } from '../../src/services/workout.service';
 
 jest.mock('../../src/services/habits.service');
 jest.mock('../../src/services/metrics.service');
 jest.mock('../../src/services/ollama.service');
 jest.mock('../../src/services/myinstants.service');
+jest.mock('../../src/services/workout.service');
 
 describe('MenuController', () => {
   let bot: jest.Mocked<TelegramBot>;
@@ -35,6 +37,7 @@ describe('MenuController', () => {
       (habitsService.getStatus as jest.Mock).mockResolvedValue({});
       (habitsService.getCompletedCount as jest.Mock).mockResolvedValue({ completed: 0, total: 5 });
       (metricsService.getTodaySum as jest.Mock).mockResolvedValue(0);
+      (workoutService.getStreak as jest.Mock).mockResolvedValue(0);
 
       // We need to wait for the async execution within the handler
       const msg = { text: '/menu', chat: { id: 123 }, from: { id: 456 } } as any;

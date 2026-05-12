@@ -157,7 +157,7 @@ describe('BotController', () => {
         it('should handle /checktreino error', async () => {
             (workoutService.checkDailyMessages as jest.Mock).mockRejectedValue(new Error('Fail'));        
             await commandHandler({ text: '/checktreino', chat: { id: 123 } });
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), expect.stringContaining('Erro ao processar'));
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), expect.stringContaining('Erro no Check-treino'));
         });
 
         it('should handle /hora', async () => {
@@ -186,7 +186,7 @@ describe('BotController', () => {
         it('should handle /instante error', async () => {
             (myInstantsService.getBestMatchAudio as jest.Mock).mockRejectedValue(new Error('API Error')); 
             await commandHandler({ text: '/instante cavalo', chat: { id: 123 }, from: { first_name: 'User' } });
-            expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('Erro ao buscar áudio'));
+            expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('Erro no MyInstants'));
         });
 
         it('should handle /reset', async () => {

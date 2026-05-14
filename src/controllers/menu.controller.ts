@@ -246,7 +246,18 @@ Envie "treinei", "malhei" ou "fui na academia" para registrar
     report += `🌙 <b>Jantar:</b>\n${diet.jantar}\n\n`;
     report += `<i>Foca no objetivo, Lenda! 💪</i>`;
 
-    await this.bot.sendMessage(chatId, report, { parse_mode: 'HTML' });
+    await this.bot.sendMessage(chatId, report, {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🍳 Café feito', callback_data: 'meal_done_cafe' },
+            { text: '🍽️ Almoço feito', callback_data: 'meal_done_almoco' },
+            { text: '🌙 Jantar feito', callback_data: 'meal_done_jantar' },
+          ]
+        ]
+      }
+    });
   }
 
   public async showGym(chatId: number) {

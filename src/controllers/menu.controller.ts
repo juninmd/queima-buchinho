@@ -9,6 +9,7 @@ import { logger } from '../utils/logger';
 import { ttsService } from '../services/tts.service';
 import { sendAudioMessage } from '../utils/telegram';
 import { DIET_PLAN } from '../config/diet';
+import { GYM_PLAN } from '../config/gym';
 import { getBrasiliaDayName } from '../utils/time';
 
 export class MenuController {
@@ -29,6 +30,7 @@ export class MenuController {
       if (cleanText === '/agua') return this.showWater(msg);
       if (cleanText === '/semana') return this.showWeekly(msg);
       if (cleanText === '/cardapio') return this.showDiet(msg.chat.id);
+      if (cleanText === '/ficha') return this.showGym(msg.chat.id);
     };
 
     this.bot.on('message', async (msg) => {
@@ -119,6 +121,9 @@ export class MenuController {
     rows.push([
       { text: '📊 Semana', callback_data: 'weekly_summary' },
       { text: '🍽️ Cardápio', callback_data: 'show_diet' },
+      { text: '🏋️ Ficha', callback_data: 'show_gym' }
+    ]);
+    rows.push([
       { text: '🚀 Motivar', callback_data: 'get_motivation' }
     ]);
 
@@ -240,6 +245,28 @@ Envie "treinei", "malhei" ou "fui na academia" para registrar
     report += `🍽️ <b>Almoço:</b>\n${diet.almoco}\n\n`;
     report += `🌙 <b>Jantar:</b>\n${diet.jantar}\n\n`;
     report += `<i>Foca no objetivo, Lenda! 💪</i>`;
+
+    await this.bot.sendMessage(chatId, report, { parse_mode: 'HTML' });
+  }
+
+  public async showGym(chatId: number) {
+    const dayName = getBrasiliaDayName();
+    const day = GYM_PLAN[dayName] || GYM_PLAN['segunda-feira'];
+
+    let report = `${day.emoji} <b>Ficha de Hoje — ${day.muscleGroup}</b>\n`;
+    report += `<i>${day.focus}</i>\n\n`;
+
+    if (day.rest) {
+      report += `😴 Hoje é dia de recuperação! Seu corpo cresce no descanso.\n\n`;
+    }
+
+    for (const ex of day.exercises) {
+      report += `• <b>${ex.name}</b> — ${ex.sets}\n`;
+    }
+
+    if (!day.rest) {
+      report += `\n<i>Vai com tudo, Lenda! 🔥</i>`;
+    }
 
     await this.bot.sendMessage(chatId, report, { parse_mode: 'HTML' });
   }

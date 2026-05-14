@@ -61,6 +61,10 @@ export class HabitsController {
       } else if (data === 'show_diet') {
         await this.handleShowDiet(query, chatId);
         handled = true;
+      } else if (data === 'show_gym') {
+        await this.bot.answerCallbackQuery(query.id);
+        await this.menuController.showGym(chatId);
+        handled = true;
       } else if (data.startsWith('meal_done_')) {
         await this.handleMealDone(query, userId, chatId);
         handled = true;

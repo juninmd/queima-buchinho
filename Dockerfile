@@ -16,7 +16,7 @@ FROM node:24-alpine
 WORKDIR /app
 
 # Instalar Python e edge-tts
-RUN apk add --no-cache python3 py3-pip && \
+RUN apk add --no-cache python3 py3-pip curl && \
     pip install edge-tts --break-system-packages
 
 RUN npm install -g pnpm
@@ -25,5 +25,9 @@ RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/assets ./assets
 RUN mkdir -p assets data && echo "[]" > data/workout-history.json
+
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -fsS http://localhost:8080/health || exit 1
 
 CMD ["pnpm", "start"]

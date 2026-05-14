@@ -106,8 +106,20 @@ Regras de tom (SIGA ESTRITAMENTE):
     }
 
     public async getHabitResponse(habitKey: string): Promise<MikaResponse | null> {
+        const HABIT_CONTEXT: Record<string, string> = {
+            treino: 'treino de força na academia',
+            cardio: 'exercício cardiovascular',
+            alongamento: 'flexibilidade e mobilidade',
+            leitura: 'leitura e desenvolvimento intelectual',
+            meditacao: 'saúde mental e foco',
+            suplemento: 'suplementação e nutrição',
+            cafe: 'café da manhã nutritivo',
+            almoco: 'almoço dentro da dieta',
+            jantar: 'jantar equilibrado',
+        };
+        const context = HABIT_CONTEXT[habitKey] || habitKey;
         return this.generateDynamicResponse(
-            `O Mestre marcou o hábito "${habitKey}". Reage de forma natural — pode ser um "boa" seco ou uma piada leve.`
+            `O Mestre acabou de marcar "${context}". Reage como amiga — pode ser um "boa" seco, um elogio de dois segundos, ou uma piada leve sobre aquele hábito específico.`
         );
     }
 
@@ -117,8 +129,20 @@ Regras de tom (SIGA ESTRITAMENTE):
         );
     }
 
-    public async getDailyAuditResponse(summary: any): Promise<MikaResponse | null> {
-        const prompt = `Resumo do dia do Mestre — treinou: ${summary.trained}, água: ${summary.water}ml, peso: ${summary.weight}kg, gordura: ${summary.body_fat}%. Comenta o dia todo de uma vez, como amiga fazendo um balanço real.`;
+    public async getDailyAuditResponse(summary: {
+        trained: boolean;
+        water?: number;
+        weight?: number | null;
+        body_fat?: number | null;
+        streak?: number;
+        habitsCompleted?: number;
+        habitsTotal?: number;
+    }): Promise<MikaResponse | null> {
+        const streakInfo = summary.streak ? `streak de ${summary.streak} dias` : 'sem streak ativo';
+        const habitsInfo = summary.habitsCompleted !== undefined
+            ? `${summary.habitsCompleted}/${summary.habitsTotal} hábitos feitos`
+            : 'hábitos não informados';
+        const prompt = `Balanço do dia do Mestre: treinou=${summary.trained}, água=${summary.water ?? 0}ml, ${habitsInfo}, ${streakInfo}${summary.weight ? `, peso=${summary.weight}kg` : ''}. Faz um balanço honesto em 1-2 frases — zoa se foi fraco, elogia se foi consistente.`;
         return this.generateDynamicResponse(prompt);
     }
 }

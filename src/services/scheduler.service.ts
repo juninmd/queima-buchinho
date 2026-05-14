@@ -8,6 +8,7 @@ import { redisService } from './redis.service';
 import { ttsService } from './tts.service';
 import { myInstantsService } from './myinstants.service';
 import { DIET_PLAN } from '../config/diet';
+import { GYM_PLAN } from '../config/gym';
 import { HABIT_MAP } from '../config/habits';
 import { getBrasiliaDayName } from '../utils/time';
 import { logger } from '../utils/logger';
@@ -244,6 +245,40 @@ export class SchedulerService {
             } catch (error) {
                 logger.error('❌ Erro ao enviar verificação de hábitos:', error);
             }
+        });
+    }
+
+    public async sendGymReminder() {
+        await this.withLock('lock:gym_reminder', async () => {
+            const chatId = this.getChatId();
+            if (!chatId) return;
+
+            const dayName = getBrasiliaDayName();
+            const day = GYM_PLAN[dayName] || GYM_PLAN['segunda-feira'];
+
+            logger.info(`🏋️ Enviando ficha de treino de ${dayName}...`);
+
+            if (day.rest) {
+                await this.bot.sendMessage(chatId,
+                    `${day.emoji} <b>Hoje é dia de descanso, Lenda!</b>\n\nRecuperação é parte do treino. Descansa bem e volta mais forte amanhã. 💜`,
+                    { parse_mode: 'HTML' }
+                );
+                return;
+            }
+
+            let msg = `${day.emoji} <b>FICHA DE HOJE — ${day.muscleGroup.toUpperCase()}</b>\n`;
+            msg += `<i>${day.focus}</i>\n`;
+            msg += `──────────────────────\n`;
+            for (const ex of day.exercises) {
+                msg += `• <b>${escapeHtml(ex.name)}</b> — ${ex.sets}\n`;
+            }
+            msg += `──────────────────────\n`;
+            msg += `<i>Vai com tudo, Majestade! 🔥</i>`;
+
+            await this.bot.sendMessage(chatId, msg, {
+                parse_mode: 'HTML',
+                reply_markup: { inline_keyboard: [[TRAIN_BTN]] }
+            });
         });
     }
 

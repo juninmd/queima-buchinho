@@ -129,5 +129,6 @@ async function runReminder(scheduler: SchedulerService, mode: string) {
   else if (m === 'water') await scheduler.sendWaterReminder();
   else if (m === 'habits_check') await scheduler.sendHabitsCheckReminder();
   else if (m === 'daily_audit') await scheduler.runDailyMikaAudit();
+  else if (m === 'gym') await scheduler.sendGymReminder();
   else if (m.startsWith('food_')) await scheduler.sendFoodReminder(m.replace('food_', '') as any);
 }

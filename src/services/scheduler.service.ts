@@ -87,7 +87,7 @@ export class SchedulerService {
 
             if (trained) {
                 logger.info('✅ Usuário treinou hoje!');
-                workoutService.logWorkout(chatId, true, trainingMsgText);
+                await workoutService.logWorkout(chatId, true, trainingMsgText);
                 await this.sendWithAudio(chatId, await memeService.getCongratsMessage());
                 return;
             }
@@ -290,12 +290,19 @@ export class SchedulerService {
             logger.info('🎤 Iniciando auditoria diária da Mika...');
             try {
                 // 1. Coletar dados do dia
-                const { trained } = await workoutService.checkDailyMessages(this.bot, chatId);
-                const summary = await metricsService.getDailySummary(chatId);
-                
+                const [{ trained }, summary, streak, habitsCount] = await Promise.all([
+                    workoutService.checkDailyMessages(this.bot, chatId),
+                    metricsService.getDailySummary(chatId),
+                    workoutService.getStreak(chatId),
+                    habitsService.getCompletedCount(chatId),
+                ]);
+
                 const auditContext = {
                     trained,
-                    ...summary
+                    ...summary,
+                    streak,
+                    habitsCompleted: habitsCount.completed,
+                    habitsTotal: habitsCount.total,
                 };
 
                 // 2. Gerar resposta da Mika

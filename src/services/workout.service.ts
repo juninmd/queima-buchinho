@@ -3,6 +3,7 @@ import { getBrasiliaDayStart, getBrasiliaDateString } from '../utils/time';
 import { WORKOUT_KEYWORDS } from '../config/constants';
 import { query } from '../config/database';
 import { logger } from '../utils/logger';
+import { DatabaseError, toError } from '../utils/errors';
 
 export class WorkoutService {
     public async checkDailyMessages(bot: TelegramBot, targetChatId?: number): Promise<{ trained: boolean; message?: TelegramBot.Message }> {
@@ -31,8 +32,8 @@ export class WorkoutService {
             }
 
             return { trained: !!trainedMessage, message: trainedMessage };
-        } catch (error) {
-            logger.error('Erro ao verificar mensagens:', error);
+        } catch (e) {
+            logger.error('Erro ao verificar mensagens:', new DatabaseError(toError(e).message));
             return { trained: false };
         }
     }
@@ -77,8 +78,8 @@ export class WorkoutService {
                 [userId, today, trained, userMessage ?? null]
             );
             logger.info(`📝 Treino registrado: user=${userId} data=${today} trained=${trained}`);
-        } catch (error) {
-            logger.error('Erro ao salvar treino:', error);
+        } catch (e) {
+            logger.error('Erro ao salvar treino:', new DatabaseError(toError(e).message));
         }
     }
 
@@ -89,8 +90,8 @@ export class WorkoutService {
                 'DELETE FROM workout_logs WHERE user_id = $1 AND brasilia_date = $2',
                 [userId, today]
             );
-        } catch (error) {
-            logger.error('Erro ao resetar treino:', error);
+        } catch (e) {
+            logger.error('Erro ao resetar treino:', new DatabaseError(toError(e).message));
         }
     }
 
@@ -122,8 +123,8 @@ export class WorkoutService {
                 }
             }
             return streak;
-        } catch (error) {
-            logger.error('Erro ao calcular streak:', error);
+        } catch (e) {
+            logger.error('Erro ao calcular streak:', new DatabaseError(toError(e).message));
             return 0;
         }
     }

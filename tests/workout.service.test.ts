@@ -1,16 +1,14 @@
 import { workoutService } from '../src/services/workout.service';
-import { pool } from '../src/config/database';
+import { query } from '../src/config/database';
 import TelegramBot from 'node-telegram-bot-api';
 
-// Mock database pool
 jest.mock('../src/config/database', () => ({
-    pool: {
-        query: jest.fn()
-    }
+    query: jest.fn(),
+    pool: { end: jest.fn() },
 }));
 
 describe('WorkoutService', () => {
-    const mockQuery = pool.query as jest.Mock;
+    const mockQuery = query as jest.Mock;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -131,7 +129,7 @@ describe('WorkoutService', () => {
             
             await workoutService.logWorkout(123, true);
             
-            expect(consoleSpy).toHaveBeenCalledWith('Erro ao salvar treino:', expect.any(Error));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('salvar treino'));
             consoleSpy.mockRestore();
         });
     });
@@ -154,7 +152,7 @@ describe('WorkoutService', () => {
             
             await workoutService.resetWorkout(123);
             
-            expect(consoleSpy).toHaveBeenCalledWith('Erro ao resetar treino:', expect.any(Error));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('resetar treino'));
             consoleSpy.mockRestore();
         });
     });

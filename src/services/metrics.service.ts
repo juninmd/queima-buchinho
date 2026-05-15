@@ -1,4 +1,4 @@
-import { pool } from '../config/database';
+import { query } from '../config/database';
 import { getBrasiliaDateString } from '../utils/time';
 import { redisService } from './redis.service';
 import { logger } from '../utils/logger';
@@ -23,7 +23,7 @@ export class MetricsService {
     public async logMetric(userId: number, type: MetricType, value: number, unit?: string): Promise<void> {
         try {
             const today = getBrasiliaDateString();
-            await pool.query(
+            await query(
                 `INSERT INTO user_metrics (user_id, type, value, unit, brasilia_date)
                  VALUES ($1, $2, $3, $4, $5)`,
                 [userId, type, value, unit ?? null, today]
@@ -37,7 +37,7 @@ export class MetricsService {
     public async getTodaySum(userId: number, type: MetricType): Promise<number> {
         try {
             const today = getBrasiliaDateString();
-            const { rows } = await pool.query(
+            const { rows } = await query(
                 `SELECT SUM(value) as total 
                  FROM user_metrics 
                  WHERE user_id = $1 AND type = $2 AND brasilia_date = $3`,
@@ -52,7 +52,7 @@ export class MetricsService {
 
     public async getLatestValue(userId: number, type: MetricType): Promise<number | null> {
         try {
-            const { rows } = await pool.query(
+            const { rows } = await query(
                 `SELECT value FROM user_metrics 
                  WHERE user_id = $1 AND type = $2 
                  ORDER BY created_at DESC LIMIT 1`,
@@ -68,7 +68,7 @@ export class MetricsService {
     public async getDailySummary(userId: number): Promise<DailySummary | null> {
         try {
             const today = getBrasiliaDateString();
-            const { rows } = await pool.query(
+            const { rows } = await query<{ type: string; total: string }>(
                 `SELECT type, SUM(value) as total
                  FROM user_metrics
                  WHERE user_id = $1 AND brasilia_date = $2
@@ -77,7 +77,7 @@ export class MetricsService {
             );
 
             const metrics: Record<string, number> = {};
-            rows.forEach((r: { type: string; total: string }) => { metrics[r.type] = parseFloat(r.total); });
+            rows.forEach((r) => { metrics[r.type] = parseFloat(r.total); });
 
             const [height, muscle, fat] = await Promise.all([
                 this.getLatestValue(userId, 'height'),
@@ -104,7 +104,7 @@ export class MetricsService {
     
     public async getWeightDiffFromStart(userId: number): Promise<number> {
         try {
-            const { rows } = await pool.query(
+            const { rows } = await query(
                 `SELECT value FROM user_metrics 
                  WHERE user_id = $1 AND type = 'weight' 
                  ORDER BY created_at ASC`,
@@ -153,14 +153,16 @@ export class MetricsService {
                       AND CAST(brasilia_date AS DATE) < date_trunc('week', CURRENT_DATE)`
             };
 
+            type MetricRow = { type: string; total: string };
+            type CountRow = { total: string };
             const [currMet, prevMet, currWork, prevWork] = await Promise.all([
-                pool.query(queries.currentMetrics, [userId]),
-                pool.query(queries.previousMetrics, [userId]),
-                pool.query(queries.currentWorkouts, [userId]),
-                pool.query(queries.previousWorkouts, [userId])
+                query<MetricRow>(queries.currentMetrics, [userId]),
+                query<MetricRow>(queries.previousMetrics, [userId]),
+                query<CountRow>(queries.currentWorkouts, [userId]),
+                query<CountRow>(queries.previousWorkouts, [userId])
             ]);
 
-            const mapMetrics = (rows: { type: string; total: string }[]): WeekMetrics => {
+            const mapMetrics = (rows: MetricRow[]): WeekMetrics => {
                 const map: WeekMetrics = { water: 0, weight: 0 };
                 rows.forEach(r => {
                     if (r.type === 'water') map.water = parseFloat(r.total);

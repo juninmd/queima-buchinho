@@ -219,10 +219,146 @@ describe('BotController', () => {
 
         it('should handle channel_post for commands', async () => {
             const channelHandlers = (bot.on as jest.Mock).mock.calls.filter(c => c[0] === 'channel_post').map(c => c[1]);
-            // The second channel_post handler is setupCommands
             const channelHandler = channelHandlers[1];
             await channelHandler({ text: '/status', chat: { id: 123 }, from: { first_name: 'User' } });
             expect(telegramUtils.sendAudioMessage).toHaveBeenCalled();
+        });
+
+        it('should handle /streak with 0 streak', async () => {
+            (workoutService.getStreak as jest.Mock).mockResolvedValue(0);
+            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: 'Começa hoje!' });
+            await commandHandler({ text: '/streak', chat: { id: 123 }, from: { id: 456 } });
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), 'Começa hoje!');
+        });
+
+        it('should handle /streak with 1 streak', async () => {
+            (workoutService.getStreak as jest.Mock).mockResolvedValue(1);
+            await commandHandler({ text: '/streak', chat: { id: 123 }, from: { id: 456 } });
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), expect.stringContaining('dia 2'));
+        });
+
+        it('should handle /streak with high streak', async () => {
+            (workoutService.getStreak as jest.Mock).mockResolvedValue(10);
+            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: '10 dias incrível!' });
+            await commandHandler({ text: '/streak', chat: { id: 123 }, from: { id: 456 } });
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), '10 dias incrível!');
+        });
+
+        it('should handle /streak with null ollama fallback', async () => {
+            (workoutService.getStreak as jest.Mock).mockResolvedValue(0);
+            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue(null);
+            await commandHandler({ text: '/streak', chat: { id: 123 }, from: { id: 456 } });
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), expect.stringContaining('Zero dias'));
+        });
+
+        it('should handle /cardio', async () => {
+            (ollamaService.getHabitResponse as jest.Mock).mockResolvedValue({ message: 'Cardio feito!' });
+            await commandHandler({ text: '/cardio', chat: { id: 123 }, from: { id: 456 } });
+            expect(habitsService.markHabit).toHaveBeenCalledWith(456, 'cardio', true);
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), 'Cardio feito!');
+        });
+
+        it('should handle /relatorio with cooldown', async () => {
+            // First call sets timestamp
+            (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: true });
+            (metricsService.getDailySummary as jest.Mock).mockResolvedValue({ water: 2000, weight: 80 });
+            (habitsService.getCompletedCount as jest.Mock).mockResolvedValue({ completed: 5, total: 9 });
+            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: 'Relatório!' });
+            await commandHandler({ text: '/relatorio', chat: { id: 999 }, from: { id: 456 } });
+            // Second call within cooldown
+            await commandHandler({ text: '/relatorio', chat: { id: 999 }, from: { id: 456 } });
+            expect(bot.sendMessage).toHaveBeenCalledWith(999, expect.stringContaining('Calma'));
+        });
+
+        it('should handle /meme random', async () => {
+            (mediaService.sendGif as jest.Mock).mockResolvedValue('http://example.com/meme.gif');
+            await commandHandler({ text: '/meme', chat: { id: 123 }, from: { first_name: 'User' } });
+            expect(telegramUtils.sendGifMessage).toHaveBeenCalled();
+        });
+
+        it('should handle /meme with query', async () => {
+            (mediaService.searchGifs as jest.Mock).mockResolvedValue([{ url: 'http://example.com/meme.gif' }]);
+            await commandHandler({ text: '/meme fitness', chat: { id: 123 }, from: { first_name: 'User' } });
+            expect(telegramUtils.sendGifMessage).toHaveBeenCalled();
+        });
+
+        it('should handle /meme with query - no results', async () => {
+            (mediaService.searchGifs as jest.Mock).mockResolvedValue([]);
+            await commandHandler({ text: '/meme noresult', chat: { id: 123 }, from: { first_name: 'User' } });
+            expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('Não achei'));
+        });
+
+        it('should handle /sticker random', async () => {
+            (mediaService.sendSticker as jest.Mock).mockResolvedValue('http://example.com/sticker.webp');
+            await commandHandler({ text: '/sticker', chat: { id: 123 }, from: { first_name: 'User' } });
+            expect(telegramUtils.sendStickerMessage).toHaveBeenCalled();
+        });
+
+        it('should handle /sticker with query', async () => {
+            (mediaService.searchStickers as jest.Mock).mockResolvedValue([{ url: 'http://example.com/s.webp' }]);
+            await commandHandler({ text: '/sticker fire', chat: { id: 123 }, from: { first_name: 'User' } });
+            expect(telegramUtils.sendStickerMessage).toHaveBeenCalled();
+        });
+
+        it('should handle /gif with query', async () => {
+            (mediaService.searchGifs as jest.Mock).mockResolvedValue([{ url: 'http://example.com/anim.gif' }]);
+            await commandHandler({ text: '/gif workout', chat: { id: 123 }, from: { first_name: 'User' } });
+            expect(telegramUtils.sendGifMessage).toHaveBeenCalled();
+        });
+
+        it('should handle /gif with no results', async () => {
+            (mediaService.searchGifs as jest.Mock).mockResolvedValue([]);
+            await commandHandler({ text: '/gif noresultxyz', chat: { id: 123 }, from: { first_name: 'User' } });
+            expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('Não achei'));
+        });
+
+        it('should handle /peso with out-of-range value', async () => {
+            await commandHandler({ text: '/peso 999', chat: { id: 123 }, from: { id: 456, first_name: 'User' } });
+            expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('Valor inválido'));
+        });
+
+        it('should handle /gordura metric', async () => {
+            (metricsService.logMetric as jest.Mock).mockResolvedValue(undefined);
+            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: 'Gordura ok!', audioSearchTerm: null });
+            await commandHandler({ text: '/gordura 20', chat: { id: 123 }, from: { id: 456, first_name: 'User' } });
+            expect(metricsService.logMetric).toHaveBeenCalledWith(456, 'body_fat', 20, '%');
+        });
+
+        it('should handle /musculo metric', async () => {
+            (metricsService.logMetric as jest.Mock).mockResolvedValue(undefined);
+            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue(null);
+            await commandHandler({ text: '/musculo 40', chat: { id: 123 }, from: { id: 456, first_name: 'User' } });
+            expect(metricsService.logMetric).toHaveBeenCalledWith(456, 'muscle_mass', 40, '%');
+        });
+
+        it('should handle /altura metric', async () => {
+            (metricsService.logMetric as jest.Mock).mockResolvedValue(undefined);
+            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: 'Ok!', audioSearchTerm: null });
+            await commandHandler({ text: '/altura 175', chat: { id: 123 }, from: { id: 456, first_name: 'User' } });
+            expect(metricsService.logMetric).toHaveBeenCalledWith(456, 'height', 175, 'cm');
+        });
+
+        it('should handle /passos metric', async () => {
+            (metricsService.logMetric as jest.Mock).mockResolvedValue(undefined);
+            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue(null);
+            await commandHandler({ text: '/passos 8000', chat: { id: 123 }, from: { id: 456, first_name: 'User' } });
+            expect(metricsService.logMetric).toHaveBeenCalledWith(456, 'steps', 8000, 'passos');
+        });
+
+        it('should handle cardio keyword in message listener', async () => {
+            const listeners = (bot.on as jest.Mock).mock.calls.filter(c => c[0] === 'message').map(c => c[1]);
+            const msgHandler = listeners[0];
+            (ollamaService.getHabitResponse as jest.Mock).mockResolvedValue({ message: 'Cardio!' });
+            await msgHandler({ text: 'fiz cardio hoje', from: { id: 123 }, chat: { id: 456 } });
+            expect(habitsService.markHabit).toHaveBeenCalledWith(123, 'cardio', true);
+        });
+
+        it('should skip workout log if already logged today', async () => {
+            const listeners = (bot.on as jest.Mock).mock.calls.filter(c => c[0] === 'message').map(c => c[1]);
+            const msgHandler = listeners[0];
+            (workoutService.hasLoggedToday as jest.Mock).mockResolvedValue(true);
+            await msgHandler({ text: 'treinei', from: { id: 123 }, chat: { id: 456 } });
+            expect(bot.sendMessage).toHaveBeenCalledWith(456, expect.stringContaining('Já registrei'));
         });
     });
 });

@@ -2,6 +2,7 @@ import { query } from '../config/database';
 import { getBrasiliaDateString } from '../utils/time';
 import { redisService } from './redis.service';
 import { logger } from '../utils/logger';
+import { DatabaseError, toError } from '../utils/errors';
 
 export type MetricType = 'water' | 'weight' | 'steps' | 'sleep' | 'height' | 'muscle_mass' | 'body_fat';
 
@@ -29,8 +30,8 @@ export class MetricsService {
                 [userId, type, value, unit ?? null, today]
             );
             logger.info(`📊 Métrica registrada: user=${userId} tipo=${type} valor=${value}${unit ?? ''}`);
-        } catch (error) {
-            logger.error('Erro ao salvar métrica:', error);
+        } catch (e) {
+            logger.error('Erro ao salvar métrica:', new DatabaseError(toError(e).message));
         }
     }
 
@@ -44,8 +45,8 @@ export class MetricsService {
                 [userId, type, today]
             );
             return parseFloat(rows[0].total) || 0;
-        } catch (error) {
-            logger.error(`Erro ao buscar soma de ${type}:`, error);
+        } catch (e) {
+            logger.error(`Erro ao buscar soma de ${type}:`, new DatabaseError(toError(e).message));
             return 0;
         }
     }
@@ -59,8 +60,8 @@ export class MetricsService {
                 [userId, type]
             );
             return rows[0] ? parseFloat(rows[0].value) : null;
-        } catch (error) {
-            logger.error(`Erro ao buscar último valor de ${type}:`, error);
+        } catch (e) {
+            logger.error(`Erro ao buscar último valor de ${type}:`, new DatabaseError(toError(e).message));
             return null;
         }
     }
@@ -92,8 +93,8 @@ export class MetricsService {
                 muscle_mass: muscle,
                 body_fat: fat
             };
-        } catch (error) {
-            logger.error('Erro ao gerar resumo diário:', error);
+        } catch (e) {
+            logger.error('Erro ao gerar resumo diário:', new DatabaseError(toError(e).message));
             return null;
         }
     }
@@ -114,8 +115,8 @@ export class MetricsService {
             const firstWeight = parseFloat(rows[0].value);
             const lastWeight = parseFloat(rows[rows.length - 1].value);
             return lastWeight - firstWeight;
-        } catch (error) {
-            logger.error('Erro ao calcular diferença de peso:', error);
+        } catch (e) {
+            logger.error('Erro ao calcular diferença de peso:', new DatabaseError(toError(e).message));
             return 0;
         }
     }
@@ -184,8 +185,8 @@ export class MetricsService {
 
             await redisService.set(cacheKey, JSON.stringify(result), 300);
             return result;
-        } catch (error) {
-            logger.error('Erro ao gerar resumo semanal:', error);
+        } catch (e) {
+            logger.error('Erro ao gerar resumo semanal:', new DatabaseError(toError(e).message));
             return null;
         }
     }

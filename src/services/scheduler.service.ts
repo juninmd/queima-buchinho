@@ -25,22 +25,39 @@ const WATER_ROW: TelegramBot.InlineKeyboardButton[] = [
 
 export class SchedulerService {
     private bot: TelegramBot;
+    private readonly memoryLocks = new Map<string, ReturnType<typeof setTimeout>>();
     constructor(bot: TelegramBot) { this.bot = bot; }
 
     private async withLock(lockKey: string, task: () => Promise<void>, ttlSeconds = 600) {
-        const lock = await redisService.get(lockKey);
-        if (lock) {
-            logger.warn(`[Scheduler] Job ${lockKey} já está em execução. Pulando.`);
-            return;
-        }
-
-        try {
-            await redisService.set(lockKey, 'locked', ttlSeconds);
-            await task();
-        } catch (error) {
-            logger.error(`[Scheduler] Erro ao executar ${lockKey}:`, error);
-        } finally {
-            await redisService.del(lockKey);
+        if (redisService.isConnected()) {
+            const lock = await redisService.get(lockKey);
+            if (lock) {
+                logger.warn(`[Scheduler] Job ${lockKey} já está em execução (Redis). Pulando.`);
+                return;
+            }
+            try {
+                await redisService.set(lockKey, 'locked', ttlSeconds);
+                await task();
+            } catch (error) {
+                logger.error(`[Scheduler] Erro ao executar ${lockKey}:`, error);
+            } finally {
+                await redisService.del(lockKey);
+            }
+        } else {
+            if (this.memoryLocks.has(lockKey)) {
+                logger.warn(`[Scheduler] Job ${lockKey} já está em execução (memória). Pulando.`);
+                return;
+            }
+            const timer = setTimeout(() => this.memoryLocks.delete(lockKey), ttlSeconds * 1000);
+            this.memoryLocks.set(lockKey, timer);
+            try {
+                await task();
+            } catch (error) {
+                logger.error(`[Scheduler] Erro ao executar ${lockKey}:`, error);
+            } finally {
+                clearTimeout(this.memoryLocks.get(lockKey));
+                this.memoryLocks.delete(lockKey);
+            }
         }
     }
 

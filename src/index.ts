@@ -23,9 +23,14 @@ const healthServer = new HealthServer(healthPort);
 healthServer.start();
 
 let bot: TelegramBot;
+let botMode: 'polling' | 'webhook' | 'none' = 'none';
 
 async function shutdown(signal: string) {
   logger.info(`🛑 Recebido ${signal}. Shutdown gracioso...`);
+  try {
+    if (botMode === 'polling') await bot?.stopPolling();
+    else if (botMode === 'webhook') await (bot as any)?.closeWebHook?.();
+  } catch { /* ignora erros no shutdown do bot */ }
   await healthServer.close();
   await redisService.disconnect();
   await pool.end();
@@ -47,6 +52,7 @@ if (mode === 'listener') {
         bot = new TelegramBot(token, { webHook: { port } } as any);
         await bot.deleteWebHook();
         await bot.setWebHook(`${webhookUrl}/bot${token}`, { allowed_updates: allowedUpdates } as any);
+        botMode = 'webhook';
         logger.info(`🚀 Modo WEBHOOK ativo: ${webhookUrl}`);
       } catch (err: any) {
         logger.error(`⚠️ Falha ao configurar Webhook: ${err.message || err}.`);
@@ -60,7 +66,8 @@ if (mode === 'listener') {
               params: { allowed_updates: allowedUpdates } 
             } 
           } as any);
-          await bot.deleteWebHook().catch(() => {}); 
+          await bot.deleteWebHook().catch(() => {});
+          botMode = 'polling';
           logger.info(`🚀 Modo POLLING fallback ativo!`);
         } catch (fallbackErr: any) {
           logger.error(`❌ Falha crítica ao iniciar modo POLLING: ${fallbackErr.message}`);
@@ -75,6 +82,7 @@ if (mode === 'listener') {
         } 
       } as any);
       await bot.deleteWebHook();
+      botMode = 'polling';
       logger.info(`🚀 Modo POLLING ativo (intervalo 1s). Updates permitidos: ${allowedUpdates.join(', ')}`);
     }
     

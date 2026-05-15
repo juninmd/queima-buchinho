@@ -3,6 +3,7 @@ import { redisService } from './redis.service';
 import { getBrasiliaDateString } from '../utils/time';
 import { HABITS } from '../config/habits';
 import { logger } from '../utils/logger';
+import { DatabaseError, toError } from '../utils/errors';
 
 const CACHE_TTL = 86400;
 
@@ -33,8 +34,8 @@ export class HabitsService {
 
       await redisService.set(this.cacheKey(userId, today), JSON.stringify(status), CACHE_TTL);
       return status;
-    } catch (error) {
-      logger.error('Erro ao buscar status dos hábitos:', error);
+    } catch (e) {
+      logger.error('Erro ao buscar status dos hábitos:', new DatabaseError(toError(e).message));
       const status: HabitStatus = {};
       HABITS.forEach(h => status[h.key] = false);
       return status;
@@ -55,8 +56,8 @@ export class HabitsService {
         [userId, today, habitKey, newValue, newValue ? new Date() : null]
       );
       logger.info(`📋 Hábito ${habitKey} = ${newValue} user=${userId}`);
-    } catch (error) {
-      logger.error(`Erro ao alternar hábito ${habitKey}:`, error);
+    } catch (e) {
+      logger.error(`Erro ao alternar hábito ${habitKey}:`, new DatabaseError(toError(e).message));
     }
 
     await redisService.del(this.cacheKey(userId, today));
@@ -73,8 +74,8 @@ export class HabitsService {
          DO UPDATE SET completed = $4, completed_at = $5`,
         [userId, today, habitKey, completed, completed ? new Date() : null]
       );
-    } catch (error) {
-      logger.error(`Erro ao marcar hábito ${habitKey}:`, error);
+    } catch (e) {
+      logger.error(`Erro ao marcar hábito ${habitKey}:`, new DatabaseError(toError(e).message));
     }
     await redisService.del(this.cacheKey(userId, today));
   }

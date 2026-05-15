@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { logger } from '../utils/logger';
+import { ExternalServiceError, toError } from '../utils/errors';
 
 export interface InstantButton {
     title: string;
@@ -40,8 +41,9 @@ export class MyInstantsService {
             });
 
             return buttons.slice(0, 5);
-        } catch (error) {
-            logger.error('Error searching MyInstants:', error);
+        } catch (e) {
+            const err = toError(e);
+            logger.error('Error searching MyInstants:', new ExternalServiceError('MyInstants', err.message));
             return [];
         }
     }

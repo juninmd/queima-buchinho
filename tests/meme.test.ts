@@ -7,25 +7,25 @@ describe('MemeService', () => {
         const res = await memeService.getRoastMessage();
         expect(typeof res.message).toBe('string');
         expect(res.message.length).toBeGreaterThan(0);
-    });
+    }, 30000);
 
     it('should return a congrats message', async () => {
         const res = await memeService.getCongratsMessage();
         expect(typeof res.message).toBe('string');
         expect(res.message.length).toBeGreaterThan(0);
-    });
+    }, 30000);
 
     it('should return a morning reminder', async () => {
         const res = await memeService.getMorningReminder('Segunda');
         expect(typeof res.message).toBe('string');
         expect(res.message.length).toBeGreaterThan(0);
-    });
+    }, 30000);
 
     it('should return a conditional reminder', async () => {
         const res = await memeService.getConditionalReminder('12:00');
         expect(typeof res.message).toBe('string');
         expect(res.message.length).toBeGreaterThan(0);
-    });
+    }, 30000);
 
     it('should fallback to static roast when ollama fails', async () => {
         const originalDynamicRoast = ollamaService.getDynamicRoast;

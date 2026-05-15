@@ -3,48 +3,44 @@ dotenv.config();
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
-/**
- * Escapes regex characters in a string.
- */
-function escapeRegExp(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/**
- * Masks the Telegram token in any string or object.
- */
-export function maskData(data: any): any {
+export function maskData(data: unknown): unknown {
   if (!TOKEN || TOKEN.length < 5) return data;
-
-  const tokenRegex = new RegExp(escapeRegExp(TOKEN), 'g');
-
-  if (typeof data === 'string') {
-    return data.replace(tokenRegex, '***[TOKEN_OCULTO]***');
-  }
-
+  const re = new RegExp(escapeRegExp(TOKEN), 'g');
+  if (typeof data === 'string') return data.replace(re, '***[TOKEN_OCULTO]***');
   if (typeof data === 'object' && data !== null) {
     try {
-        const json = JSON.stringify(data);
-        if (json.includes(TOKEN)) {
-          return JSON.parse(json.replace(tokenRegex, '***[TOKEN_OCULTO]***'));
-        }
-    } catch (e) {
-        // If circular structure or other JSON error, return as is (safest path for non-serializable objects)
-        return '[Unserializable Object - Masking Skipped]';
+      const json = JSON.stringify(data);
+      return json.includes(TOKEN)
+        ? JSON.parse(json.replace(re, '***[TOKEN_OCULTO]***'))
+        : data;
+    } catch {
+      return '[Unserializable Object]';
     }
   }
-
   return data;
 }
 
+type Level = 'info' | 'warn' | 'error';
+
+function log(level: Level, message: string, meta?: unknown): void {
+  const entry: Record<string, unknown> = {
+    time: new Date().toISOString(),
+    level,
+    msg: maskData(message),
+  };
+  if (meta !== undefined) entry['meta'] = maskData(meta);
+  const line = JSON.stringify(entry);
+  if (level === 'error') console.error(line);
+  else if (level === 'warn') console.warn(line);
+  else console.log(line);
+}
+
 export const logger = {
-  info: (message: string, ...args: any[]) => {
-    console.log(maskData(message), ...args.map(maskData));
-  },
-  warn: (message: string, ...args: any[]) => {
-    console.warn(maskData(message), ...args.map(maskData));
-  },
-  error: (message: string, ...args: any[]) => {
-    console.error(maskData(message), ...args.map(maskData));
-  }
+  info: (message: string, meta?: unknown) => log('info', message, meta),
+  warn: (message: string, meta?: unknown) => log('warn', message, meta),
+  error: (message: string, meta?: unknown) => log('error', message, meta),
 };

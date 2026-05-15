@@ -1,4 +1,4 @@
-import { pool } from '../config/database';
+import { query } from '../config/database';
 import { redisService } from './redis.service';
 import { getBrasiliaDateString } from '../utils/time';
 import { HABITS } from '../config/habits';
@@ -21,7 +21,7 @@ export class HabitsService {
     if (cached) return JSON.parse(cached);
 
     try {
-      const { rows } = await pool.query(
+      const { rows } = await query(
         `SELECT habit_key, completed FROM daily_habits
          WHERE user_id = $1 AND brasilia_date = $2`,
         [userId, today]
@@ -47,7 +47,7 @@ export class HabitsService {
     const newValue = !current[habitKey];
 
     try {
-      await pool.query(
+      await query(
         `INSERT INTO daily_habits (user_id, brasilia_date, habit_key, completed, completed_at)
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (user_id, brasilia_date, habit_key)
@@ -66,7 +66,7 @@ export class HabitsService {
   public async markHabit(userId: number, habitKey: string, completed: boolean): Promise<void> {
     const today = getBrasiliaDateString();
     try {
-      await pool.query(
+      await query(
         `INSERT INTO daily_habits (user_id, brasilia_date, habit_key, completed, completed_at)
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (user_id, brasilia_date, habit_key)

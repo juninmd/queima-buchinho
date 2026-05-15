@@ -1,13 +1,12 @@
-import { pool } from '../../src/config/database';
+import { query } from '../../src/config/database';
 import { habitsService } from '../../src/services/habits.service';
 import { redisService } from '../../src/services/redis.service';
 import * as timeUtils from '../../src/utils/time';
 import { HABITS } from '../../src/config/habits';
 
 jest.mock('../../src/config/database', () => ({
-    pool: {
-        query: jest.fn(),
-    },
+    query: jest.fn(),
+    pool: { end: jest.fn() },
 }));
 
 jest.mock('../../src/services/redis.service', () => ({
@@ -37,12 +36,12 @@ describe('HabitsService', () => {
             const result = await habitsService.getStatus(userId);
 
             expect(result).toEqual(cachedStatus);
-            expect(pool.query).not.toHaveBeenCalled();
+            expect(query).not.toHaveBeenCalled();
         });
 
         it('should fetch status from DB and cache it if not cached', async () => {
             (redisService.get as jest.Mock).mockResolvedValue(null);
-            (pool.query as jest.Mock).mockResolvedValue({
+            (query as jest.Mock).mockResolvedValue({
                 rows: [{ habit_key: 'treino', completed: true }]
             });
 
@@ -59,7 +58,7 @@ describe('HabitsService', () => {
 
         it('should return default status on DB error', async () => {
             (redisService.get as jest.Mock).mockResolvedValue(null);
-            (pool.query as jest.Mock).mockRejectedValue(new Error('DB Error'));
+            (query as jest.Mock).mockRejectedValue(new Error('DB Error'));
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
             const result = await habitsService.getStatus(userId);
@@ -78,7 +77,7 @@ describe('HabitsService', () => {
             const result = await habitsService.toggleHabit(userId, 'treino');
 
             expect(result).toBe(true);
-            expect(pool.query).toHaveBeenCalledWith(
+            expect(query).toHaveBeenCalledWith(
                 expect.stringContaining('INSERT INTO daily_habits'),
                 expect.arrayContaining([userId, today, 'treino', true])
             );
@@ -93,7 +92,7 @@ describe('HabitsService', () => {
             const result = await habitsService.toggleHabit(userId, 'treino');
 
             expect(result).toBe(false);
-            expect(pool.query).toHaveBeenCalledWith(
+            expect(query).toHaveBeenCalledWith(
                 expect.stringContaining('INSERT INTO daily_habits'),
                 expect.arrayContaining([userId, today, 'treino', false])
             );
@@ -102,7 +101,7 @@ describe('HabitsService', () => {
 
         it('should handle error during toggle', async () => {
             (redisService.get as jest.Mock).mockResolvedValue(JSON.stringify({ treino: false }));
-            (pool.query as jest.Mock).mockRejectedValue(new Error('DB Error'));
+            (query as jest.Mock).mockRejectedValue(new Error('DB Error'));
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
             await habitsService.toggleHabit(userId, 'treino');
@@ -116,7 +115,7 @@ describe('HabitsService', () => {
         it('should mark habit as completed', async () => {
             await habitsService.markHabit(userId, 'treino', true);
 
-            expect(pool.query).toHaveBeenCalledWith(
+            expect(query).toHaveBeenCalledWith(
                 expect.stringContaining('INSERT INTO daily_habits'),
                 expect.arrayContaining([userId, today, 'treino', true])
             );
@@ -124,7 +123,7 @@ describe('HabitsService', () => {
         });
 
         it('should handle error during markHabit', async () => {
-            (pool.query as jest.Mock).mockRejectedValue(new Error('DB Error'));
+            (query as jest.Mock).mockRejectedValue(new Error('DB Error'));
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
             await habitsService.markHabit(userId, 'treino', true);

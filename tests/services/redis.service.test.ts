@@ -28,7 +28,7 @@ describe('RedisService', () => {
         delete process.env.REDIS_URL;
         const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
         redisService.connect();
-        expect(consoleSpy).toHaveBeenCalledWith('⚠️ REDIS_URL não definida, cache desabilitado');
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('REDIS_URL'));
         consoleSpy.mockRestore();
     });
 
@@ -42,24 +42,23 @@ describe('RedisService', () => {
     it('should log errors and connection', () => {
         const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
         const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-        
+
         redisService.connect();
-        
+
         const errorCallback = mockRedisInstance.on.mock.calls.find((call: any) => call[0] === 'error')[1];
         const connectCallback = mockRedisInstance.on.mock.calls.find((call: any) => call[0] === 'connect')[1];
-        
+
         errorCallback(new Error('test error'));
         connectCallback();
-        
-        expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Redis error:', expect.any(Error));
-        expect(consoleLogSpy).toHaveBeenCalledWith('✅ Redis conectado');
-        
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Redis error'));
+        expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Redis conectado'));
+
         consoleErrorSpy.mockRestore();
         consoleLogSpy.mockRestore();
     });
 
     it('should return null on get if not connected', async () => {
-        // Force client to null by not calling connect
         const result = await redisService.get('key');
         expect(result).toBeNull();
     });
@@ -78,7 +77,7 @@ describe('RedisService', () => {
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
         const result = await redisService.get('key');
         expect(result).toBeNull();
-        expect(consoleSpy).toHaveBeenCalledWith('Redis GET error:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('GET error'));
         consoleSpy.mockRestore();
     });
 
@@ -99,7 +98,7 @@ describe('RedisService', () => {
         mockRedisInstance.set.mockRejectedValue(new Error('set error'));
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
         await redisService.set('key', 'value');
-        expect(consoleSpy).toHaveBeenCalledWith('Redis SET error:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('SET error'));
         consoleSpy.mockRestore();
     });
 
@@ -114,7 +113,7 @@ describe('RedisService', () => {
         mockRedisInstance.del.mockRejectedValue(new Error('del error'));
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
         await redisService.del('key');
-        expect(consoleSpy).toHaveBeenCalledWith('Redis DEL error:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('DEL error'));
         consoleSpy.mockRestore();
     });
 

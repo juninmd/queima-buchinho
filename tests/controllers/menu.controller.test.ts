@@ -84,7 +84,7 @@ describe('MenuController', () => {
         handler({ text: '/menu', chat: { id: 123 }, from: { id: 456 } });
         await new Promise(r => setTimeout(r, 10));
         
-        expect(consoleSpy).toHaveBeenCalledWith('[MenuController] Erro no handleCommand:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('handleCommand'));
         consoleSpy.mockRestore();
     });
   });

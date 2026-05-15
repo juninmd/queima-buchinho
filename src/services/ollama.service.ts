@@ -2,6 +2,7 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { logger } from '../utils/logger';
+import { ExternalServiceError, toError } from '../utils/errors';
 
 const openrouter = createOpenRouter({
     apiKey: process.env.OPENROUTER_API_KEY
@@ -42,10 +43,10 @@ Regras de tom (SIGA ESTRITAMENTE):
             });
 
             return object;
-        } catch (error: any) {
-            logger.error(`❌ [AI SDK] Erro na geração:`, error.message || error);
-            // Se falhou por fetch, vamos tentar dar um log mais detalhado
-            if (error.cause) logger.error(`🔍 [Cause]:`, error.cause);
+        } catch (e) {
+            const err = toError(e);
+            const svcErr = new ExternalServiceError('OpenRouter', err.message, { cause: (e as any)?.cause });
+            logger.error(`❌ [AI SDK] Erro na geração:`, svcErr);
             return null;
         }
     }

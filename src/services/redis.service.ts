@@ -4,6 +4,10 @@ import { logger } from '../utils/logger';
 class RedisService {
   private client: Redis | null = null;
 
+  public isConnected(): boolean {
+    return this.client !== null;
+  }
+
   public connect(): void {
     const url = process.env.REDIS_URL;
     if (!url) {

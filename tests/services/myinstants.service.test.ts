@@ -46,7 +46,7 @@ describe('MyInstantsService', () => {
         const results = await myInstantsService.search('test');
 
         expect(results).toEqual([]);
-        expect(consoleSpy).toHaveBeenCalledWith('Error searching MyInstants:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('MyInstants'));
         consoleSpy.mockRestore();
     });
 

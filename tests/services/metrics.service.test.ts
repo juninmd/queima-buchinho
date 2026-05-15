@@ -1,14 +1,13 @@
 import { metricsService } from '../../src/services/metrics.service';
-import { pool } from '../../src/config/database';
+import { query } from '../../src/config/database';
 
 jest.mock('../../src/config/database', () => ({
-    pool: {
-        query: jest.fn()
-    }
+    query: jest.fn(),
+    pool: { end: jest.fn() },
 }));
 
 describe('MetricsService', () => {
-    const mockQuery = pool.query as jest.Mock;
+    const mockQuery = query as jest.Mock;
     const userId = 123456;
 
     beforeEach(() => {

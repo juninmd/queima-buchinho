@@ -39,7 +39,7 @@ describe('OllamaService', () => {
         const result = await ollamaService.generateDynamicResponse('test prompt');
 
         expect(result).toBeNull();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('❌ [AI SDK] Erro na geração:'), 'Ollama error');
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Erro na geração'));
         consoleSpy.mockRestore();
     });
 

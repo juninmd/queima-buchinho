@@ -16,6 +16,8 @@ const relatorioLastCall = new Map<number, number>();
 const RELATORIO_COOLDOWN_MS = 5 * 60 * 1000;
 
 export class BotController {
+    private readonly startTime = Math.floor(Date.now() / 1000);
+
     constructor(private bot: TelegramBot) { }
 
     public init() {
@@ -29,6 +31,7 @@ export class BotController {
             const text = msg.text || '';
             const userId = msg.from?.id || msg.sender_chat?.id; // Support for channels
             if (!userId || text.startsWith('/')) return;
+            if (msg.date < this.startTime) return; // ignore pending updates from before startup
 
             if (this.hasWorkoutKeyword(text)) {
                 logger.info(`✅ Evento em chat ${msg.chat.id} identificado como treino de ${userId}`);

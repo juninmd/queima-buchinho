@@ -39,37 +39,30 @@ describe('MenuController', () => {
       (metricsService.getTodaySum as jest.Mock).mockResolvedValue(0);
       (workoutService.getStreak as jest.Mock).mockResolvedValue(0);
 
-      // We need to wait for the async execution within the handler
       const msg = { text: '/menu', chat: { id: 123 }, from: { id: 456 } } as any;
-      messageHandler(msg);
-      await new Promise(r => setTimeout(r, 10));
+      await messageHandler(msg);
       expect(bot.sendMessage).toHaveBeenCalled();
 
       // Help
-      messageHandler({ text: '/help', chat: { id: 123 } });
-      await new Promise(r => setTimeout(r, 10));
+      await messageHandler({ text: '/help', chat: { id: 123 } });
       expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('Hábitos'), expect.any(Object));
 
       // Agua
-      messageHandler({ text: '/agua', chat: { id: 123 }, from: { id: 456 } });
-      await new Promise(r => setTimeout(r, 10));
+      await messageHandler({ text: '/agua', chat: { id: 123 }, from: { id: 456 } });
       expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('Consumo de Água'), expect.any(Object));
 
       // Semana
       (metricsService.getWeeklySummary as jest.Mock).mockResolvedValue({ current: { workouts: 0, metrics: { water: 0 } }, previous: { workouts: 0, metrics: { water: 0 } } });
       (ollamaService.getWeeklyReport as jest.Mock).mockResolvedValue({ message: 'Mandou bem!', audioSearchTerm: 'congrats' });
-      messageHandler({ text: '/semana', chat: { id: 123 }, from: { id: 456 } });
-      await new Promise(r => setTimeout(r, 10));
+      await messageHandler({ text: '/semana', chat: { id: 123 }, from: { id: 456 } });
       expect(bot.sendMessage).toHaveBeenCalled();
 
       // Channel post
-      channelPostHandler({ text: '/help', chat: { id: 123 } });
-      await new Promise(r => setTimeout(r, 10));
+      await channelPostHandler({ text: '/help', chat: { id: 123 } });
       expect(bot.sendMessage).toHaveBeenCalled();
 
       // Bot username mention
-      messageHandler({ text: '/menu@mybot', chat: { id: 123 }, from: { id: 456 } });
-      await new Promise(r => setTimeout(r, 10));
+      await messageHandler({ text: '/menu@mybot', chat: { id: 123 }, from: { id: 456 } });
       expect(bot.sendMessage).toHaveBeenCalled();
     });
 
@@ -81,8 +74,7 @@ describe('MenuController', () => {
         // Mock a failure in showMenu
         (habitsService.getStatus as jest.Mock).mockRejectedValue(new Error('Fail'));
         
-        handler({ text: '/menu', chat: { id: 123 }, from: { id: 456 } });
-        await new Promise(r => setTimeout(r, 10));
+        await handler({ text: '/menu', chat: { id: 123 }, from: { id: 456 } });
         
         expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('handleCommand'));
         consoleSpy.mockRestore();

@@ -110,3 +110,18 @@ export async function sendGifMessage(
         if (caption) await bot.sendMessage(chatId, caption, options);
     }
 }
+
+/**
+ * Responde ao chat com áudio da Mika gerado por TTS, fazendo fallback para texto em caso de falha.
+ */
+export async function replyMika(bot: TelegramBot, chatId: number, text: string) {
+    try {
+        const { ttsService } = require('../services/tts.service');
+        const audioPath = await ttsService.generateMikaAudio(text);
+        await sendAudioMessage(bot, chatId, audioPath, text);
+        await ttsService.cleanup(audioPath);
+    } catch (error) {
+        logger.error('Erro ao responder com áudio da Mika:', error);
+        await bot.sendMessage(chatId, text);
+    }
+}

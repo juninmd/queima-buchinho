@@ -1,11 +1,12 @@
 import { EdgeTTS } from 'edge-tts-universal';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { logger } from '../utils/logger';
 
 export class TtsService {
     private readonly voice = 'pt-BR-FranciscaNeural';
-    private readonly tmpDir = '/tmp/mika_audio';
+    private readonly tmpDir = path.join(os.tmpdir(), 'mika_audio');
 
     constructor() {
         if (!fs.existsSync(this.tmpDir)) {

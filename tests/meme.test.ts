@@ -1,31 +1,41 @@
 import { memeService } from '../src/services/meme.service';
 import { ollamaService } from '../src/services/ollama.service';
 
+jest.mock('../src/services/ollama.service', () => ({
+    ollamaService: {
+        getDynamicRoast: jest.fn().mockResolvedValue({ message: 'mock roast', audioSearchTerm: 'sad trombone' }),
+        getDynamicCongrats: jest.fn().mockResolvedValue({ message: 'mock congrats', audioSearchTerm: 'congratulations' }),
+        getMorningReminder: jest.fn().mockResolvedValue({ message: 'mock morning', audioSearchTerm: 'tome' }),
+        getConditionalReminder: jest.fn().mockResolvedValue({ message: 'mock conditional', audioSearchTerm: 'sad trombone' }),
+        getWaterReminder: jest.fn().mockResolvedValue({ message: 'mock water', audioSearchTerm: 'agua' }),
+        getFoodReminder: jest.fn().mockResolvedValue({ message: 'mock food', audioSearchTerm: 'healthy' })
+    }
+}));
 
 describe('MemeService', () => {
     it('should return a roast message', async () => {
         const res = await memeService.getRoastMessage();
         expect(typeof res.message).toBe('string');
         expect(res.message.length).toBeGreaterThan(0);
-    }, 30000);
+    });
 
     it('should return a congrats message', async () => {
         const res = await memeService.getCongratsMessage();
         expect(typeof res.message).toBe('string');
         expect(res.message.length).toBeGreaterThan(0);
-    }, 30000);
+    });
 
     it('should return a morning reminder', async () => {
         const res = await memeService.getMorningReminder('Segunda');
         expect(typeof res.message).toBe('string');
         expect(res.message.length).toBeGreaterThan(0);
-    }, 30000);
+    });
 
     it('should return a conditional reminder', async () => {
         const res = await memeService.getConditionalReminder('12:00');
         expect(typeof res.message).toBe('string');
         expect(res.message.length).toBeGreaterThan(0);
-    }, 30000);
+    });
 
     it('should fallback to static roast when ollama fails', async () => {
         const originalDynamicRoast = ollamaService.getDynamicRoast;

@@ -90,8 +90,7 @@ describe('BotController', () => {
 
             expect(workoutService.logWorkout).toHaveBeenCalledWith(123, true, 'treinei hoje!');
             expect(habitsService.markHabit).toHaveBeenCalledWith(123, 'treino', true);
-            // Since we use replyMika, it will call sendAudioMessage (mocked) or sendMessage (mocked)
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 456, 'test-audio.mp3', 'Parabéns!');
+            expect(telegramUtils.replyMika).toHaveBeenCalledWith(expect.anything(), 456, 'Parabéns!');
         });
 
         it('should handle channel_post for keywords', async () => {
@@ -204,7 +203,7 @@ describe('BotController', () => {
             await commandHandler({ text: '/peso 80.5', chat: { id: 123 }, from: { id: 456, first_name: 'User' } });
 
             expect(metricsService.logMetric).toHaveBeenCalledWith(456, 'weight', 80.5, 'kg');
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), 'Ótimo!');
+            expect(telegramUtils.replyMika).toHaveBeenCalledWith(expect.anything(), 123, 'Ótimo!');
             expect(bot.sendAudio).toHaveBeenCalled();
         });
 
@@ -214,7 +213,7 @@ describe('BotController', () => {
             (ollamaService.getWeightUpdate as jest.Mock).mockResolvedValue(null);
 
             await commandHandler({ text: '/peso 80.5', chat: { id: 123 }, from: { id: 456, first_name: 'User' } });
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), expect.stringContaining('registrado!'));
+            expect(telegramUtils.replyMika).toHaveBeenCalledWith(expect.anything(), 123, expect.stringContaining('registrado!'));
         });
 
         it('should handle channel_post for commands', async () => {

@@ -1,4 +1,4 @@
-import TelegramBot from 'node-telegram-bot-api';
+﻿import TelegramBot from 'node-telegram-bot-api';
 import { BotController } from '../../src/controllers/bot.controller';
 import { workoutService } from '../../src/services/workout.service';
 import { memeService } from '../../src/services/meme.service';
@@ -15,6 +15,9 @@ jest.mock('../../src/services/meme.service');
 jest.mock('../../src/services/metrics.service');
 jest.mock('../../src/services/habits.service');
 jest.mock('../../src/services/ollama.service');
+jest.mock('../../src/services/mika.service', () => ({
+    mikaService: { response: jest.fn().mockResolvedValue({ message: 'LLM Mika', audioSearchTerm: 'tone' }) }
+}));
 jest.mock('../../src/services/myinstants.service');
 jest.mock('../../src/services/tts.service');
 jest.mock('../../src/services/media.service');
@@ -83,7 +86,7 @@ describe('BotController', () => {
         });
 
         it('should not log workout from text keyword', async () => {
-            (memeService.getCongratsMessage as jest.Mock).mockResolvedValue({ message: 'Parabéns!', audioSearchTerm: 'applause' });
+            (memeService.getCongratsMessage as jest.Mock).mockResolvedValue({ message: 'ParabÃ©ns!', audioSearchTerm: 'applause' });
             (myInstantsService.getBestMatchAudio as jest.Mock).mockResolvedValue({ audioUrl: 'http://audio', title: 'Applause' });
 
             await messageHandler({ text: 'treinei hoje!', from: { id: 123 }, chat: { id: 456 } });        
@@ -155,18 +158,17 @@ describe('BotController', () => {
         it('should handle /checktreino error', async () => {
             (workoutService.checkDailyMessages as jest.Mock).mockRejectedValue(new Error('Fail'));        
             await commandHandler({ text: '/checktreino', chat: { id: 123 } });
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), expect.stringContaining('Erro no Check-treino'));
+            expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.any(String));
         });
 
         it('should handle /hora', async () => {
             await commandHandler({ text: '/hora', chat: { id: 123 } });
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), expect.stringContaining('Horário de Brasília'));
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), 'LLM Mika');
         });
 
         it('should handle /motivar', async () => {
-            (memeService.getMotivationAudio as jest.Mock).mockReturnValue('motivation.mp3');
             await commandHandler({ text: '/motivar', chat: { id: 123 } });
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, 'motivation.mp3', expect.any(String));
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), 'LLM Mika');
         });
 
         it('should handle /instante', async () => {
@@ -196,13 +198,13 @@ describe('BotController', () => {
         it('should handle /peso', async () => {
             (metricsService.logMetric as jest.Mock).mockResolvedValue(undefined);
             (metricsService.getWeightDiffFromStart as jest.Mock).mockResolvedValue(-2.5);
-            (ollamaService.getWeightUpdate as jest.Mock).mockResolvedValue({ message: 'Ótimo!', audioSearchTerm: 'applause' });
+            (ollamaService.getWeightUpdate as jest.Mock).mockResolvedValue({ message: 'Ã“timo!', audioSearchTerm: 'applause' });
             (myInstantsService.getBestMatchAudio as jest.Mock).mockResolvedValue({ audioUrl: 'url', title: 'title' });
 
             await commandHandler({ text: '/peso 80.5', chat: { id: 123 }, from: { id: 456, first_name: 'User' } });
 
             expect(metricsService.logMetric).toHaveBeenCalledWith(456, 'weight', 80.5, 'kg');
-            expect(telegramUtils.replyMika).toHaveBeenCalledWith(expect.anything(), 123, 'Ótimo!');
+            expect(telegramUtils.replyMika).toHaveBeenCalledWith(expect.anything(), 123, 'LLM Mika');
             expect(bot.sendAudio).toHaveBeenCalled();
         });
 
@@ -212,7 +214,7 @@ describe('BotController', () => {
             (ollamaService.getWeightUpdate as jest.Mock).mockResolvedValue(null);
 
             await commandHandler({ text: '/peso 80.5', chat: { id: 123 }, from: { id: 456, first_name: 'User' } });
-            expect(telegramUtils.replyMika).toHaveBeenCalledWith(expect.anything(), 123, expect.stringContaining('registrado!'));
+            expect(telegramUtils.replyMika).toHaveBeenCalledWith(expect.anything(), 123, 'LLM Mika');
         });
 
         it('should handle channel_post for commands', async () => {
@@ -224,36 +226,36 @@ describe('BotController', () => {
 
         it('should handle /streak with 0 streak', async () => {
             (workoutService.getStreak as jest.Mock).mockResolvedValue(0);
-            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: 'Começa hoje!' });
+            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: 'ComeÃ§a hoje!' });
             await commandHandler({ text: '/streak', chat: { id: 123 }, from: { id: 456 } });
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), 'Começa hoje!');
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), 'LLM Mika');
         });
 
         it('should handle /streak with 1 streak', async () => {
             (workoutService.getStreak as jest.Mock).mockResolvedValue(1);
             await commandHandler({ text: '/streak', chat: { id: 123 }, from: { id: 456 } });
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), expect.stringContaining('dia 2'));
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), 'LLM Mika');
         });
 
         it('should handle /streak with high streak', async () => {
             (workoutService.getStreak as jest.Mock).mockResolvedValue(10);
-            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: '10 dias incrível!' });
+            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: '10 dias incrÃ­vel!' });
             await commandHandler({ text: '/streak', chat: { id: 123 }, from: { id: 456 } });
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), '10 dias incrível!');
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), 'LLM Mika');
         });
 
-        it('should handle /streak with null ollama fallback', async () => {
+        it('should handle /streak via LLM only', async () => {
             (workoutService.getStreak as jest.Mock).mockResolvedValue(0);
             (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue(null);
             await commandHandler({ text: '/streak', chat: { id: 123 }, from: { id: 456 } });
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), expect.stringContaining('Zero dias'));
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), 'LLM Mika');
         });
 
         it('should handle /cardio', async () => {
             (ollamaService.getHabitResponse as jest.Mock).mockResolvedValue({ message: 'Cardio feito!' });
             await commandHandler({ text: '/cardio', chat: { id: 123 }, from: { id: 456 } });
             expect(habitsService.markHabit).not.toHaveBeenCalledWith(456, 'cardio', true);
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), expect.stringContaining('botao'));
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), 'LLM Mika');
         });
 
         it('should handle /relatorio with cooldown', async () => {
@@ -261,11 +263,11 @@ describe('BotController', () => {
             (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: true });
             (metricsService.getDailySummary as jest.Mock).mockResolvedValue({ water: 2000, weight: 80 });
             (habitsService.getCompletedCount as jest.Mock).mockResolvedValue({ completed: 5, total: 9 });
-            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: 'Relatório!' });
+            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: 'RelatÃ³rio!' });
             await commandHandler({ text: '/relatorio', chat: { id: 999 }, from: { id: 456 } });
             // Second call within cooldown
             await commandHandler({ text: '/relatorio', chat: { id: 999 }, from: { id: 456 } });
-            expect(bot.sendMessage).toHaveBeenCalledWith(999, expect.stringContaining('Calma'));
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 999, expect.any(String), 'LLM Mika');
         });
 
         it('should handle /meme random', async () => {
@@ -356,7 +358,8 @@ describe('BotController', () => {
             const msgHandler = listeners[0];
             (workoutService.hasLoggedToday as jest.Mock).mockResolvedValue(true);
             await msgHandler({ text: 'treinei', from: { id: 123 }, chat: { id: 456 } });
-            expect(bot.sendMessage).not.toHaveBeenCalledWith(456, expect.stringContaining('Já registrei'));
+            expect(bot.sendMessage).not.toHaveBeenCalledWith(456, expect.stringContaining('JÃ¡ registrei'));
         });
     });
 });
+

@@ -3,87 +3,28 @@ import { ollamaService } from '../src/services/ollama.service';
 
 jest.mock('../src/services/ollama.service', () => ({
     ollamaService: {
-        getDynamicRoast: jest.fn().mockResolvedValue({ message: 'mock roast', audioSearchTerm: 'sad trombone' }),
-        getDynamicCongrats: jest.fn().mockResolvedValue({ message: 'mock congrats', audioSearchTerm: 'congratulations' }),
-        getMorningReminder: jest.fn().mockResolvedValue({ message: 'mock morning', audioSearchTerm: 'tome' }),
-        getConditionalReminder: jest.fn().mockResolvedValue({ message: 'mock conditional', audioSearchTerm: 'sad trombone' }),
-        getWaterReminder: jest.fn().mockResolvedValue({ message: 'mock water', audioSearchTerm: 'agua' }),
-        getFoodReminder: jest.fn().mockResolvedValue({ message: 'mock food', audioSearchTerm: 'healthy' })
+        generateDynamicResponse: jest.fn().mockResolvedValue({ message: 'mock mika', audioSearchTerm: 'mock audio' })
     }
 }));
 
 describe('MemeService', () => {
-    it('should return a roast message', async () => {
-        const res = await memeService.getRoastMessage();
-        expect(typeof res.message).toBe('string');
-        expect(res.message.length).toBeGreaterThan(0);
+    it.each([
+        ['roast', () => memeService.getRoastMessage()],
+        ['congrats', () => memeService.getCongratsMessage()],
+        ['morning', () => memeService.getMorningReminder('Segunda')],
+        ['conditional', () => memeService.getConditionalReminder('12:00')]
+    ])('should return an LLM %s message', async (_name, call) => {
+        const res = await call();
+        expect(res.message).toBe('mock mika');
     });
 
-    it('should return a congrats message', async () => {
-        const res = await memeService.getCongratsMessage();
-        expect(typeof res.message).toBe('string');
-        expect(res.message.length).toBeGreaterThan(0);
-    });
-
-    it('should return a morning reminder', async () => {
-        const res = await memeService.getMorningReminder('Segunda');
-        expect(typeof res.message).toBe('string');
-        expect(res.message.length).toBeGreaterThan(0);
-    });
-
-    it('should return a conditional reminder', async () => {
-        const res = await memeService.getConditionalReminder('12:00');
-        expect(typeof res.message).toBe('string');
-        expect(res.message.length).toBeGreaterThan(0);
-    });
-
-    it('should fallback to static roast when ollama fails', async () => {
-        const originalDynamicRoast = ollamaService.getDynamicRoast;
-        ollamaService.getDynamicRoast = jest.fn().mockResolvedValue(null);
-
-        const res = await memeService.getRoastMessage();
-        expect(typeof res.message).toBe('string');
-        expect(res.audioSearchTerm).toBe('sad trombone');
-
-        ollamaService.getDynamicRoast = originalDynamicRoast;
-    });
-
-    it('should fallback to static congrats when ollama fails', async () => {
-        const originalDynamicCongrats = ollamaService.getDynamicCongrats;
-        ollamaService.getDynamicCongrats = jest.fn().mockResolvedValue(null);
-
-        const res = await memeService.getCongratsMessage();
-        expect(typeof res.message).toBe('string');
-        expect(res.audioSearchTerm).toBe('congratulations');
-
-        ollamaService.getDynamicCongrats = originalDynamicCongrats;
-    });
-
-    it('should fallback to static morning reminder when ollama fails', async () => {
-        const originalMorningReminder = ollamaService.getMorningReminder;
-        ollamaService.getMorningReminder = jest.fn().mockResolvedValue(null);
-
-        const res = await memeService.getMorningReminder('Segunda');
-        expect(typeof res.message).toBe('string');
-        expect(res.audioSearchTerm).toBe('tome');
-
-        ollamaService.getMorningReminder = originalMorningReminder;
-    });
-
-    it('should fallback to static conditional reminder when ollama fails', async () => {
-        const originalConditionalReminder = ollamaService.getConditionalReminder;
-        ollamaService.getConditionalReminder = jest.fn().mockResolvedValue(null);
-
-        const res = await memeService.getConditionalReminder('12:00');
-        expect(typeof res.message).toBe('string');
-        expect(res.audioSearchTerm).toBe('sad trombone');
-
-        ollamaService.getConditionalReminder = originalConditionalReminder;
+    it('should throw when LLM fails', async () => {
+        (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue(null);
+        await expect(memeService.getRoastMessage()).rejects.toThrow('Mika LLM response unavailable');
     });
 
     it('should return motivation audio path if exists', () => {
         const audio = memeService.getMotivationAudio();
-        // Since we don't have the assets in CI/test env easily, we just check return type
         expect(audio === null || typeof audio === 'string').toBe(true);
     });
 });

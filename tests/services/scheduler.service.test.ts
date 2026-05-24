@@ -1,4 +1,4 @@
-import TelegramBot from 'node-telegram-bot-api';
+﻿import TelegramBot from 'node-telegram-bot-api';
 import { SchedulerService } from '../../src/services/scheduler.service';
 import { workoutService } from '../../src/services/workout.service';
 import { memeService } from '../../src/services/meme.service';
@@ -13,6 +13,9 @@ jest.mock('../../src/services/workout.service');
 jest.mock('../../src/services/meme.service');
 jest.mock('../../src/services/habits.service');
 jest.mock('../../src/services/ollama.service');
+jest.mock('../../src/services/mika.service', () => ({
+    mikaService: { response: jest.fn().mockResolvedValue({ message: 'LLM Mika', audioSearchTerm: 'tone' }) }
+}));
 jest.mock('../../src/services/myinstants.service');
 jest.mock('../../src/utils/telegram');
 jest.mock('../../src/services/redis.service');
@@ -50,7 +53,7 @@ describe('SchedulerService', () => {
             delete process.env.CHAT_ID;
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
             expect((scheduler as any).getChatId()).toBeNull();
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('CHAT_ID não definido'));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('CHAT_ID nÃ£o definido'));
             consoleSpy.mockRestore();
         });
     });
@@ -123,18 +126,17 @@ describe('SchedulerService', () => {
     describe('sendHabitsCheckReminder', () => {
         it('should congratulate if all habits done', async () => {
             (habitsService.getUncompletedHabits as jest.Mock).mockResolvedValue([]);
-            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: 'Parabéns!' });
             await scheduler.sendHabitsCheckReminder();
-            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), expect.stringContaining('Parabéns!'), undefined);
+            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), 'LLM Mika', undefined);
         });
 
         it('should send reminder if habits pending', async () => {
-            (habitsService.getUncompletedHabits as jest.Mock).mockResolvedValue(['treino', 'leitura']);   
-            (ollamaService.getHabitsCheckReminder as jest.Mock).mockResolvedValue({ message: 'Do your habits!' });
+            (habitsService.getUncompletedHabits as jest.Mock).mockResolvedValue(['treino', 'leitura']);
 
             await scheduler.sendHabitsCheckReminder();
 
-            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), 'Do your habits!', expect.any(Object));
+            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), 'LLM Mika', expect.any(Object));
         });
     });
 });
+

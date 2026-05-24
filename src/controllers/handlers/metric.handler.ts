@@ -1,6 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { metricsService, MetricType } from '../../services/metrics.service';
-import { ollamaService } from '../../services/ollama.service';
+import { mikaService } from '../../services/mika.service';
 import { myInstantsService } from '../../services/myinstants.service';
 import { METRIC_LIMITS, BOT_MESSAGES } from '../../config/constants';
 import { replyMika } from '../../utils/telegram';
@@ -32,28 +32,21 @@ export async function handleMetric(
         body_fat: 'gordura corporal',
         muscle_mass: 'massa muscular'
     };
-
     const label = labels[type] || type;
 
-    let response;
+    let prompt = `A pessoa acabou de registrar ${value}${unit} de ${label}. Comentario curto e sarcastico.`;
     if (type === 'weight') {
         const diff = await metricsService.getWeightDiffFromStart(userId);
-        response = await ollamaService.getWeightUpdate(value, diff);
-    } else {
-        response = await ollamaService.generateDynamicResponse(
-            `A pessoa acabou de registrar ${value}${unit} de ${label}. Dê um comentário curto e sarcástico sobre isso.`
-        );
+        const diffMsg = diff === 0 ? 'peso estavel' : (diff < 0 ? `perdeu ${Math.abs(diff)}kg` : `ganhou ${diff}kg`);
+        prompt = `O Mestre pesou ${value}kg (${diffMsg}). Comente de forma natural, sem coach fitness.`;
     }
 
-    if (response) {
-        await replyMika(bot, chatId, response.message);
-        if (response.audioSearchTerm) {
-            const button = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
-            if (button?.audioUrl) {
-                await bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
-            }
+    const response = await mikaService.response(prompt);
+    await replyMika(bot, chatId, response.message);
+    if (response.audioSearchTerm) {
+        const button = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
+        if (button?.audioUrl) {
+            await bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
         }
-    } else {
-        await replyMika(bot, chatId, `✅ ${label.charAt(0).toUpperCase() + label.slice(1)} de ${value}${unit} registrado!`);
     }
 }

@@ -22,16 +22,7 @@ export const METRIC_LIMITS = {
 } as const;
 
 export const BOT_MESSAGES = {
-    CONGRATS: '🎉 Parabéns! Você treinou hoje! Continue assim! 💪',
-    ALREADY_TRAINED: '🎉 Parabéns! Você já treinou hoje!',
-    STATUS_INFO: 'ℹ️ O status oficial é verificado às 22h. Use /menu para ver seus hábitos!',
-    RESET_SUCCESS: '🔄 Status de treino resetado!',
     ERROR_GENERIC: 'Erro ao processar sua solicitação.',
-    MOTIVATION_CAPTION: '🔥 Motivação suprema! Acredite em você!',
-    ROAST_CAPTION: 'Reflita...',
-    WATER_GOAL_2L: '💧🏆 META DE 2L ATINGIDA! Hidratação de dominador do mundo!',
-    WATER_GOAL_3L: '💧🌊 3 LITROS! Mestre, você é uma fonte! Nem um peixe bebe tanto!',
-    RELATORIO_COOLDOWN: '⏳ Calma, Lenda! O último relatório foi agora há pouco. Aguarda um minutinho...',
     METRIC_OUT_OF_RANGE: (label: string, min: number, max: number, unit: string) =>
         `❌ Valor inválido para ${label}. Esperado entre ${min} e ${max}${unit}.`,
 };

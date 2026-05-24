@@ -36,7 +36,7 @@ describe('WorkoutService', () => {
             expect(bot.getUpdates).not.toHaveBeenCalled();
         });
 
-        it('should return trained: true if keyword found in recent messages', async () => {
+        it('should not infer trained from recent message keywords', async () => {
             mockQuery.mockResolvedValueOnce({ rows: [] }); // Not logged
             bot.getUpdates.mockResolvedValueOnce([
                 {
@@ -51,8 +51,8 @@ describe('WorkoutService', () => {
 
             const result = await workoutService.checkDailyMessages(bot, 123);
 
-            expect(result.trained).toBe(true);
-            expect(result.message?.text).toBe('hoje eu treinei pesado');
+            expect(result.trained).toBe(false);
+            expect(bot.getUpdates).not.toHaveBeenCalled();
         });
 
         it('should return trained: false if no keyword found in recent messages', async () => {

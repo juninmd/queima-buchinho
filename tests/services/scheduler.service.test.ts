@@ -57,13 +57,13 @@ describe('SchedulerService', () => {
 
     describe('runDailyCheck', () => {
         it('should handle trained user', async () => {
-            (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: true, message: { text: 'I trained!' } });
+            (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: true });
             (memeService.getCongratsMessage as jest.Mock).mockResolvedValue({ message: 'Congrats!', audioSearchTerm: 'applause' });
             (myInstantsService.getBestMatchAudio as jest.Mock).mockResolvedValue({ audioUrl: 'http://audio.url', title: 'Applause' });
 
             await scheduler.runDailyCheck();
 
-            expect(workoutService.logWorkout).toHaveBeenCalledWith(chatId, true, 'I trained!');
+            expect(workoutService.logWorkout).not.toHaveBeenCalledWith(chatId, true, expect.anything());
             expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), 'Congrats!', undefined);
             expect(mockBot.sendAudio).toHaveBeenCalledWith(chatId, 'http://audio.url', expect.any(Object));
         });

@@ -1,6 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { workoutService } from '../../services/workout.service';
-import { habitsService } from '../../services/habits.service';
 import { ollamaService } from '../../services/ollama.service';
 import { myInstantsService } from '../../services/myinstants.service';
 import { memeService } from '../../services/meme.service';
@@ -131,9 +130,7 @@ export async function handleCardio(bot: TelegramBot, msg: TelegramBot.Message): 
 
     try {
         await bot.sendChatAction(msg.chat.id, 'typing');
-        await habitsService.markHabit(userId, 'cardio', true);
-        const response = await ollamaService.getHabitResponse('cardio');
-        await mikaReply(bot, msg.chat.id, response?.message || 'Cardio pago! 🏃‍♂️');
+        await mikaReply(bot, msg.chat.id, 'Cardio agora so pelo botao, atleta de teclado. Abre /menu e clica.');
     } catch (error) {
         logger.error('Erro ao registrar cardio:', error);
         await bot.sendMessage(msg.chat.id, BOT_MESSAGES.ERROR_GENERIC);

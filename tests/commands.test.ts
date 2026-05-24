@@ -13,6 +13,9 @@ jest.mock('../src/services/workout.service');
 jest.mock('../src/services/habits.service');
 jest.mock('../src/services/metrics.service');
 jest.mock('../src/services/ollama.service');
+jest.mock('../src/services/mika.service', () => ({
+    mikaService: { response: jest.fn().mockResolvedValue({ message: 'LLM Mika', audioSearchTerm: 'tone' }) }
+}));
 jest.mock('../src/services/tts.service');
 jest.mock('../src/services/meme.service');
 jest.mock('../src/services/redis.service', () => ({

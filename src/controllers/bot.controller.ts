@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import { mikaService } from '../services/mika.service';
 import { replyMika } from '../utils/telegram';
 import { logger } from '../utils/logger';
 
@@ -41,7 +42,10 @@ export class BotController {
 
     private setupCommands() {
         const commands = [
-            { regex: /^\/start(@\w+)?$/, handler: (msg: TelegramBot.Message) => replyMika(this.bot, msg.chat.id, '🔥 Mika na área! Use /menu para ver seus hábitos e registrar seu treino pelo botão.') },
+            { regex: /^\/start(@\w+)?$/, handler: async (msg: TelegramBot.Message) => {
+                const response = await mikaService.response('Mensagem curta de boas-vindas da Mika. Diga para usar /menu e registrar treino pelo botao.');
+                await replyMika(this.bot, msg.chat.id, response.message);
+            } },
             { regex: /^\/status(@\w+)?$/, handler: (msg: TelegramBot.Message) => handleStatus(this.bot, msg) },
             { regex: /^\/checktreino(@\w+)?$/, handler: (msg: TelegramBot.Message) => handleCheckTreino(this.bot, msg) },
             { regex: /^\/cardio(@\w+)?$/, handler: (msg: TelegramBot.Message) => handleCardio(this.bot, msg) },

@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { ollamaService } from './ollama.service';
+import { mikaService } from './mika.service';
 
 const AUDIO_FILES = {
     MOTIVATION: 'tai-lung-como-nao-posso_NrQYPc2.mp3',
@@ -20,34 +20,36 @@ export class MemeService {
     }
 
     public async getRoastMessage(): Promise<MemeResponse> {
-        const dynamic = await ollamaService.getDynamicRoast();
-        return dynamic ?? { message: 'Sem treino hoje, Lenda. O cárdio tá esperando. 🛋️', audioSearchTerm: 'sad trombone' };
+        return mikaService.response(
+            'O Mestre nao treinou hoje. Zoar de leve e mandar fazer cardio. Curto, natural, sarcastico.'
+        );
     }
 
     public async getCongratsMessage(): Promise<MemeResponse> {
-        const dynamic = await ollamaService.getDynamicCongrats();
-        return dynamic ?? { message: 'Treinou! Tá pago. 💪', audioSearchTerm: 'congratulations' };
+        return mikaService.response(
+            'O Mestre treinou hoje. Elogiar de forma genuina, acida e curta. Zero coach de Instagram.'
+        );
     }
 
     public async getMorningReminder(dayOfWeek: string): Promise<MemeResponse> {
-        const dynamic = await ollamaService.getMorningReminder(dayOfWeek);
-        return dynamic ?? { message: `Bom dia, Lenda. Hoje é ${dayOfWeek} — pré-treino, cárdio, nessa ordem. 🏃`, audioSearchTerm: 'tome' };
+        return mikaService.response(
+            `E ${dayOfWeek} de manha. Mandar bom dia natural e chamar pra vida, sem frase motivacional corporativa.`
+        );
     }
 
     public async getConditionalReminder(time: string): Promise<MemeResponse> {
-        const dynamic = await ollamaService.getConditionalReminder(time);
-        return dynamic ?? { message: `${time}h e sem treino. O cárdio tá te esperando. 🙄`, audioSearchTerm: 'sad trombone' };
+        return mikaService.response(
+            `Sao ${time} e a Lenda ainda nao treinou. Cutucada ironica curta, sem drama.`
+        );
     }
 
     public async getWaterReminder(): Promise<MemeResponse> {
-        const dynamic = await ollamaService.getWaterReminder();
-        return dynamic ?? { message: 'Bebe água agora, Lenda. 💧', audioSearchTerm: 'agua' };
+        return mikaService.response('Lembrar o Mestre de beber agua agora, com zoeira leve e direta.');
     }
 
     public async getFoodReminder(meal: 'cafe' | 'almoco' | 'jantar'): Promise<MemeResponse> {
-        const dynamic = await ollamaService.getFoodReminder(meal);
-        const fallbacks = { cafe: 'Café da manhã — come de verdade, sem biscoito recheado. 🥚', almoco: 'Hora do almoço. Proteína e legume, Majestade. 🥗', jantar: 'Janta leve, Mestre. O corpo agradece. 🌙' };
-        return dynamic ?? { message: fallbacks[meal], audioSearchTerm: 'healthy' };
+        const mealMap = { cafe: 'cafe da manha', almoco: 'almoco', jantar: 'jantar' };
+        return mikaService.response(`Hora do ${mealMap[meal]}. Mandar o Mestre comer, direto e sarcastico.`);
     }
 
     getRoastAudio(): string | null {

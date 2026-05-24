@@ -1,12 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { workoutService } from '../services/workout.service';
-import { habitsService } from '../services/habits.service';
-import { memeService } from '../services/meme.service';
-import { myInstantsService } from '../services/myinstants.service';
-import { mediaService } from '../services/media.service';
-import { ollamaService } from '../services/ollama.service';
-import { sendGifMessage, replyMika } from '../utils/telegram';
-import { WORKOUT_KEYWORDS, CARDIO_KEYWORDS } from '../config/constants';
+import { replyMika } from '../utils/telegram';
 import { logger } from '../utils/logger';
 
 // Command Handlers
@@ -40,45 +33,6 @@ export class BotController {
             const userId = msg.from?.id || msg.sender_chat?.id;
             if (!userId || text.startsWith('/')) return;
             if (msg.date < this.startTime) return;
-
-            if (this.hasWorkoutKeyword(text)) {
-                logger.info(`✅ Evento em chat ${msg.chat.id} identificado como treino de ${userId}`);
-                const alreadyLogged = await workoutService.hasLoggedToday(userId);
-                if (alreadyLogged) {
-                    await this.bot.sendMessage(msg.chat.id, '💪 Já registrei seu treino hoje! Foco total, Lenda.');
-                    return;
-                }
-                await this.bot.sendChatAction(msg.chat.id, 'record_voice');
-                await workoutService.logWorkout(userId, true, text);
-                await habitsService.markHabit(userId, 'treino', true);
-
-                const congrats = await memeService.getCongratsMessage();
-                await replyMika(this.bot, msg.chat.id, congrats.message);
-
-                const celebrationGif = await mediaService.sendGif('celebration');
-                if (celebrationGif) {
-                    await sendGifMessage(this.bot, msg.chat.id, celebrationGif);
-                }
-
-                if (congrats.audioSearchTerm) {
-                    const button = await myInstantsService.getBestMatchAudio(congrats.audioSearchTerm);
-                    if (button?.audioUrl) {
-                        await this.bot.sendAudio(msg.chat.id, button.audioUrl, { caption: `🎶 ${button.title}` });
-                    }
-                }
-            } else if (this.hasCardioKeyword(text)) {
-                logger.info(`🏃 Evento em chat ${msg.chat.id} identificado como cárdio de ${userId}`);
-                await this.bot.sendChatAction(msg.chat.id, 'record_voice');
-                await habitsService.markHabit(userId, 'cardio', true);
-
-                const response = await ollamaService.getHabitResponse('cardio');
-                if (response) await replyMika(this.bot, msg.chat.id, response.message);
-
-                const cardioGif = await mediaService.sendGif('cardio');
-                if (cardioGif) {
-                    await sendGifMessage(this.bot, msg.chat.id, cardioGif);
-                }
-            }
         };
 
         this.bot.on('message', handleMessage);
@@ -87,7 +41,7 @@ export class BotController {
 
     private setupCommands() {
         const commands = [
-            { regex: /^\/start(@\w+)?$/, handler: (msg: TelegramBot.Message) => replyMika(this.bot, msg.chat.id, '🔥 Mika na área! Use /menu para ver seus hábitos ou mande "treinei" para logar seu treino.') },
+            { regex: /^\/start(@\w+)?$/, handler: (msg: TelegramBot.Message) => replyMika(this.bot, msg.chat.id, '🔥 Mika na área! Use /menu para ver seus hábitos e registrar seu treino pelo botão.') },
             { regex: /^\/status(@\w+)?$/, handler: (msg: TelegramBot.Message) => handleStatus(this.bot, msg) },
             { regex: /^\/checktreino(@\w+)?$/, handler: (msg: TelegramBot.Message) => handleCheckTreino(this.bot, msg) },
             { regex: /^\/cardio(@\w+)?$/, handler: (msg: TelegramBot.Message) => handleCardio(this.bot, msg) },
@@ -126,13 +80,5 @@ export class BotController {
 
         this.bot.on('message', processCommand);
         this.bot.on('channel_post', processCommand);
-    }
-
-    private hasWorkoutKeyword(text: string): boolean {
-        return WORKOUT_KEYWORDS.some((kw) => text.toLowerCase().includes(kw));
-    }
-
-    private hasCardioKeyword(text: string): boolean {
-        return CARDIO_KEYWORDS.some((kw) => text.toLowerCase().includes(kw));
     }
 }

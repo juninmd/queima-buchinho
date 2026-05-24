@@ -82,23 +82,22 @@ describe('BotController', () => {
             expect(workoutService.logWorkout).not.toHaveBeenCalled();
         });
 
-        it('should log workout and send congrats if keyword matches', async () => {
+        it('should not log workout from text keyword', async () => {
             (memeService.getCongratsMessage as jest.Mock).mockResolvedValue({ message: 'Parabéns!', audioSearchTerm: 'applause' });
             (myInstantsService.getBestMatchAudio as jest.Mock).mockResolvedValue({ audioUrl: 'http://audio', title: 'Applause' });
 
             await messageHandler({ text: 'treinei hoje!', from: { id: 123 }, chat: { id: 456 } });        
 
-            expect(workoutService.logWorkout).toHaveBeenCalledWith(123, true, 'treinei hoje!');
-            expect(habitsService.markHabit).toHaveBeenCalledWith(123, 'treino', true);
-            expect(telegramUtils.replyMika).toHaveBeenCalledWith(expect.anything(), 456, 'Parabéns!');
+            expect(workoutService.logWorkout).not.toHaveBeenCalled();
+            expect(habitsService.markHabit).not.toHaveBeenCalledWith(123, 'treino', true);
         });
 
-        it('should handle channel_post for keywords', async () => {
+        it('should not log channel_post workout keyword', async () => {
             const channelHandler = (bot.on as jest.Mock).mock.calls.find(c => c[0] === 'channel_post')[1];
             (memeService.getCongratsMessage as jest.Mock).mockResolvedValue({ message: 'Boa!', audioSearchTerm: null });
 
             await channelHandler({ text: 'treinei', sender_chat: { id: 789 }, chat: { id: 789 } });       
-            expect(workoutService.logWorkout).toHaveBeenCalledWith(789, true, 'treinei');
+            expect(workoutService.logWorkout).not.toHaveBeenCalled();
         });
     });
 
@@ -253,8 +252,8 @@ describe('BotController', () => {
         it('should handle /cardio', async () => {
             (ollamaService.getHabitResponse as jest.Mock).mockResolvedValue({ message: 'Cardio feito!' });
             await commandHandler({ text: '/cardio', chat: { id: 123 }, from: { id: 456 } });
-            expect(habitsService.markHabit).toHaveBeenCalledWith(456, 'cardio', true);
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), 'Cardio feito!');
+            expect(habitsService.markHabit).not.toHaveBeenCalledWith(456, 'cardio', true);
+            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 123, expect.any(String), expect.stringContaining('botao'));
         });
 
         it('should handle /relatorio with cooldown', async () => {
@@ -344,20 +343,20 @@ describe('BotController', () => {
             expect(metricsService.logMetric).toHaveBeenCalledWith(456, 'steps', 8000, 'passos');
         });
 
-        it('should handle cardio keyword in message listener', async () => {
+        it('should not handle cardio keyword in message listener', async () => {
             const listeners = (bot.on as jest.Mock).mock.calls.filter(c => c[0] === 'message').map(c => c[1]);
             const msgHandler = listeners[0];
             (ollamaService.getHabitResponse as jest.Mock).mockResolvedValue({ message: 'Cardio!' });
             await msgHandler({ text: 'fiz cardio hoje', from: { id: 123 }, chat: { id: 456 } });
-            expect(habitsService.markHabit).toHaveBeenCalledWith(123, 'cardio', true);
+            expect(habitsService.markHabit).not.toHaveBeenCalledWith(123, 'cardio', true);
         });
 
-        it('should skip workout log if already logged today', async () => {
+        it('should not reply to workout text if already logged today', async () => {
             const listeners = (bot.on as jest.Mock).mock.calls.filter(c => c[0] === 'message').map(c => c[1]);
             const msgHandler = listeners[0];
             (workoutService.hasLoggedToday as jest.Mock).mockResolvedValue(true);
             await msgHandler({ text: 'treinei', from: { id: 123 }, chat: { id: 456 } });
-            expect(bot.sendMessage).toHaveBeenCalledWith(456, expect.stringContaining('Já registrei'));
+            expect(bot.sendMessage).not.toHaveBeenCalledWith(456, expect.stringContaining('Já registrei'));
         });
     });
 });

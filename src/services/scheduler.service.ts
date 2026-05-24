@@ -99,12 +99,10 @@ export class SchedulerService {
             const chatId = this.getChatId();
             if (!chatId) return;
 
-            const { trained, message } = await workoutService.checkDailyMessages(this.bot, chatId);
-            const trainingMsgText = message?.text || '';
+            const { trained } = await workoutService.checkDailyMessages(this.bot, chatId);
 
             if (trained) {
                 logger.info('✅ Usuário treinou hoje!');
-                await workoutService.logWorkout(chatId, true, trainingMsgText);
                 await this.sendWithAudio(chatId, await memeService.getCongratsMessage());
                 return;
             }

@@ -25,7 +25,7 @@
   "dependencies": {
     "@openrouter/ai-sdk-provider": "^2.9.0",
     "@types/pg": "^8.20.0",
-    "ai": "^6.0.184",
+    "ai": "^6.0.191",
     "ai-sdk-ollama": "^3.8.3",
     "axios": "^1.16.1",
     "cheerio": "^1.2.0",

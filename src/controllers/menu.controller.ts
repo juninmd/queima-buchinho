@@ -151,9 +151,9 @@ export class MenuController {
 /passos &lt;valor&gt; - Registrar passos do dia
 
 <b>💪 Treino:</b>
-Envie "treinei", "malhei" ou "fui na academia" para registrar
+Treino e cardio: registre pelos botoes do /menu
 /checktreino - Verificação manual
-/cardio - Registrar cárdio rápido
+/cardio - Mostra aviso para usar o botao
 /streak - Ver sua sequência de treinos 🔥
 /reset - Resetar treino de hoje
 

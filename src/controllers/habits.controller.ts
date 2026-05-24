@@ -1,8 +1,8 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { habitsService } from '../services/habits.service';
 import { metricsService } from '../services/metrics.service';
-import { ollamaService } from '../services/ollama.service';
 import { memeService } from '../services/meme.service';
+import { mikaService } from '../services/mika.service';
 import { myInstantsService } from '../services/myinstants.service';
 import { workoutService } from '../services/workout.service';
 import { HABIT_MAP } from '../config/habits';
@@ -121,8 +121,8 @@ export class HabitsController {
     }
 
     if (newValue) {
-      const response = await ollamaService.getHabitResponse(habitKey);
-      if (response) await this.bot.sendMessage(chatId, response.message);
+      const response = await mikaService.response(`O Mestre marcou o habito ${habit.label}. Reaja curto, natural e sarcastico.`);
+      await this.bot.sendMessage(chatId, response.message);
     }
   }
 
@@ -146,12 +146,14 @@ export class HabitsController {
     const crossed3L = prevTotal < WATER_CELEBRATION_ML && total >= WATER_CELEBRATION_ML;
 
     if (crossed3L) {
-      await this.bot.sendMessage(chatId, BOT_MESSAGES.WATER_GOAL_3L);
+      const response = await mikaService.response(`O Mestre chegou a ${total}ml de agua hoje. Celebre 3 litros com sarcasmo curto.`);
+      await this.bot.sendMessage(chatId, response.message);
     } else if (crossed2L) {
-      await this.bot.sendMessage(chatId, BOT_MESSAGES.WATER_GOAL_2L);
+      const response = await mikaService.response(`O Mestre chegou a ${total}ml de agua hoje. Celebre a meta de 2 litros com sarcasmo curto.`);
+      await this.bot.sendMessage(chatId, response.message);
     } else {
-      const response = await ollamaService.getWaterSuccess(total);
-      if (response) await this.bot.sendMessage(chatId, response.message);
+      const response = await mikaService.response(`O Mestre bebeu agua, total de hoje ${total}ml. Reaja curto e sarcastico.`);
+      await this.bot.sendMessage(chatId, response.message);
     }
   }
 
@@ -189,8 +191,8 @@ export class HabitsController {
 
     await this.bot.answerCallbackQuery(query.id, { text: '🏃 Cárdio registrado!' }).catch(() => {});
 
-    const response = await ollamaService.getHabitResponse('cardio');
-    if (response) await this.bot.sendMessage(chatId, response.message);
+    const response = await mikaService.response('O Mestre marcou cardio concluido. Reaja curto, natural e sarcastico.');
+    await this.bot.sendMessage(chatId, response.message);
 
     if (messageId) {
       try {
@@ -220,8 +222,8 @@ export class HabitsController {
     query: TelegramBot.CallbackQuery, chatId: number
   ) {
     await this.bot.answerCallbackQuery(query.id, { text: '🚀 Buscando motivação...' }).catch(() => {});
-    const audio = memeService.getMotivationAudio();
-    await sendAudioMessage(this.bot, chatId, audio, BOT_MESSAGES.MOTIVATION_CAPTION);
+    const response = await mikaService.response('Mande uma motivacao curta para o Mestre treinar agora, sarcastica e natural.');
+    await sendAudioMessage(this.bot, chatId, null, response.message);
   }
 
   private async handleMealDone(
@@ -233,7 +235,8 @@ export class HabitsController {
     await this.bot.answerCallbackQuery(query.id, {
       text: `${habit?.emoji || '✅'} ${habit?.label || meal} marcado!`
     }).catch(() => {});
-    await this.bot.sendMessage(chatId, `${habit?.emoji || '✅'} ${habit?.label || meal} registrado!`);
+    const response = await mikaService.response(`O Mestre marcou ${habit?.label || meal} como feito. Reaja curto e sarcastico.`);
+    await this.bot.sendMessage(chatId, response.message);
   }
 
   private async handleShowDiet(query: TelegramBot.CallbackQuery, chatId: number) {

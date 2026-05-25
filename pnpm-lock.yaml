@@ -10,16 +10,16 @@ importers:
     dependencies:
       '@openrouter/ai-sdk-provider':
         specifier: ^2.9.0
-        version: 2.9.0(ai@6.0.184(zod@4.3.6))(zod@4.3.6)
+        version: 2.9.0(ai@6.0.191(zod@4.3.6))(zod@4.3.6)
       '@types/pg':
         specifier: ^8.20.0
         version: 8.20.0
       ai:
-        specifier: ^6.0.184
-        version: 6.0.184(zod@4.3.6)
+        specifier: ^6.0.191
+        version: 6.0.191(zod@4.3.6)
       ai-sdk-ollama:
         specifier: ^3.8.3
-        version: 3.8.3(ai@6.0.184(zod@4.3.6))(zod@4.3.6)
+        version: 3.8.3(ai@6.0.191(zod@4.3.6))(zod@4.3.6)
       axios:
         specifier: ^1.16.1
         version: 1.16.1
@@ -78,8 +78,8 @@ importers:
 
 packages:
 
-  '@ai-sdk/gateway@3.0.115':
-    resolution: {integrity: sha512-xonmGfN9pt54WdKqMzWe68BRYS3rsYvraBzioyA0gfNcecHs8Ir5qk/X8grJSyZ95hghjWiOphrK6bAc11E6SA==}
+  '@ai-sdk/gateway@3.0.120':
+    resolution: {integrity: sha512-MYKAeD2q7/sa1ZdqtL2tw0Me0B8Tok6Q/fhkJDhJl39dG8u+VBlWO9yk9lcdm784bM418o1EKObo4aOxs6+18Q==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -656,8 +656,8 @@ packages:
     peerDependencies:
       ai: ^6.0.154
 
-  ai@6.0.184:
-    resolution: {integrity: sha512-j//zHkKvj5ra27l8izHco8cj1g1Pr7vx1ZK+hrzrkHvndgIRmdfZKOb6+RAPpvbk42qGIsuYvlYbGlVAu3erNQ==}
+  ai@6.0.191:
+    resolution: {integrity: sha512-zAxvjKebQE7YkSyyNIl0OM7i6/zygnKeF+yNUjD4nWOelYrG+LpDd6RnH6mjySI4zUpZ7o4wbnmAy8jc6u98vQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -2638,7 +2638,7 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/gateway@3.0.115(zod@4.3.6)':
+  '@ai-sdk/gateway@3.0.120(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
       '@ai-sdk/provider-utils': 4.0.27(zod@4.3.6)
@@ -3162,9 +3162,9 @@ snapshots:
       '@tybys/wasm-util': 0.10.2
     optional: true
 
-  '@openrouter/ai-sdk-provider@2.9.0(ai@6.0.184(zod@4.3.6))(zod@4.3.6)':
+  '@openrouter/ai-sdk-provider@2.9.0(ai@6.0.191(zod@4.3.6))(zod@4.3.6)':
     dependencies:
-      ai: 6.0.184(zod@4.3.6)
+      ai: 6.0.191(zod@4.3.6)
       zod: 4.3.6
 
   '@opentelemetry/api@1.9.1': {}
@@ -3350,19 +3350,19 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai-sdk-ollama@3.8.3(ai@6.0.184(zod@4.3.6))(zod@4.3.6):
+  ai-sdk-ollama@3.8.3(ai@6.0.191(zod@4.3.6))(zod@4.3.6):
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@ai-sdk/provider-utils': 4.0.23(zod@4.3.6)
-      ai: 6.0.184(zod@4.3.6)
+      ai: 6.0.191(zod@4.3.6)
       jsonrepair: 3.14.0
       ollama: 0.6.3
     transitivePeerDependencies:
       - zod
 
-  ai@6.0.184(zod@4.3.6):
+  ai@6.0.191(zod@4.3.6):
     dependencies:
-      '@ai-sdk/gateway': 3.0.115(zod@4.3.6)
+      '@ai-sdk/gateway': 3.0.120(zod@4.3.6)
       '@ai-sdk/provider': 3.0.10
       '@ai-sdk/provider-utils': 4.0.27(zod@4.3.6)
       '@opentelemetry/api': 1.9.1

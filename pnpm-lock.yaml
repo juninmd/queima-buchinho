@@ -10,16 +10,16 @@ importers:
     dependencies:
       '@openrouter/ai-sdk-provider':
         specifier: ^2.9.0
-        version: 2.9.0(ai@6.0.191(zod@4.3.6))(zod@4.3.6)
+        version: 2.9.0(ai@6.0.191(zod@4.4.3))(zod@4.4.3)
       '@types/pg':
         specifier: ^8.20.0
         version: 8.20.0
       ai:
         specifier: ^6.0.191
-        version: 6.0.191(zod@4.3.6)
+        version: 6.0.191(zod@4.4.3)
       ai-sdk-ollama:
         specifier: ^3.8.4
-        version: 3.8.4(ai@6.0.191(zod@4.3.6))(zod@4.3.6)
+        version: 3.8.4(ai@6.0.191(zod@4.4.3))(zod@4.4.3)
       axios:
         specifier: ^1.16.1
         version: 1.16.1
@@ -48,8 +48,8 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       zod:
-        specifier: ^4.3.6
-        version: 4.3.6
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@types/ioredis':
         specifier: ^4.28.10
@@ -2614,24 +2614,24 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  zod@4.3.6:
-    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
 
-  '@ai-sdk/gateway@3.0.120(zod@4.3.6)':
+  '@ai-sdk/gateway@3.0.120(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.3.6)
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
       '@vercel/oidc': 3.2.0
-      zod: 4.3.6
+      zod: 4.4.3
 
-  '@ai-sdk/provider-utils@4.0.27(zod@4.3.6)':
+  '@ai-sdk/provider-utils@4.0.27(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.8
-      zod: 4.3.6
+      zod: 4.4.3
 
   '@ai-sdk/provider@3.0.10':
     dependencies:
@@ -3132,10 +3132,10 @@ snapshots:
       '@tybys/wasm-util': 0.10.2
     optional: true
 
-  '@openrouter/ai-sdk-provider@2.9.0(ai@6.0.191(zod@4.3.6))(zod@4.3.6)':
+  '@openrouter/ai-sdk-provider@2.9.0(ai@6.0.191(zod@4.4.3))(zod@4.4.3)':
     dependencies:
-      ai: 6.0.191(zod@4.3.6)
-      zod: 4.3.6
+      ai: 6.0.191(zod@4.4.3)
+      zod: 4.4.3
 
   '@opentelemetry/api@1.9.1': {}
 
@@ -3320,23 +3320,23 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai-sdk-ollama@3.8.4(ai@6.0.191(zod@4.3.6))(zod@4.3.6):
+  ai-sdk-ollama@3.8.4(ai@6.0.191(zod@4.4.3))(zod@4.4.3):
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.3.6)
-      ai: 6.0.191(zod@4.3.6)
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+      ai: 6.0.191(zod@4.4.3)
       jsonrepair: 3.14.0
       ollama: 0.6.3
     transitivePeerDependencies:
       - zod
 
-  ai@6.0.191(zod@4.3.6):
+  ai@6.0.191(zod@4.4.3):
     dependencies:
-      '@ai-sdk/gateway': 3.0.120(zod@4.3.6)
+      '@ai-sdk/gateway': 3.0.120(zod@4.4.3)
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.3.6)
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
       '@opentelemetry/api': 1.9.1
-      zod: 4.3.6
+      zod: 4.4.3
 
   ajv@6.15.0:
     dependencies:
@@ -5799,4 +5799,4 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod@4.3.6: {}
+  zod@4.4.3: {}

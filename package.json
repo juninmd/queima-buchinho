@@ -36,7 +36,7 @@
     "node-telegram-bot-api": "^0.67.0",
     "ollama": "^0.6.3",
     "pg": "^8.20.0",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/ioredis": "^4.28.10",

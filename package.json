@@ -26,7 +26,7 @@
     "@openrouter/ai-sdk-provider": "^2.9.0",
     "@types/pg": "^8.20.0",
     "ai": "^6.0.191",
-    "ai-sdk-ollama": "^3.8.3",
+    "ai-sdk-ollama": "^3.8.4",
     "axios": "^1.16.1",
     "cheerio": "^1.2.0",
     "dotenv": "^17.4.2",

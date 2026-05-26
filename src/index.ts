@@ -6,7 +6,7 @@ import { MenuController } from './controllers/menu.controller';
 import { HabitsController } from './controllers/habits.controller';
 import { redisService } from './services/redis.service';
 import { logger } from './utils/logger';
-import { HealthServer } from './utils/server';
+import { HealthServer, markPollingAlive, setPollingMode } from './utils/server';
 import { pool } from './config/database';
 import { notifyStartup, notifyShutdown, notifyCrash } from './utils/notifications';
 
@@ -97,13 +97,29 @@ if (mode === 'listener') {
   })();
 }
 
+let pollingHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
 function setupPolling() {
   if (bot && botMode === 'polling') {
     try { bot.stopPolling().catch(() => {}); } catch { /* ignore */ }
   }
+  if (pollingHeartbeatTimer) { clearInterval(pollingHeartbeatTimer); pollingHeartbeatTimer = null; }
+
   bot = new TelegramBot(token!, { polling: { interval: 1000, params: { allowed_updates: allowedUpdates } } } as any);
   botMode = 'polling';
+  setPollingMode(true);
   logger.info(`🚀 Polling ativo!`);
+
+  // Heartbeat: prove Telegram API is reachable every 60s
+  pollingHeartbeatTimer = setInterval(async () => {
+    try {
+      await bot.getMe();
+      markPollingAlive();
+    } catch {
+      logger.warn('⚠️ Heartbeat: getMe() falhou — polling pode estar morto');
+    }
+  }, 60_000);
+  markPollingAlive(); // reset on (re)start
 
   bot.on('polling_error', (err: any) => {
     const code = err?.code || '';
@@ -114,8 +130,14 @@ function setupPolling() {
     }
   });
 
-  bot.on('message', (msg) => logger.info(`📩 Msg: Chat=${msg.chat.id}, User=${msg.from?.username}, Texto="${msg.text}"`));
-  bot.on('callback_query', (q) => logger.info(`🖱️ Callback: Data=${q.data}, Chat=${q.message?.chat.id}`));
+  bot.on('message', (msg) => {
+    markPollingAlive();
+    logger.info(`📩 Msg: Chat=${msg.chat.id}, User=${msg.from?.username}, Texto="${msg.text}"`);
+  });
+  bot.on('callback_query', (q) => {
+    markPollingAlive();
+    logger.info(`🖱️ Callback: Data=${q.data}, Chat=${q.message?.chat.id}`);
+  });
 }
 
 function attachControllers() {

@@ -107,8 +107,12 @@ export class HabitsController {
 
     const newValue = await habitsService.toggleHabit(userId, habitKey);
 
-    if (habitKey === 'treino' && newValue) {
-      await workoutService.logWorkout(userId, true, 'Menu button');
+    if (habitKey === 'treino') {
+      if (newValue) {
+        await workoutService.logWorkout(userId, true, 'Menu button');
+      } else {
+        await workoutService.resetWorkout(userId);
+      }
     }
 
     const statusEmoji = newValue ? '✅' : '❌';

@@ -5,7 +5,7 @@ class RedisService {
   private client: Redis | null = null;
 
   public isConnected(): boolean {
-    return this.client !== null;
+    return this.client !== null && this.client.status === 'ready';
   }
 
   public connect(): void {
@@ -14,7 +14,11 @@ class RedisService {
       logger.warn('⚠️ REDIS_URL não definida, cache desabilitado');
       return;
     }
-    this.client = new Redis(url);
+    this.client = new Redis(url, {
+      maxRetriesPerRequest: 1,
+      connectTimeout: 2000,
+      enableOfflineQueue: false
+    });
     this.client.on('error', (err) => logger.error('❌ Redis error:', err));
     this.client.on('connect', () => logger.info('✅ Redis conectado'));
   }

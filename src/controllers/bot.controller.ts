@@ -6,6 +6,7 @@ import { logger } from '../utils/logger';
 // Command Handlers
 import { handleMetric } from './handlers/metric.handler';
 import { handleInstante, handleMeme, handleSticker, handleGif } from './handlers/media.handler';
+import { handleCantada } from './handlers/fun.handler';
 import {
     handleStatus,
     handleHora,
@@ -34,6 +35,18 @@ export class BotController {
             const userId = msg.from?.id || msg.sender_chat?.id;
             if (!userId || text.startsWith('/')) return;
             if (msg.date < this.startTime) return;
+
+            const isPrivate = msg.chat?.type === 'private';
+            const mentionsMika = text.toLowerCase().includes('mika');
+            if (msg.chat?.id && (isPrivate || mentionsMika)) {
+                try {
+                    await this.bot.sendChatAction(msg.chat.id, 'record_voice');
+                    const response = await mikaService.response(text);
+                    await replyMika(this.bot, msg.chat.id, response.message);
+                } catch (e) {
+                    logger.error('Erro no auto-reply da Mika:', e);
+                }
+            }
         };
 
         this.bot.on('message', handleMessage);
@@ -64,7 +77,8 @@ export class BotController {
             { regex: /^\/meme(@\w+)? (.+)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => handleMeme(this.bot, msg, match) },
             { regex: /^\/sticker(@\w+)?$/, handler: (msg: TelegramBot.Message) => handleSticker(this.bot, msg, null) },
             { regex: /^\/sticker(@\w+)? (.+)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => handleSticker(this.bot, msg, match) },
-            { regex: /^\/gif(@\w+)? (.+)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => handleGif(this.bot, msg, match) }
+            { regex: /^\/gif(@\w+)? (.+)/, handler: (msg: TelegramBot.Message, match: RegExpExecArray) => handleGif(this.bot, msg, match) },
+            { regex: /^\/(cantada|xaveco)(@\w+)?$/, handler: (msg: TelegramBot.Message) => handleCantada(this.bot, msg) }
         ];
 
         const processCommand = async (msg: TelegramBot.Message) => {

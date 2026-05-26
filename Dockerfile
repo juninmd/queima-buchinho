@@ -1,33 +1,26 @@
-# Stage 1: Build
-FROM node:26-alpine AS builder
+# Stage 1: Build/Install
+FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
-# Install build dependencies
-RUN apk add --no-cache build-base git python3
-
-RUN npm install -g pnpm
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
-COPY . .
-RUN pnpm run build
+COPY package.json bun.lockb* ./
+RUN bun install --frozen-lockfile
 
 # Stage 2: Production
-FROM node:26-alpine
+FROM oven/bun:1-alpine
 WORKDIR /app
 
-# Instalar Python e edge-tts
+# Instalar Python e edge-tts para o TTS da Mika
 RUN apk add --no-cache python3 py3-pip curl && \
     pip install edge-tts --break-system-packages
 
-RUN npm install -g pnpm
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prod --frozen-lockfile
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/assets ./assets
+COPY --from=builder /app/node_modules ./node_modules
+COPY package.json bun.lockb* ./
+COPY . .
+
 RUN mkdir -p assets data && echo "[]" > data/workout-history.json
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD curl -fsS http://localhost:8080/health || exit 1
 
-CMD ["pnpm", "start"]
+CMD ["bun", "src/index.ts"]

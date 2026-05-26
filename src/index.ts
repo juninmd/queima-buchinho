@@ -1,3 +1,4 @@
+import cron from 'node-cron';
 import TelegramBot from 'node-telegram-bot-api';
 import * as dotenv from 'dotenv';
 import { SchedulerService } from './services/scheduler.service';
@@ -138,6 +139,28 @@ function setupPolling() {
     markPollingAlive();
     logger.info(`🖱️ Callback: Data=${q.data}, Chat=${q.message?.chat.id}`);
   });
+}
+
+
+let cronJobsInitialized = false;
+function setupCronJobs() {
+  if (cronJobsInitialized) return;
+  cronJobsInitialized = true;
+  
+  const scheduler = new SchedulerService(bot);
+  cron.schedule('30 22 * * *', () => scheduler.runDailyCheck(), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('30 6 * * *', () => scheduler.sendMorningReminder(), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('0 6 * * *', () => scheduler.sendGymReminder(), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('30 15 * * *', () => scheduler.sendFoodReminder('cafe_tarde'), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('0 12,18 * * *', () => scheduler.sendConditionalReminder(), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('0 9,11,14,17 * * *', () => scheduler.sendWaterReminder(), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('0 8 * * *', () => scheduler.sendFoodReminder('cafe'), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('0 12 * * *', () => scheduler.sendFoodReminder('almoco'), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('0 19 * * *', () => scheduler.sendFoodReminder('jantar'), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('0 20 * * *', () => scheduler.sendHabitsCheckReminder(), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('0 22 * * *', () => scheduler.runDailyMikaAudit(), { timezone: 'America/Sao_Paulo' });
+  
+  logger.info('⏰ CronJobs internos inicializados!');
 }
 
 function attachControllers() {

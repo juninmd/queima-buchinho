@@ -10,6 +10,7 @@ describe('RedisService', () => {
         jest.clearAllMocks();
         process.env.REDIS_URL = 'redis://localhost:6379';
         mockRedisInstance = {
+            status: 'ready',
             on: jest.fn(),
             get: jest.fn(),
             set: jest.fn(),
@@ -34,7 +35,11 @@ describe('RedisService', () => {
 
     it('should connect and register event listeners', () => {
         redisService.connect();
-        expect(Redis).toHaveBeenCalledWith('redis://localhost:6379');
+        expect(Redis).toHaveBeenCalledWith('redis://localhost:6379', {
+            maxRetriesPerRequest: 1,
+            connectTimeout: 2000,
+            enableOfflineQueue: false
+        });
         expect(mockRedisInstance.on).toHaveBeenCalledWith('error', expect.any(Function));
         expect(mockRedisInstance.on).toHaveBeenCalledWith('connect', expect.any(Function));
     });

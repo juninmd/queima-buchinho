@@ -73,14 +73,7 @@ if (mode === 'listener') {
       setupPolling();
     }
 
-    bot.on('message', (msg) => logger.info(`📩 Msg: Chat=${msg.chat.id}, User=${msg.from?.username}, Texto="${msg.text}"`));
-    bot.on('callback_query', (q) => logger.info(`🖱️ Callback: Data=${q.data}, Chat=${q.message?.chat.id}`));
-    bot.on('polling_error', (err) => logger.error('❌ Polling error:', err.message));
-
-    new HabitsController(bot, new MenuController(bot)).init();
-    new BotController(bot).init();
-    new MenuController(bot).init();
-    logger.info('🚀 Controllers ativos!');
+    attachControllers();
     await notifyStartup(bot).catch(() => {});
   };
 
@@ -105,9 +98,31 @@ if (mode === 'listener') {
 }
 
 function setupPolling() {
+  if (bot && botMode === 'polling') {
+    try { bot.stopPolling().catch(() => {}); } catch { /* ignore */ }
+  }
   bot = new TelegramBot(token!, { polling: { interval: 1000, params: { allowed_updates: allowedUpdates } } } as any);
   botMode = 'polling';
   logger.info(`🚀 Polling ativo!`);
+
+  bot.on('polling_error', (err: any) => {
+    const code = err?.code || '';
+    logger.error('❌ [DEBUG] Erro no Polling:', err?.message ?? err);
+    if (code === 'EFATAL' || code === 'ECONNRESET' || err?.message?.includes('ECONNRESET')) {
+      logger.warn('🔄 Polling morreu (ECONNRESET/EFATAL). Reconectando em 5s...');
+      setTimeout(() => { setupPolling(); attachControllers(); }, 5000);
+    }
+  });
+
+  bot.on('message', (msg) => logger.info(`📩 Msg: Chat=${msg.chat.id}, User=${msg.from?.username}, Texto="${msg.text}"`));
+  bot.on('callback_query', (q) => logger.info(`🖱️ Callback: Data=${q.data}, Chat=${q.message?.chat.id}`));
+}
+
+function attachControllers() {
+  new HabitsController(bot, new MenuController(bot)).init();
+  new BotController(bot).init();
+  new MenuController(bot).init();
+  logger.info('🚀 Controllers ativos!');
 }
 
 async function runReminder(scheduler: SchedulerService, mode: string) {

@@ -242,6 +242,7 @@ Treino e cardio: registre pelos botoes do /menu
 
     let report = `ðŸ´ <b>CardÃ¡pio de Hoje (${dayName})</b>\n\n`;
     report += `ðŸ³ <b>CafÃ© da ManhÃ£:</b>\n${diet.cafe}\n\n`;
+    report += `☕ <b>Café da Tarde:</b>\n${diet.cafe_tarde}\n\n`;
     report += `ðŸ½ï¸ <b>AlmoÃ§o:</b>\n${diet.almoco}\n\n`;
     report += `ðŸŒ™ <b>Jantar:</b>\n${diet.jantar}\n\n`;
     const response = await mikaService.response('Diga uma frase curta para seguir o cardapio de hoje, no tom da Mika.');

@@ -7,11 +7,11 @@
   "description": "Telegram bot para motivação de treinos",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "migrate": "node dist/scripts/migrate.js",
-    "dev": "ts-node src/index.ts",
-    "test": "jest",
+    "build": "tsc --noEmit",
+    "start": "bun src/index.ts",
+    "migrate": "bun src/scripts/migrate.ts",
+    "dev": "bun --hot src/index.ts",
+    "test": "bun x jest",
     "lint": "tsc --noEmit"
   },
   "keywords": [

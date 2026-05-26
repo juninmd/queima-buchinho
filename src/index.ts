@@ -8,9 +8,9 @@ import { redisService } from './services/redis.service';
 import { logger } from './utils/logger';
 import { HealthServer } from './utils/server';
 import { pool } from './config/database';
+import { notifyStartup, notifyShutdown, notifyCrash } from './utils/notifications';
 
 dotenv.config();
-
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const mode = process.env.BOT_MODE || 'listener';
 const webhookUrl = process.env.WEBHOOK_URL;
@@ -28,9 +28,10 @@ let botMode: 'polling' | 'webhook' | 'none' = 'none';
 async function shutdown(signal: string) {
   logger.info(`🛑 Recebido ${signal}. Shutdown gracioso...`);
   try {
+    if (bot) await notifyShutdown(bot).catch(() => {});
     if (botMode === 'polling') await bot?.stopPolling();
     else if (botMode === 'webhook') await (bot as any)?.closeWebHook?.();
-  } catch { /* ignora erros no shutdown do bot */ }
+  } catch { /* ignore */ }
   await healthServer.close();
   await redisService.disconnect();
   await pool.end();
@@ -39,80 +40,53 @@ async function shutdown(signal: string) {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('uncaughtException', async (err) => {
+  logger.error('💥 Uncaught Exception:', err);
+  if (bot) await notifyCrash(bot, err).catch(() => {});
+  process.exit(1);
+});
+process.on('unhandledRejection', async (reason) => {
+  const err = reason instanceof Error ? reason : new Error(String(reason));
+  logger.error('💥 Unhandled Rejection:', err);
+  if (bot) await notifyCrash(bot, err).catch(() => {});
+  process.exit(1);
+});
+
+const allowedUpdates = ['message', 'callback_query', 'channel_post', 'edited_message'];
 
 if (mode === 'listener') {
   redisService.connect();
   const setupBot = async () => {
     logger.info('⚙️ Iniciando setup do Bot...');
-    
-    const allowedUpdates = ['message', 'callback_query', 'channel_post', 'edited_message'];
-
     if (webhookUrl) {
       try {
         bot = new TelegramBot(token, { webHook: { port } } as any);
         await bot.deleteWebHook();
         await bot.setWebHook(`${webhookUrl}/bot${token}`, { allowed_updates: allowedUpdates } as any);
         botMode = 'webhook';
-        logger.info(`🚀 Modo WEBHOOK ativo: ${webhookUrl}`);
+        logger.info(`🚀 Webhook ativo: ${webhookUrl}`);
       } catch (err: any) {
-        logger.error(`⚠️ Falha ao configurar Webhook: ${err.message || err}.`);
-        logger.info('🔄 Tentando fallback para modo POLLING...');
-        
-        try {
-          // Se falhou o webhook, tentamos o polling como último recurso
-          bot = new TelegramBot(token, { 
-            polling: { 
-              interval: 1000, 
-              params: { allowed_updates: allowedUpdates } 
-            } 
-          } as any);
-          await bot.deleteWebHook().catch(() => {});
-          botMode = 'polling';
-          logger.info(`🚀 Modo POLLING fallback ativo!`);
-        } catch (fallbackErr: any) {
-          logger.error(`❌ Falha crítica ao iniciar modo POLLING: ${fallbackErr.message}`);
-          throw fallbackErr;
-        }
+        logger.error(`⚠️ Webhook falhou, tentando Polling: ${err.message}`);
+        setupPolling();
       }
     } else {
-      bot = new TelegramBot(token, { 
-        polling: { 
-          interval: 1000, 
-          params: { allowed_updates: allowedUpdates } 
-        } 
-      } as any);
-      await bot.deleteWebHook();
-      botMode = 'polling';
-      logger.info(`🚀 Modo POLLING ativo (intervalo 1s). Updates permitidos: ${allowedUpdates.join(', ')}`);
+      setupPolling();
     }
-    
-    // LOG EXTREMO: Capturar qualquer evento
-    bot.on('message', (msg) => {
-      logger.info(`📩 [DEBUG] MENSAGEM RECEBIDA: Chat=${msg.chat.id}, User=${msg.from?.username}, Texto="${msg.text}"`);
-    });
-    
-    bot.on('callback_query', (query) => {
-      logger.info(`🖱️ [DEBUG] CALLBACK RECEBIDO: Data=${query.data}, Chat=${query.message?.chat.id}`);
-    });
 
-    bot.on('polling_error', (err) => logger.error('❌ [DEBUG] Erro no Polling:', err.message));
+    bot.on('message', (msg) => logger.info(`📩 Msg: Chat=${msg.chat.id}, User=${msg.from?.username}, Texto="${msg.text}"`));
+    bot.on('callback_query', (q) => logger.info(`🖱️ Callback: Data=${q.data}, Chat=${q.message?.chat.id}`));
+    bot.on('polling_error', (err) => logger.error('❌ Polling error:', err.message));
 
-    const menu = new MenuController(bot);
-    const habits = new HabitsController(bot, menu);
-    const botCtrl = new BotController(bot);
-
-    habits.init();
-    logger.info('✅ HabitsController inicializado!');
-    botCtrl.init();
-    logger.info('✅ BotController inicializado!');
-    menu.init();
-    logger.info('✅ MenuController inicializado!');
-
-    logger.info('🚀 Todos os controllers e listeners ativos!');
+    new HabitsController(bot, new MenuController(bot)).init();
+    new BotController(bot).init();
+    new MenuController(bot).init();
+    logger.info('🚀 Controllers ativos!');
+    await notifyStartup(bot).catch(() => {});
   };
+
   setupBot().catch(err => {
-    logger.error('💥 Erro CRÍTICO no setupBot:', err);
-    process.exit(1); // Fail fast in listener mode
+    logger.error('💥 Erro no setupBot:', err);
+    process.exit(1);
   });
 } else {
   bot = new TelegramBot(token);
@@ -128,6 +102,12 @@ if (mode === 'listener') {
       process.exit(1);
     }
   })();
+}
+
+function setupPolling() {
+  bot = new TelegramBot(token!, { polling: { interval: 1000, params: { allowed_updates: allowedUpdates } } } as any);
+  botMode = 'polling';
+  logger.info(`🚀 Polling ativo!`);
 }
 
 async function runReminder(scheduler: SchedulerService, mode: string) {

@@ -186,7 +186,7 @@ export class SchedulerService {
         });
     }
 
-    public async sendFoodReminder(meal: 'cafe' | 'almoco' | 'jantar') {
+    public async sendFoodReminder(meal: 'cafe' | 'almoco' | 'cafe_tarde' | 'jantar') {
         await this.withLock(`lock:food_reminder_${meal}`, async () => {
             const chatId = this.getChatId();
             if (!chatId) return;

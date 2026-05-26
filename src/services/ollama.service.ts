@@ -81,8 +81,8 @@ Regras de tom (SIGA ESTRITAMENTE):
         );
     }
 
-    public async getFoodReminder(meal: 'cafe' | 'almoco' | 'jantar'): Promise<MikaResponse | null> {
-        const mealMap = { cafe: 'café da manhã', almoco: 'almoço', jantar: 'jantar' };
+    public async getFoodReminder(meal: 'cafe' | 'almoco' | 'cafe_tarde' | 'jantar'): Promise<MikaResponse | null> {
+        const mealMap = { cafe: 'café da manhã', almoco: 'almoço', cafe_tarde: 'café da tarde', jantar: 'jantar' };
         return this.generateDynamicResponse(
             `Hora do ${mealMap[meal]}. Lembra o Mestre de ir comer. Direto, sem romantizar comida saudável, só manda ele amassar uma refeição.`
         );

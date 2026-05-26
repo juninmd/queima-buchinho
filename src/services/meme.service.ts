@@ -47,8 +47,8 @@ export class MemeService {
         return mikaService.response('Lembrar o Mestre de beber agua agora, com zoeira leve e direta.');
     }
 
-    public async getFoodReminder(meal: 'cafe' | 'almoco' | 'jantar'): Promise<MemeResponse> {
-        const mealMap = { cafe: 'cafe da manha', almoco: 'almoco', jantar: 'jantar' };
+    public async getFoodReminder(meal: 'cafe' | 'almoco' | 'cafe_tarde' | 'jantar'): Promise<MemeResponse> {
+        const mealMap = { cafe: 'cafe da manha', almoco: 'almoco', cafe_tarde: 'cafe da tarde', jantar: 'jantar' };
         return mikaService.response(`Hora do ${mealMap[meal]}. Mandar o Mestre comer, direto e sarcastico.`);
     }
 

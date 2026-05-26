@@ -16,6 +16,7 @@ export const HABITS: HabitDefinition[] = [
   { key: 'almoco', emoji: '🍽️', label: 'Almoço', category: 'nutrition' },
   { key: 'cafe_tarde', emoji: '🍪', label: 'Café Tarde', category: 'nutrition' },
   { key: 'jantar', emoji: '🌙', label: 'Jantar', category: 'nutrition' },
+  { key: 'sem_acucar', emoji: '🚫', label: 'Sem Açúcar', category: 'nutrition' },
 ];
 
 export const HABIT_MAP = new Map(HABITS.map(h => [h.key, h]));

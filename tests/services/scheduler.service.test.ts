@@ -53,7 +53,7 @@ describe('SchedulerService', () => {
             delete process.env.CHAT_ID;
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
             expect((scheduler as any).getChatId()).toBeNull();
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('CHAT_ID nÃ£o definido'));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('CHAT_ID não definido'));
             consoleSpy.mockRestore();
         });
     });

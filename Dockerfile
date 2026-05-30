@@ -2,7 +2,7 @@
 FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
-COPY package.json bun.lockb* ./
+COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile
 
 # Stage 2: Production
@@ -14,7 +14,7 @@ RUN apk add --no-cache python3 py3-pip curl && \
     pip install edge-tts --break-system-packages
 
 COPY --from=builder /app/node_modules ./node_modules
-COPY package.json bun.lockb* ./
+COPY package.json bun.lock* ./
 COPY . .
 
 RUN mkdir -p assets data && echo "[]" > data/workout-history.json
@@ -23,4 +23,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD curl -fsS http://localhost:8080/health || exit 1
 
-CMD ["bun", "src/index.ts"]
+CMD bun src/scripts/migrate.ts && bun src/index.ts

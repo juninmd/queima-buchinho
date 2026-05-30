@@ -12,7 +12,7 @@
     "migrate": "bun src/scripts/migrate.ts",
     "dev": "bun --hot src/index.ts",
     "test": "bun x jest",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit && echo"
   },
   "keywords": [
     "telegram",

@@ -1,4 +1,4 @@
-﻿import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot from 'node-telegram-bot-api';
 import { habitsService } from '../services/habits.service';
 import { metricsService } from '../services/metrics.service';
 import { workoutService } from '../services/workout.service';
@@ -83,12 +83,12 @@ export class MenuController {
     ]);
     const bar = getProgressBar(completed, total);
 
-    let text = `<b>ðŸ”¥ Queima Buchinho - Menu do Dia ðŸ”¥</b>\n\n`;
-    text += `Progresso: ${completed}/${total} hÃ¡bitos\n`;
+    let text = `<b>🔥 Queima Buchinho - Menu do Dia 🔥</b>\n\n`;
+    text += `Progresso: ${completed}/${total} hábitos\n`;
     text += `<code>${bar}</code>\n\n`;
-    text += `ðŸ’§ Ãgua hoje: ${water}ml\n`;
+    text += `💧 Água hoje: ${water}ml\n`;
     if (streak > 0) {
-      const flame = streak >= 7 ? 'ðŸ”¥ðŸ”¥ðŸ”¥' : streak >= 3 ? 'ðŸ”¥ðŸ”¥' : 'ðŸ”¥';
+      const flame = streak >= 7 ? '🔥🔥🔥' : streak >= 3 ? '🔥🔥' : '🔥';
       text += `${flame} Streak: ${streak} dia${streak > 1 ? 's' : ''} seguido${streak > 1 ? 's' : ''}!\n`;
     }
     text += `\nToque para marcar/desmarcar:`;
@@ -108,61 +108,61 @@ export class MenuController {
 
     for (const pair of pairs) {
       rows.push(pair.map(h => ({
-        text: `${h.emoji} ${h.label} ${status[h.key] ? 'âœ…' : 'âŒ'}`,
+        text: `${h.emoji} ${h.label} ${status[h.key] ? '✅' : '❌'}`,
         callback_data: `habit_${h.key}`
       })));
     }
 
     rows.push([
-      { text: 'ðŸ’§ +250ml', callback_data: 'add_water_250' },
-      { text: 'ðŸ’§ +500ml', callback_data: 'add_water_500' },
-      { text: 'ðŸ’§ +1L', callback_data: 'add_water_1000' }
+      { text: '💧 +250ml', callback_data: 'add_water_250' },
+      { text: '💧 +500ml', callback_data: 'add_water_500' },
+      { text: '💧 +1L', callback_data: 'add_water_1000' }
     ]);
 
     rows.push([
-      { text: 'ðŸ“Š Semana', callback_data: 'weekly_summary' },
-      { text: 'ðŸ½ï¸ CardÃ¡pio', callback_data: 'show_diet' },
-      { text: 'ðŸ‹ï¸ Ficha', callback_data: 'show_gym' }
+      { text: '📊 Semana', callback_data: 'weekly_summary' },
+      { text: '🍽️ Cardápio', callback_data: 'show_diet' },
+      { text: '🏋️ Ficha', callback_data: 'show_gym' }
     ]);
     rows.push([
-      { text: 'ðŸš€ Motivar', callback_data: 'get_motivation' }
+      { text: '🚀 Motivar', callback_data: 'get_motivation' }
     ]);
 
     rows.push([
-      { text: 'ðŸ”„ Atualizar', callback_data: 'refresh_menu' }
+      { text: '🔄 Atualizar', callback_data: 'refresh_menu' }
     ]);
 
     return rows;
   }
 
   private async showHelp(msg: TelegramBot.Message) {
-    const text = `<b>ðŸ”¥ Queima Buchinho Bot ðŸ”¥</b>
+    const text = `<b>🔥 Queima Buchinho Bot 🔥</b>
 
-<b>ðŸ“‹ HÃ¡bitos:</b>
-/menu - Menu interativo com todos os hÃ¡bitos
+<b>📋 Hábitos:</b>
+/menu - Menu interativo com todos os hábitos
 /progresso - Ver progresso do dia
-/semana - RelatÃ³rio semanal (Mika tÃ³xica ðŸ˜ˆ)
+/semana - Relatório semanal (Mika tóxica 😈)
 
-<b>ðŸ’§ MÃ©tricas:</b>
-/agua - Registrar Ã¡gua (com botÃµes)
-/peso &lt;valor&gt; - Registrar peso (kg)
-/altura &lt;valor&gt; - Registrar altura (cm)
-/gordura &lt;valor&gt; - % de gordura corporal
-/musculo &lt;valor&gt; - % de massa muscular
-/passos &lt;valor&gt; - Registrar passos do dia
+<b>💧 Métricas:</b>
+/agua - Registrar água (com botões)
+/peso <valor> - Registrar peso (kg)
+/altura <valor> - Registrar altura (cm)
+/gordura <valor> - % de gordura corporal
+/musculo <valor> - % de massa muscular
+/passos <valor> - Registrar passos do dia
 
-<b>ðŸ’ª Treino:</b>
+<b>💪 Treino:</b>
 Treino e cardio: registre pelos botoes do /menu
-/checktreino - VerificaÃ§Ã£o manual
+/checktreino - Verificação manual
 /cardio - Mostra aviso para usar o botao
-/streak - Ver sua sequÃªncia de treinos ðŸ”¥
+/streak - Ver sua sequência de treinos 🔥
 /reset - Resetar treino de hoje
 
-<b>ðŸŽµ Outros:</b>
-/relatorio - RelatÃ³rio diÃ¡rio com Ã¡udio da Mika
-/motivar - Ãudio motivacional
-/instante &lt;termo&gt; - Sons do MyInstants
-/hora - HorÃ¡rio de BrasÃ­lia`;
+<b>🎵 Outros:</b>
+/relatorio - Relatório diário com áudio da Mika
+/motivar - Áudio motivacional
+/instante <termo> - Sons do MyInstants
+/hora - Horário de Brasília`;
 
     await this.bot.sendMessage(msg.chat.id, text, { parse_mode: 'HTML' });
   }
@@ -173,15 +173,15 @@ Treino e cardio: registre pelos botoes do /menu
 
     const today = await metricsService.getTodaySum(userId, 'water');
     await this.bot.sendMessage(msg.chat.id,
-      `ðŸ’§ <b>Consumo de Ãgua</b>\nTotal de hoje: ${today}ml\n\nEscolha uma quantidade:`, {
+      `💧 <b>Consumo de Água</b>\nTotal de hoje: ${today}ml\n\nEscolha uma quantidade:`, {
         parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
             [
-              { text: 'ðŸ¥¤ +250ml', callback_data: 'add_water_250' },
-              { text: 'ðŸ¥› +500ml', callback_data: 'add_water_500' }
+              { text: '🥛 +250ml', callback_data: 'add_water_250' },
+              { text: '🥤 +500ml', callback_data: 'add_water_500' }
             ],
-            [{ text: 'ðŸ¼ +1L', callback_data: 'add_water_1000' }]
+            [{ text: '🍼 +1L', callback_data: 'add_water_1000' }]
           ]
         }
       });
@@ -196,7 +196,7 @@ Treino e cardio: registre pelos botoes do /menu
       await this.bot.sendChatAction(chatId, 'typing');
       const summary = await metricsService.getWeeklySummary(userId);
       if (!summary) {
-        await this.bot.sendMessage(chatId, 'âŒ Erro ao gerar resumo semanal.');
+        await this.bot.sendMessage(chatId, '❌ Erro ao gerar resumo semanal.');
         return;
       }
 
@@ -205,34 +205,34 @@ Treino e cardio: registre pelos botoes do /menu
         throw new Error('Mika LLM response unavailable');
       }
 
-      const wE = summary.current.metrics.water >= summary.previous.metrics.water ? 'ðŸ“ˆ' : 'ðŸ“‰';
-      const tE = summary.current.workouts >= summary.previous.workouts ? 'ðŸ“ˆ' : 'ðŸ“‰';
+      const wE = summary.current.metrics.water >= summary.previous.metrics.water ? '📈' : '📉';
+      const tE = summary.current.workouts >= summary.previous.workouts ? '📈' : '📉';
 
-      let report = `ðŸ“Š <b>Resumo Semanal</b>\n\n`;
-      report += `ðŸ’ª Treinos: ${summary.current.workouts} vs ${summary.previous.workouts} ${tE}\n`;        
-      report += `ðŸ’§ Ãgua: ${summary.current.metrics.water}ml vs ${summary.previous.metrics.water}ml ${wE}\n\n`;
-      report += `ðŸ—£ï¸ <b>Mika diz:</b> ${response.message}`;
+      let report = `📊 <b>Resumo Semanal</b>\n\n`;
+      report += `💪 Treinos: ${summary.current.workouts} vs ${summary.previous.workouts} ${tE}\n`;        
+      report += `💧 Água: ${summary.current.metrics.water}ml vs ${summary.previous.metrics.water}ml ${wE}\n\n`;
+      report += `🗣️ <b>Mika diz:</b> ${response.message}`;
 
       await this.bot.sendMessage(chatId, report, { parse_mode: 'HTML' });
 
-      // Gerar e enviar Ã¡udio da Mika
+      // Gerar e enviar áudio da Mika
       try {
         const audioPath = await ttsService.generateMikaAudio(response.message);
-        await sendAudioMessage(this.bot, chatId, audioPath, `ðŸŽ™ï¸ ComentÃ¡rio da Mika`);
+        await sendAudioMessage(this.bot, chatId, audioPath, `🎙️ Comentário da Mika`);
         await ttsService.cleanup(audioPath);
       } catch (error) {
-        logger.error('Erro ao gerar Ã¡udio do resumo semanal:', error);
+        logger.error('Erro ao gerar áudio do resumo semanal:', error);
       }
 
       if (response.audioSearchTerm) {
         const button = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
         if (button?.audioUrl) {
-          await this.bot.sendAudio(chatId, button.audioUrl, { caption: `ðŸŽ¶ ${button.title}` });
+          await this.bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
         }
       }
     } catch (error) {
       logger.error('Erro no showWeekly:', error);
-      await this.bot.sendMessage(chatId, 'âŒ Erro ao processar resumo semanal.');
+      await this.bot.sendMessage(chatId, '❌ Erro ao processar resumo semanal.');
     }
   }
 
@@ -240,11 +240,11 @@ Treino e cardio: registre pelos botoes do /menu
     const dayName = getBrasiliaDayName();
     const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
 
-    let report = `ðŸ´ <b>CardÃ¡pio de Hoje (${dayName})</b>\n\n`;
-    report += `ðŸ³ <b>CafÃ© da ManhÃ£:</b>\n${diet.cafe}\n\n`;
+    let report = `🥗 <b>Cardápio de Hoje (${dayName})</b>\n\n`;
+    report += `🍳 <b>Café da Manhã:</b>\n${diet.cafe}\n\n`;
     report += `☕ <b>Café da Tarde:</b>\n${diet.cafe_tarde}\n\n`;
-    report += `ðŸ½ï¸ <b>AlmoÃ§o:</b>\n${diet.almoco}\n\n`;
-    report += `ðŸŒ™ <b>Jantar:</b>\n${diet.jantar}\n\n`;
+    report += `🍽️ <b>Almoço:</b>\n${diet.almoco}\n\n`;
+    report += `🌙 <b>Jantar:</b>\n${diet.jantar}\n\n`;
     const response = await mikaService.response('Diga uma frase curta para seguir o cardapio de hoje, no tom da Mika.');
     report += `<i>${response.message}</i>`;
 
@@ -253,9 +253,9 @@ Treino e cardio: registre pelos botoes do /menu
       reply_markup: {
         inline_keyboard: [
           [
-            { text: 'ðŸ³ CafÃ© feito', callback_data: 'meal_done_cafe' },
-            { text: 'ðŸ½ï¸ AlmoÃ§o feito', callback_data: 'meal_done_almoco' },
-            { text: 'ðŸŒ™ Jantar feito', callback_data: 'meal_done_jantar' },
+            { text: '🍳 Café feito', callback_data: 'meal_done_cafe' },
+            { text: '🍽️ Almoço feito', callback_data: 'meal_done_almoco' },
+            { text: '🌙 Jantar feito', callback_data: 'meal_done_jantar' },
           ]
         ]
       }
@@ -266,7 +266,7 @@ Treino e cardio: registre pelos botoes do /menu
     const dayName = getBrasiliaDayName();
     const day = GYM_PLAN[dayName] || GYM_PLAN['segunda-feira'];
 
-    let report = `${day.emoji} <b>Ficha de Hoje â€” ${day.muscleGroup}</b>\n`;
+    let report = `${day.emoji} <b>Ficha de Hoje — ${day.muscleGroup}</b>\n`;
     report += `<i>${day.focus}</i>\n\n`;
 
     if (day.rest) {
@@ -275,7 +275,7 @@ Treino e cardio: registre pelos botoes do /menu
     }
 
     for (const ex of day.exercises) {
-      report += `â€¢ <b>${ex.name}</b> â€” ${ex.sets}\n`;
+      report += `• <b>${ex.name}</b> — ${ex.sets}\n`;
     }
 
     if (!day.rest) {

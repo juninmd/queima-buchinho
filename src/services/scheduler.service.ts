@@ -17,11 +17,11 @@ import { MenuController } from '../controllers/menu.controller';
 import { escapeHtml } from '../utils/html';
 import { sendAudioMessage } from '../utils/telegram';
 
-const TRAIN_BTN: TelegramBot.InlineKeyboardButton = { text: 'ðŸ‹ï¸â€â™‚ï¸ JÃ¡ treinei! âœ…', callback_data: 'mark_trained' };
-const CARDIO_BTN: TelegramBot.InlineKeyboardButton = { text: 'ðŸƒ CÃ¡rdio feito! âœ…', callback_data: 'mark_cardio' };
+const TRAIN_BTN: TelegramBot.InlineKeyboardButton = { text: '🏋️‍♂️ Já treinei! ✅', callback_data: 'mark_trained' };
+const CARDIO_BTN: TelegramBot.InlineKeyboardButton = { text: '🏃 Cárdio feito! ✅', callback_data: 'mark_cardio' };
 const WATER_ROW: TelegramBot.InlineKeyboardButton[] = [
-    { text: 'ðŸ¥¤ +250ml', callback_data: 'add_water_250' },
-    { text: 'ðŸ¥› +500ml', callback_data: 'add_water_500' }
+    { text: '🥛 +250ml', callback_data: 'add_water_250' },
+    { text: '🥤 +500ml', callback_data: 'add_water_500' }
 ];
 
 export class SchedulerService {
@@ -33,7 +33,7 @@ export class SchedulerService {
         if (redisService.isConnected()) {
             const lock = await redisService.get(lockKey);
             if (lock) {
-                logger.warn(`[Scheduler] Job ${lockKey} jÃ¡ estÃ¡ em execuÃ§Ã£o (Redis). Pulando.`);
+                logger.warn(`[Scheduler] Job ${lockKey} já está em execução (Redis). Pulando.`);
                 return;
             }
             try {
@@ -46,7 +46,7 @@ export class SchedulerService {
             }
         } else {
             if (this.memoryLocks.has(lockKey)) {
-                logger.warn(`[Scheduler] Job ${lockKey} jÃ¡ estÃ¡ em execuÃ§Ã£o (memÃ³ria). Pulando.`);
+                logger.warn(`[Scheduler] Job ${lockKey} já está em execução (memória). Pulando.`);
                 return;
             }
             const timer = setTimeout(() => this.memoryLocks.delete(lockKey), ttlSeconds * 1000);
@@ -65,7 +65,7 @@ export class SchedulerService {
     private getChatId(): number | null {
         const chatIdStr = process.env.CHAT_ID;
         if (!chatIdStr) {
-            logger.error('âŒ CHAT_ID nÃ£o definido.');
+            logger.error('❌ CHAT_ID não definido.');
             return null;
         }
         return Number(chatIdStr);
@@ -81,37 +81,37 @@ export class SchedulerService {
             await this.bot.sendMessage(chatId, response.message, options);
         }
 
-        // Se tiver termo de Ã¡udio (ou se for falha), tentar enviar MyInstants tambÃ©m
+        // Se tiver termo de áudio (ou se for falha), tentar enviar MyInstants também
         if (response.audioSearchTerm) {
             try {
                 const instant = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
                 if (instant?.audioUrl) {
-                    await this.bot.sendAudio(chatId, instant.audioUrl, { caption: `ðŸŽ¶ ${instant.title}` });
+                    await this.bot.sendAudio(chatId, instant.audioUrl, { caption: `🎶 ${instant.title}` });
                 }
             } catch (err) {
-                logger.error('[Scheduler] Erro ao enviar Ã¡udio do MyInstants:', err);
+                logger.error('[Scheduler] Erro ao enviar áudio do MyInstants:', err);
             }
         }
     }
 
     public async runDailyCheck() {
         await this.withLock('lock:daily_check', async () => {
-            logger.info('â° Executando verificaÃ§Ã£o diÃ¡ria...');
+            logger.info('⏰ Executando verificação diária...');
             const chatId = this.getChatId();
             if (!chatId) return;
 
             const { trained } = await workoutService.checkDailyMessages(this.bot, chatId);
 
             if (trained) {
-                logger.info('âœ… UsuÃ¡rio treinou hoje!');
+                logger.info('✅ Usuário treinou hoje!');
                 await this.sendWithAudio(chatId, await memeService.getCongratsMessage());
                 return;
             }
 
-            logger.info('âŒ UsuÃ¡rio nÃ£o treinou hoje.');
+            logger.info('❌ Usuário não treinou hoje.');
             workoutService.logWorkout(chatId, false);
             const roast = await memeService.getRoastMessage();
-            // Adicionando termo de Ã¡udio para falha se nÃ£o houver
+            // Adicionando termo de áudio para falha se não houver
             await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[TRAIN_BTN, CARDIO_BTN]] } });
         });
     }
@@ -123,24 +123,24 @@ export class SchedulerService {
             const dayName = getBrasiliaDayName();
             const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
 
-            logger.info(`â° Enviando lembrete matinal de ${dayName}...`);
+            logger.info(`⏰ Enviando lembrete matinal de ${dayName}...`);
              let msg = `🍴 <b>CARDAPIO DE HOJE</b>\n` +
-                    `â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n` +
-                    `ðŸ³ <b>CafÃ©:</b> ${escapeHtml(diet.cafe)}\n` +
-                    `ðŸ½ï¸ <b>AlmoÃ§o:</b> ${escapeHtml(diet.almoco)}\n` +
-                    `ðŸŒ™ <b>Jantar:</b> ${escapeHtml(diet.jantar)}`;
+                    `──────────────────────\n` +
+                    `🍳 <b>Café:</b> ${escapeHtml(diet.cafe)}\n` +
+                    `🍽️ <b>Almoço:</b> ${escapeHtml(diet.almoco)}\n` +
+                    `🌙 <b>Jantar:</b> ${escapeHtml(diet.jantar)}`;
 
              const options: TelegramBot.SendMessageOptions = {
                  parse_mode: 'HTML',
                  reply_markup: {
                      inline_keyboard: [
                          [
-                             { text: 'ðŸ³ CafÃ©', callback_data: 'meal_done_cafe' },
-                             { text: 'ðŸ½ï¸ AlmoÃ§o', callback_data: 'meal_done_almoco' },
-                             { text: 'ðŸŒ™ Jantar', callback_data: 'meal_done_jantar' }
+                             { text: '🍳 Café', callback_data: 'meal_done_cafe' },
+                             { text: '🍽️ Almoço', callback_data: 'meal_done_almoco' },
+                             { text: '🌙 Jantar', callback_data: 'meal_done_jantar' }
                          ],
                          [TRAIN_BTN, CARDIO_BTN],
-                         [{ text: 'ðŸ“± Abrir Menu Principal', callback_data: 'refresh_menu' }]
+                         [{ text: '📱 Abrir Menu Principal', callback_data: 'refresh_menu' }]
                      ]
                  }
              };
@@ -155,19 +155,19 @@ export class SchedulerService {
             const chatId = this.getChatId();
             if (!chatId) return;
 
-            logger.info('â° Verificando treino para cobranÃ§a...');
+            logger.info('⏰ Verificando treino para cobrança...');
             try {
                 const { trained } = await workoutService.checkDailyMessages(this.bot, chatId);
                 if (!trained) {
                     const hour = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit' });
-                    logger.info(`âŒ UsuÃ¡rio nÃ£o treinou. Enviando cobranÃ§a das ${hour}:00...`);
+                    logger.info(`❌ Usuário não treinou. Enviando cobrança das ${hour}:00...`);
                     const roast = await memeService.getConditionalReminder(`${hour}:00`);
                     await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[TRAIN_BTN, CARDIO_BTN]] } });
                 } else {
-                    logger.info('âœ… UsuÃ¡rio jÃ¡ treinou hoje. Pulando cobranÃ§a.');
+                    logger.info('✅ Usuário já treinou hoje. Pulando cobrança.');
                 }
             } catch (error) {
-                logger.error('âŒ Erro ao verificar treino na cobranÃ§a:', error);
+                logger.error('❌ Erro ao verificar treino na cobrança:', error);
             }
         });
     }
@@ -177,9 +177,9 @@ export class SchedulerService {
             const chatId = this.getChatId();
             if (!chatId) return;
 
-            logger.info('ðŸ’§ Enviando lembrete de Ã¡gua...');
+            logger.info('💧 Enviando lembrete de água...');
             const options: TelegramBot.SendMessageOptions = {
-                reply_markup: { inline_keyboard: [WATER_ROW, [{ text: 'ðŸ¼ +1L', callback_data: 'add_water_1000' }]] }
+                reply_markup: { inline_keyboard: [WATER_ROW, [{ text: '🍼 +1L', callback_data: 'add_water_1000' }]] }
             };
             const reminder = await memeService.getWaterReminder();
             await this.sendWithAudio(chatId, reminder, options);
@@ -197,12 +197,12 @@ export class SchedulerService {
             const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
             const mealDescription = diet[meal];
 
-            logger.info(`ðŸ½ï¸ Enviando lembrete de ${meal}...`);
+            logger.info(`🍽️ Enviando lembrete de ${meal}...`);
             const options: TelegramBot.SendMessageOptions = {
                 parse_mode: 'HTML',
                 reply_markup: {
                     inline_keyboard: [
-                        [{ text: `âœ… JÃ¡ ${label}!`, callback_data: `meal_done_${meal}` }],
+                        [{ text: `✅ Já ${label}!`, callback_data: `meal_done_${meal}` }],
                         [TRAIN_BTN, CARDIO_BTN],
                         WATER_ROW
                     ]
@@ -225,7 +225,7 @@ export class SchedulerService {
             const chatId = this.getChatId();
             if (!chatId) return;
 
-            logger.info('ðŸ“‹ Enviando verificaÃ§Ã£o de hÃ¡bitos do dia...');
+            logger.info('📋 Enviando verificação de hábitos do dia...');
             try {
                 const uncompleted = await habitsService.getUncompletedHabits(chatId);
                 if (uncompleted.length === 0) {
@@ -245,14 +245,14 @@ export class SchedulerService {
 
                 const keyboard = uncompleted.slice(0, 4).reduce<TelegramBot.InlineKeyboardButton[][]>((rows, key, i) => {
                     const h = HABIT_MAP.get(key);
-                    const btn = { text: `${h?.emoji || 'âœ…'} ${h?.label || key}`, callback_data: `habit_${key}` };
+                    const btn = { text: `${h?.emoji || '✅'} ${h?.label || key}`, callback_data: `habit_${key}` };
                     i % 2 === 0 ? rows.push([btn]) : rows[rows.length - 1].push(btn);
                     return rows;
                 }, []);
 
                 await this.sendWithAudio(chatId, response, { reply_markup: { inline_keyboard: keyboard } });
             } catch (error) {
-                logger.error('âŒ Erro ao enviar verificaÃ§Ã£o de hÃ¡bitos:', error);
+                logger.error('❌ Erro ao enviar verificação de hábitos:', error);
             }
         });
     }
@@ -265,7 +265,7 @@ export class SchedulerService {
             const dayName = getBrasiliaDayName();
             const day = GYM_PLAN[dayName] || GYM_PLAN['segunda-feira'];
 
-            logger.info(`ðŸ‹ï¸ Enviando ficha de treino de ${dayName}...`);
+            logger.info(`🏋️‍♂️ Enviando ficha de treino de ${dayName}...`);
 
             if (day.rest) {
                 const response = await mikaService.response('Hoje e dia de descanso. Explique curto que recuperacao faz parte do treino, no tom da Mika.');
@@ -276,14 +276,14 @@ export class SchedulerService {
                 return;
             }
 
-            let msg = `${day.emoji} <b>FICHA DE HOJE â€” ${day.muscleGroup.toUpperCase()}</b>\n`;
+            let msg = `${day.emoji} <b>FICHA DE HOJE — ${day.muscleGroup.toUpperCase()}</b>\n`;
             msg += `<i>${day.focus}</i>\n`;
-            msg += `â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n`;
+            msg += `──────────────────────\n`;
             for (const ex of day.exercises) {
-                msg += `â€¢ <b>${escapeHtml(ex.name)}</b> â€” ${ex.sets}\n`;
+                msg += `• <b>${escapeHtml(ex.name)}</b> — ${ex.sets}\n`;
             }
             const response = await mikaService.response(`Hoje o treino e ${day.muscleGroup}. Mande uma frase curta para ir treinar, no tom da Mika.`);
-            msg += `â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n`;
+            msg += `──────────────────────\n`;
             msg += `<i>${escapeHtml(response.message)}</i>`;
 
             await this.bot.sendMessage(chatId, msg, {
@@ -298,7 +298,7 @@ export class SchedulerService {
             const chatId = this.getChatId();
             if (!chatId) return;
 
-            logger.info('ðŸŽ¤ Iniciando auditoria diÃ¡ria da Mika...');
+            logger.info('🎙️ Iniciando auditoria diária da Mika...');
             try {
                 // 1. Coletar dados do dia
                 const [{ trained }, summary, streak, habitsCount] = await Promise.all([
@@ -322,20 +322,20 @@ export class SchedulerService {
                     throw new Error('Mika LLM response unavailable');
                 }
 
-                // 3. Converter para Ãudio (edge-tts)
+                // 3. Converter para Áudio (edge-tts)
                 const audioPath = await ttsService.generateMikaAudio(response.message);
 
                 // 4. Enviar para o Telegram
                 await this.bot.sendAudio(chatId, audioPath, {
-                    caption: `ðŸŽ™ï¸ Auditoria do Dia - Mika\n\n"${response.message.substring(0, 100)}..."`
+                    caption: `🎙️ Auditoria do Dia - Mika\n\n"${response.message.substring(0, 100)}..."`
                 });
 
                 // 5. Cleanup
                 await ttsService.cleanup(audioPath);
                 
-                logger.info('âœ… Auditoria diÃ¡ria enviada com sucesso!');
+                logger.info('✅ Auditoria diária enviada com sucesso!');
             } catch (error) {
-                logger.error('âŒ Erro na auditoria diÃ¡ria:', error);
+                logger.error('❌ Erro na auditoria diária:', error);
             }
         });
     }

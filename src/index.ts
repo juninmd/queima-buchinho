@@ -12,13 +12,13 @@ import { pool } from './config/database';
 import { notifyStartup, notifyShutdown, notifyCrash } from './utils/notifications';
 
 dotenv.config();
-const token = process.env.TELEGRAM_BOT_TOKEN;
+const token = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN;
 const mode = process.env.BOT_MODE || 'listener';
 const webhookUrl = process.env.WEBHOOK_URL;
 const port = Number(process.env.PORT) || 3000;
 const healthPort = Number(process.env.HEALTH_PORT) || 8080;
 
-if (!token) throw new Error('TELEGRAM_BOT_TOKEN não definido');
+if (!token) throw new Error('TELEGRAM_BOT_TOKEN ou BOT_TOKEN não definido');
 
 const healthServer = new HealthServer(healthPort);
 healthServer.start();
@@ -75,6 +75,7 @@ if (mode === 'listener') {
     }
 
     attachControllers();
+    setupCronJobs();
     await notifyStartup(bot).catch(() => {});
   };
 

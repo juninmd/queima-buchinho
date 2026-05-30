@@ -48,11 +48,11 @@ describe('MenuController', () => {
 
       // Help
       await messageHandler({ text: '/help', chat: { id: 123 } });
-      expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('HÃ¡bitos'), expect.any(Object));
+      expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('Hábitos'), expect.any(Object));
 
       // Agua
       await messageHandler({ text: '/agua', chat: { id: 123 }, from: { id: 456 } });
-      expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('Consumo de Ãgua'), expect.any(Object));
+      expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('Consumo de Água'), expect.any(Object));
 
       // Semana
       (metricsService.getWeeklySummary as jest.Mock).mockResolvedValue({ current: { workouts: 0, metrics: { water: 0 } }, previous: { workouts: 0, metrics: { water: 0 } } });
@@ -112,20 +112,20 @@ describe('MenuController', () => {
       it('should handle missing summary', async () => {
           (metricsService.getWeeklySummary as jest.Mock).mockResolvedValue(null);
           await menuController.showWeekly({ chat: { id: 123 }, from: { id: 456 } } as any);
-          expect(bot.sendMessage).toHaveBeenCalledWith(123, 'âŒ Erro ao gerar resumo semanal.');
+          expect(bot.sendMessage).toHaveBeenCalledWith(123, '❌ Erro ao gerar resumo semanal.');
       });
 
       it('should handle missing LLM response', async () => {
         (metricsService.getWeeklySummary as jest.Mock).mockResolvedValue({ current: { workouts: 0, metrics: { water: 0 } }, previous: { workouts: 0, metrics: { water: 0 } } });
         (ollamaService.getWeeklyReport as jest.Mock).mockResolvedValue(null);
         await menuController.showWeekly({ chat: { id: 123 }, from: { id: 456 } } as any);
-        expect(bot.sendMessage).toHaveBeenCalledWith(123, 'âŒ Erro ao processar resumo semanal.');
+        expect(bot.sendMessage).toHaveBeenCalledWith(123, '❌ Erro ao processar resumo semanal.');
     });
 
     it('should handle generic error', async () => {
         (metricsService.getWeeklySummary as jest.Mock).mockRejectedValue(new Error('Generic'));
         await menuController.showWeekly({ chat: { id: 123 }, from: { id: 456 } } as any);
-        expect(bot.sendMessage).toHaveBeenCalledWith(123, 'âŒ Erro ao processar resumo semanal.');
+        expect(bot.sendMessage).toHaveBeenCalledWith(123, '❌ Erro ao processar resumo semanal.');
     });
 
     it('should handle audio if provided', async () => {

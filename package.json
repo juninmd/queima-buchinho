@@ -32,7 +32,7 @@
     "dotenv": "^17.4.2",
     "edge-tts-node": "^1.5.7",
     "edge-tts-universal": "^1.4.0",
-    "ioredis": "^5.10.1",
+    "ioredis": "^5.11.0",
     "node-telegram-bot-api": "^0.67.0",
     "ollama": "^0.6.3",
     "pg": "^8.21.0",
@@ -40,7 +40,7 @@
     "node-cron": "^3.0.3"
   },
   "devDependencies": {
-    "@types/ioredis": "^4.28.10",
+    "@types/ioredis": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.9.1",
     "@types/node-telegram-bot-api": "^0.64.14",

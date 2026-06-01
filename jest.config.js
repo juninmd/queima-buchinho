@@ -7,4 +7,7 @@ module.exports = {
     coverageThreshold: {
         global: { lines: 70, functions: 70 }
     },
+    transform: {
+        '^.+\\.tsx?$': ['ts-jest', { diagnostics: false }]
+    }
 };

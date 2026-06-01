@@ -2,8 +2,8 @@ import { generateObject } from 'ai';
 import { ollamaService } from '../../src/services/ollama.service';
 
 jest.mock('ai');
-jest.mock('ai-sdk-ollama', () => ({
-    createOllama: jest.fn(() => jest.fn(() => ({ modelId: 'mock-model' })))
+jest.mock('@ai-sdk/openai', () => ({
+    createOpenAI: jest.fn(() => jest.fn(() => ({ modelId: 'mock-model' })))
 }));
 
 describe('OllamaService', () => {

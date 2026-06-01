@@ -1,12 +1,13 @@
-import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { logger } from '../utils/logger';
 import { ExternalServiceError, toError } from '../utils/errors';
 
-const litellm = createOpenAI({
-  apiKey: process.env.LITELLM_API_KEY,
-  baseURL: process.env.LITELLM_BASE_URL,
+const litellm = createOpenAICompatible({
+  name: 'litellm',
+  apiKey: process.env.LITELLM_API_KEY ?? '',
+  baseURL: process.env.LITELLM_BASE_URL ?? '',
 });
 
 export const MikaResponseSchema = z.object({

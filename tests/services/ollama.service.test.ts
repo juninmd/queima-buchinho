@@ -1,9 +1,9 @@
-import { generateObject } from 'ai';
-import { ollamaService } from '../../src/services/ollama.service';
+import { generateObject, generateText } from 'ai';
+import { OllamaService, ollamaService } from '../../src/services/ollama.service';
 
 jest.mock('ai');
-jest.mock('@ai-sdk/openai', () => ({
-    createOpenAI: jest.fn(() => jest.fn(() => ({ modelId: 'mock-model' })))
+jest.mock('@ai-sdk/openai-compatible', () => ({
+    createOpenAICompatible: jest.fn(() => jest.fn(() => ({ modelId: 'mock-model' })))
 }));
 
 describe('OllamaService', () => {
@@ -41,6 +41,27 @@ describe('OllamaService', () => {
         expect(result).toBeNull();
         expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Erro na geração'));
         consoleSpy.mockRestore();
+    });
+
+    it('should parse text JSON for local models', async () => {
+        const previousModel = process.env.AI_MODEL;
+        process.env.AI_MODEL = 'local/qwen2.5';
+        (generateText as jest.Mock).mockResolvedValue({
+            text: '{"message":"Oi Mestre","audioSearchTerm":"oi"}'
+        });
+
+        const service = new OllamaService();
+        const result = await service.generateDynamicResponse('test prompt');
+
+        expect(result).toEqual({
+            message: 'Oi Mestre',
+            audioSearchTerm: 'oi'
+        });
+        expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
+            model: expect.anything(),
+            prompt: 'test prompt'
+        }));
+        process.env.AI_MODEL = previousModel;
     });
 
     it('should call generateDynamicResponse for dynamic roast', async () => {

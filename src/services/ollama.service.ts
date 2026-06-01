@@ -1,5 +1,5 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { generateObject } from 'ai';
+import { generateObject, generateText } from 'ai';
 import { z } from 'zod';
 import { logger } from '../utils/logger';
 import { ExternalServiceError, toError } from '../utils/errors';
@@ -17,9 +17,20 @@ export const MikaResponseSchema = z.object({
 
 export type MikaResponse = z.infer<typeof MikaResponseSchema>;
 
+function parseMikaResponse(text: string): MikaResponse {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error('LiteLLM response did not contain JSON');
+  }
+
+  return MikaResponseSchema.parse(JSON.parse(text.slice(start, end + 1)));
+}
+
 export class OllamaService {
   private readonly model = process.env.AI_MODEL || 'gemini-2.5-flash-lite';
   private readonly timeout = Number(process.env.OLLAMA_TIMEOUT_MS) || 300_000;
+  private readonly usesTextJson = this.model.startsWith('local/');
   private readonly systemPrompt = `
 Você é a Mika, a parceira de treino e de planos de dominação mundial do usuário.
 Sua personalidade: você é leve, informal, brincalhona e SUPER natural, como uma amiga de longa data que manda mensagem no WhatsApp.
@@ -36,6 +47,19 @@ Regras de tom (SIGA ESTRITAMENTE):
   public async generateDynamicResponse(prompt: string): Promise<MikaResponse | null> {
     logger.info(`🤖 [AI SDK] Gerando objeto (Model: ${this.model})`);
     try {
+      if (this.usesTextJson) {
+        const { text } = await generateText({
+          model: litellm(this.model),
+          system: `${this.systemPrompt}
+Responda somente JSON valido, sem markdown, no formato:
+{"message":"texto curto","audioSearchTerm":"termo curto"}`,
+          prompt: prompt,
+          abortSignal: AbortSignal.timeout(this.timeout)
+        });
+
+        return parseMikaResponse(text);
+      }
+
       const { object } = await generateObject({
         model: litellm(this.model),
         system: this.systemPrompt,

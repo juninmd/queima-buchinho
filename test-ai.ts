@@ -1,13 +1,14 @@
 import 'dotenv/config';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 
-const openrouter = createOpenRouter({
-    apiKey: process.env.OPENROUTER_API_KEY
+const litellm = createOpenAI({
+    apiKey: process.env.LITELLM_API_KEY,
+    baseURL: process.env.LITELLM_BASE_URL,
 });
 
-const model = process.env.AI_MODEL || 'google/gemini-2.0-flash-001';
+const model = process.env.AI_MODEL || 'gemini-2.5-flash-lite';
 console.log(`Using model: ${model}`);
 
 const schema = z.object({
@@ -17,7 +18,7 @@ const schema = z.object({
 async function test() {
     try {
         const res = await generateObject({
-            model: openrouter(model),
+            model: litellm(model),
             prompt: 'Say hello in Portuguese',
             schema
         });

@@ -4,7 +4,7 @@
   "engines": {
     "node": ">=24"
   },
-  "description": "Telegram bot para motiva\u00e7\u00e3o de treinos",
+  "description": "Telegram bot para motivação de treinos",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc --noEmit && echo",
@@ -23,7 +23,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@openrouter/ai-sdk-provider": "^2.9.0",
+    "@ai-sdk/openai": "^3.0.67",
     "@types/pg": "^8.20.0",
     "ai": "^6.0.193",
     "ai-sdk-ollama": "^3.8.4",
@@ -33,21 +33,21 @@
     "edge-tts-node": "^1.5.7",
     "edge-tts-universal": "^1.4.0",
     "ioredis": "^5.11.0",
+    "node-cron": "^4.2.1",
     "node-telegram-bot-api": "^0.67.0",
     "ollama": "^0.6.3",
     "pg": "^8.21.0",
-    "zod": "^4.4.3",
-    "node-cron": "^4.2.1"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/ioredis": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.9.1",
+    "@types/node-cron": "^3.0.11",
     "@types/node-telegram-bot-api": "^0.64.14",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.1",
-    "typescript": "^6.0.3",
-    "@types/node-cron": "^3.0.11"
+    "typescript": "^6.0.3"
   }
 }

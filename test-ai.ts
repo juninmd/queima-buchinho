@@ -1,11 +1,12 @@
 import 'dotenv/config';
-import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 
-const litellm = createOpenAI({
-    apiKey: process.env.LITELLM_API_KEY,
-    baseURL: process.env.LITELLM_BASE_URL,
+const litellm = createOpenAICompatible({
+    name: 'litellm',
+    apiKey: process.env.LITELLM_API_KEY ?? '',
+    baseURL: process.env.LITELLM_BASE_URL ?? '',
 });
 
 const model = process.env.AI_MODEL || 'gemini-2.5-flash-lite';

@@ -1,5 +1,5 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
 import { z } from 'zod';
 import { logger } from '../utils/logger';
 import { ExternalServiceError, toError } from '../utils/errors';
@@ -14,6 +14,9 @@ const litellm = createOpenAICompatible({
   name: 'litellm',
   apiKey: process.env.LITELLM_API_KEY ?? '',
   baseURL: process.env.LITELLM_BASE_URL ?? '',
+  // litellm/NVIDIA NIM suportam guided decoding via response_format json_schema;
+  // sem esta flag o provider manda json_object e o modelo inventa as chaves.
+  supportsStructuredOutputs: true,
 });
 
 export const MikaResponseSchema = z.object({
@@ -22,16 +25,6 @@ export const MikaResponseSchema = z.object({
 });
 
 export type MikaResponse = z.infer<typeof MikaResponseSchema>;
-
-function parseMikaResponse(text: string): MikaResponse {
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error('LiteLLM response did not contain JSON');
-  }
-
-  return MikaResponseSchema.parse(JSON.parse(text.slice(start, end + 1)));
-}
 
 export class OllamaService {
   private readonly model = process.env.AI_MODEL || 'gemini-2.5-flash-lite';
@@ -52,18 +45,15 @@ Regras de tom (SIGA ESTRITAMENTE):
   public async generateDynamicResponse(prompt: string): Promise<MikaResponse | null> {
     logger.info(`🤖 [AI SDK] Gerando objeto (Model: ${this.model})`);
     try {
-      // litellm backends (NVIDIA NIM/ollama) não forçam json_schema, então
-      // generateObject devolve prosa/chaves erradas. Usar prompt-based JSON.
-      const { text } = await generateText({
+      const { object } = await generateObject({
         model: litellm(this.model),
-        system: `${this.systemPrompt}
-Responda somente JSON valido, sem markdown, no formato:
-{"message":"texto curto","audioSearchTerm":"termo curto"}`,
+        system: this.systemPrompt,
         prompt: prompt,
+        schema: MikaResponseSchema,
         abortSignal: AbortSignal.timeout(this.timeout)
       });
 
-      return parseMikaResponse(text);
+      return object;
     } catch (e) {
       const err = toError(e);
       const svcErr = new ExternalServiceError('LiteLLM', err.message, { cause: (e as any)?.cause });

@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
 import { OllamaService, ollamaService } from '../../src/services/ollama.service';
 
 jest.mock('ai');
@@ -12,8 +12,8 @@ describe('OllamaService', () => {
     });
 
     it('should generate dynamic response successfully', async () => {
-        (generateText as jest.Mock).mockResolvedValue({
-            text: '{"message":"Test message","audioSearchTerm":"test audio"}'
+        (generateObject as jest.Mock).mockResolvedValue({
+            object: { message: "Test message", audioSearchTerm: "test audio" }
         });
 
         const result = await ollamaService.generateDynamicResponse('test prompt');
@@ -22,14 +22,14 @@ describe('OllamaService', () => {
             message: "Test message",
             audioSearchTerm: "test audio"
         });
-        expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
+        expect(generateObject).toHaveBeenCalledWith(expect.objectContaining({
             model: expect.anything(),
-            prompt: 'test prompt'
+            schema: expect.anything()
         }));
     });
 
     it('should handle ollama chat error', async () => {
-        (generateText as jest.Mock).mockRejectedValue(new Error('Ollama error'));
+        (generateObject as jest.Mock).mockRejectedValue(new Error('Ollama error'));
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
         const result = await ollamaService.generateDynamicResponse('test prompt');
@@ -39,11 +39,11 @@ describe('OllamaService', () => {
         consoleSpy.mockRestore();
     });
 
-    it('should parse text JSON for local models', async () => {
+    it('should generate structured object regardless of model', async () => {
         const previousModel = process.env.AI_MODEL;
-        process.env.AI_MODEL = 'local/qwen2.5';
-        (generateText as jest.Mock).mockResolvedValue({
-            text: '{"message":"Oi Mestre","audioSearchTerm":"oi"}'
+        process.env.AI_MODEL = 'cloud/llama-8b';
+        (generateObject as jest.Mock).mockResolvedValue({
+            object: { message: 'Oi Mestre', audioSearchTerm: 'oi' }
         });
 
         const service = new OllamaService();
@@ -53,9 +53,9 @@ describe('OllamaService', () => {
             message: 'Oi Mestre',
             audioSearchTerm: 'oi'
         });
-        expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
+        expect(generateObject).toHaveBeenCalledWith(expect.objectContaining({
             model: expect.anything(),
-            prompt: 'test prompt'
+            schema: expect.anything()
         }));
         process.env.AI_MODEL = previousModel;
     });

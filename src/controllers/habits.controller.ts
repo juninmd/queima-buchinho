@@ -3,11 +3,10 @@ import { habitsService } from '../services/habits.service';
 import { metricsService } from '../services/metrics.service';
 import { memeService } from '../services/meme.service';
 import { mikaService } from '../services/mika.service';
-import { myInstantsService } from '../services/myinstants.service';
 import { workoutService } from '../services/workout.service';
 import { HABIT_MAP } from '../config/habits';
 import { MenuController } from './menu.controller';
-import { sendAudioMessage } from '../utils/telegram';
+import { sendMika } from '../utils/telegram';
 import { logger } from '../utils/logger';
 import { BOT_MESSAGES, WATER_GOAL_ML, WATER_CELEBRATION_ML } from '../config/constants';
 
@@ -126,7 +125,7 @@ export class HabitsController {
 
     if (newValue) {
       const response = await mikaService.response(`O Mestre marcou o habito ${habit.label}. Reaja curto, natural e sarcastico.`);
-      await this.bot.sendMessage(chatId, response.message);
+      await sendMika(this.bot, chatId, response);
     }
   }
 
@@ -151,13 +150,13 @@ export class HabitsController {
 
     if (crossed3L) {
       const response = await mikaService.response(`O Mestre chegou a ${total}ml de agua hoje. Celebre 3 litros com sarcasmo curto.`);
-      await this.bot.sendMessage(chatId, response.message);
+      await sendMika(this.bot, chatId, response);
     } else if (crossed2L) {
       const response = await mikaService.response(`O Mestre chegou a ${total}ml de agua hoje. Celebre a meta de 2 litros com sarcasmo curto.`);
-      await this.bot.sendMessage(chatId, response.message);
+      await sendMika(this.bot, chatId, response);
     } else {
       const response = await mikaService.response(`O Mestre bebeu agua, total de hoje ${total}ml. Reaja curto e sarcastico.`);
-      await this.bot.sendMessage(chatId, response.message);
+      await sendMika(this.bot, chatId, response);
     }
   }
 
@@ -170,14 +169,7 @@ export class HabitsController {
     await this.bot.answerCallbackQuery(query.id, { text: '🏋️‍♂️ Treino registrado!' }).catch(() => {});
 
     const congrats = await memeService.getCongratsMessage();
-    await this.bot.sendMessage(chatId, congrats.message);
-
-    if (congrats.audioSearchTerm) {
-      const button = await myInstantsService.getBestMatchAudio(congrats.audioSearchTerm);
-      if (button?.audioUrl) {
-        await this.bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
-      }
-    }
+    await sendMika(this.bot, chatId, congrats);
 
     if (messageId) {
       try {
@@ -196,7 +188,7 @@ export class HabitsController {
     await this.bot.answerCallbackQuery(query.id, { text: '🏃 Cárdio registrado!' }).catch(() => {});
 
     const response = await mikaService.response('O Mestre marcou cardio concluido. Reaja curto, natural e sarcastico.');
-    await this.bot.sendMessage(chatId, response.message);
+    await sendMika(this.bot, chatId, response);
 
     if (messageId) {
       try {
@@ -227,7 +219,7 @@ export class HabitsController {
   ) {
     await this.bot.answerCallbackQuery(query.id, { text: '🚀 Buscando motivação...' }).catch(() => {});
     const response = await mikaService.response('Mande uma motivacao curta para o Mestre treinar agora, sarcastica e natural.');
-    await sendAudioMessage(this.bot, chatId, null, response.message);
+    await sendMika(this.bot, chatId, response);
   }
 
   private async handleMealDone(
@@ -240,7 +232,7 @@ export class HabitsController {
       text: `${habit?.emoji || '✅'} ${habit?.label || meal} marcado!`
     }).catch(() => {});
     const response = await mikaService.response(`O Mestre marcou ${habit?.label || meal} como feito. Reaja curto e sarcastico.`);
-    await this.bot.sendMessage(chatId, response.message);
+    await sendMika(this.bot, chatId, response);
   }
 
   private async handleShowDiet(query: TelegramBot.CallbackQuery, chatId: number) {

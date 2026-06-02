@@ -4,6 +4,12 @@ import { z } from 'zod';
 import { logger } from '../utils/logger';
 import { ExternalServiceError, toError } from '../utils/errors';
 
+if (!process.env.LITELLM_BASE_URL || !process.env.LITELLM_API_KEY) {
+  logger.warn(
+    '⚠️ [AI SDK] LITELLM_BASE_URL/LITELLM_API_KEY ausentes — chamadas à Mika vão falhar (response unavailable)'
+  );
+}
+
 const litellm = createOpenAICompatible({
   name: 'litellm',
   apiKey: process.env.LITELLM_API_KEY ?? '',

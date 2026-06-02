@@ -1,4 +1,4 @@
-import { generateObject, generateText } from 'ai';
+import { generateText } from 'ai';
 import { OllamaService, ollamaService } from '../../src/services/ollama.service';
 
 jest.mock('ai');
@@ -12,13 +12,9 @@ describe('OllamaService', () => {
     });
 
     it('should generate dynamic response successfully', async () => {
-        const mockResponse = {
-            object: {
-                message: "Test message",
-                audioSearchTerm: "test audio"
-            }
-        };
-        (generateObject as jest.Mock).mockResolvedValue(mockResponse);
+        (generateText as jest.Mock).mockResolvedValue({
+            text: '{"message":"Test message","audioSearchTerm":"test audio"}'
+        });
 
         const result = await ollamaService.generateDynamicResponse('test prompt');
 
@@ -26,14 +22,14 @@ describe('OllamaService', () => {
             message: "Test message",
             audioSearchTerm: "test audio"
         });
-        expect(generateObject).toHaveBeenCalledWith(expect.objectContaining({
+        expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
             model: expect.anything(),
-            schema: expect.anything()
+            prompt: 'test prompt'
         }));
     });
 
     it('should handle ollama chat error', async () => {
-        (generateObject as jest.Mock).mockRejectedValue(new Error('Ollama error'));
+        (generateText as jest.Mock).mockRejectedValue(new Error('Ollama error'));
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
         const result = await ollamaService.generateDynamicResponse('test prompt');

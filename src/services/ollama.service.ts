@@ -1,5 +1,5 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { generateObject, generateText } from 'ai';
+import { generateText } from 'ai';
 import { z } from 'zod';
 import { logger } from '../utils/logger';
 import { ExternalServiceError, toError } from '../utils/errors';
@@ -36,7 +36,6 @@ function parseMikaResponse(text: string): MikaResponse {
 export class OllamaService {
   private readonly model = process.env.AI_MODEL || 'gemini-2.5-flash-lite';
   private readonly timeout = Number(process.env.OLLAMA_TIMEOUT_MS) || 300_000;
-  private readonly usesTextJson = this.model.startsWith('local/');
   private readonly systemPrompt = `
 Você é a Mika, a parceira de treino e de planos de dominação mundial do usuário.
 Sua personalidade: você é leve, informal, brincalhona e SUPER natural, como uma amiga de longa data que manda mensagem no WhatsApp.
@@ -53,28 +52,18 @@ Regras de tom (SIGA ESTRITAMENTE):
   public async generateDynamicResponse(prompt: string): Promise<MikaResponse | null> {
     logger.info(`🤖 [AI SDK] Gerando objeto (Model: ${this.model})`);
     try {
-      if (this.usesTextJson) {
-        const { text } = await generateText({
-          model: litellm(this.model),
-          system: `${this.systemPrompt}
+      // litellm backends (NVIDIA NIM/ollama) não forçam json_schema, então
+      // generateObject devolve prosa/chaves erradas. Usar prompt-based JSON.
+      const { text } = await generateText({
+        model: litellm(this.model),
+        system: `${this.systemPrompt}
 Responda somente JSON valido, sem markdown, no formato:
 {"message":"texto curto","audioSearchTerm":"termo curto"}`,
-          prompt: prompt,
-          abortSignal: AbortSignal.timeout(this.timeout)
-        });
-
-        return parseMikaResponse(text);
-      }
-
-      const { object } = await generateObject({
-        model: litellm(this.model),
-        system: this.systemPrompt,
         prompt: prompt,
-        schema: MikaResponseSchema,
         abortSignal: AbortSignal.timeout(this.timeout)
       });
 
-      return object;
+      return parseMikaResponse(text);
     } catch (e) {
       const err = toError(e);
       const svcErr = new ExternalServiceError('LiteLLM', err.message, { cause: (e as any)?.cause });

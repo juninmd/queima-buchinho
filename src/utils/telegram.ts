@@ -125,3 +125,32 @@ export async function replyMika(bot: TelegramBot, chatId: number, text: string) 
         await bot.sendMessage(chatId, text);
     }
 }
+
+/**
+ * Envia uma resposta da Mika SEMPRE acompanhada de áudio.
+ * Preferência: efeito sonoro do MyInstants (audioSearchTerm). Se não houver
+ * match, garante áudio com a voz TTS da Mika (replyMika).
+ */
+export async function sendMika(
+    bot: TelegramBot,
+    chatId: number,
+    response: { message: string; audioSearchTerm?: string },
+    options?: TelegramBot.SendMessageOptions
+) {
+    const term = response.audioSearchTerm;
+    if (term) {
+        try {
+            const { myInstantsService } = require('../services/myinstants.service');
+            const button = await myInstantsService.getBestMatchAudio(term);
+            if (button?.audioUrl) {
+                await bot.sendMessage(chatId, response.message, options);
+                await bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
+                return;
+            }
+        } catch (e) {
+            logger.error('Erro ao buscar áudio MyInstants da Mika:', e);
+        }
+    }
+    // Sem efeito MyInstants: garante áudio com a voz TTS da Mika.
+    await replyMika(bot, chatId, response.message);
+}

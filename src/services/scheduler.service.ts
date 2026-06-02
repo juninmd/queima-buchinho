@@ -94,6 +94,33 @@ export class SchedulerService {
         }
     }
 
+    /**
+     * Envia apenas o áudio da fala da Mika (voz TTS + efeito MyInstants), sem
+     * repetir o texto. Usado quando o texto já vai embutido numa mensagem
+     * formatada (ficha/descanso) mas precisa SEMPRE vir acompanhado de áudio.
+     */
+    private async sendMikaVoice(chatId: number, response: { message: string; audioSearchTerm?: string }) {
+        try {
+            const audioPath = await ttsService.generateMikaAudio(response.message);
+            if (audioPath) {
+                await this.bot.sendVoice(chatId, audioPath).catch(() => {});
+                await ttsService.cleanup(audioPath);
+            }
+        } catch (e) {
+            logger.error('[Scheduler] Erro ao enviar voz da Mika:', e);
+        }
+        if (response.audioSearchTerm) {
+            try {
+                const instant = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
+                if (instant?.audioUrl) {
+                    await this.bot.sendAudio(chatId, instant.audioUrl, { caption: `🎶 ${instant.title}` });
+                }
+            } catch (err) {
+                logger.error('[Scheduler] Erro ao enviar áudio do MyInstants:', err);
+            }
+        }
+    }
+
     public async runDailyCheck() {
         await this.withLock('lock:daily_check', async () => {
             logger.info('⏰ Executando verificação diária...');
@@ -273,6 +300,7 @@ export class SchedulerService {
                     `${day.emoji} <b>DESCANSO</b>\n\n${escapeHtml(response.message)}`,
                     { parse_mode: 'HTML' }
                 );
+                await this.sendMikaVoice(chatId, response);
                 return;
             }
 
@@ -290,6 +318,7 @@ export class SchedulerService {
                 parse_mode: 'HTML',
                 reply_markup: { inline_keyboard: [[TRAIN_BTN]] }
             });
+            await this.sendMikaVoice(chatId, response);
         });
     }
 

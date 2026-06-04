@@ -8,6 +8,7 @@
 [![Protocol: Antigravity](https://img.shields.io/badge/Protocol-Antigravity-orange.svg)]()
 
 > **Queima Buchinho** é um bot de motivação de treinos e rastreamento de hábitos saudáveis via Telegram, integrado com Inteligência Artificial sob a persona de **Mika** (uma assistente *toxic-cute*, irônica e altamente sarcástica). 
+O bot envia mensagens motivacionais personalizadas, acompanha hábitos de treino e saúde, e interage com usuários através da persona Mika, conhecida por seu tom ácido e sarcástico.
 
 Construído com foco em altíssima performance, baixo consumo de memória e inicialização instantânea utilizando o ecossistema **Bun** e **TypeScript**.
 

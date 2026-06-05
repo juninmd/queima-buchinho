@@ -89,6 +89,6 @@ describe('Command Handling Tests', () => {
 
         await messageHandler(msg);
         
-        expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('Menu do Dia'), expect.any(Object));
+        expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('MENU DO DIA'), expect.any(Object));
     });
 });

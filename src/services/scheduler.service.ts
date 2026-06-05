@@ -10,15 +10,18 @@ import { ttsService } from './tts.service';
 import { myInstantsService } from './myinstants.service';
 import { DIET_PLAN } from '../config/diet';
 import { GYM_PLAN } from '../config/gym';
-import { HABIT_MAP } from '../config/habits';
+import { HABIT_MAP, HABITS, getProgressBar } from '../config/habits';
+import { WATER_GOAL_ML } from '../config/constants';
 import { getBrasiliaDayName } from '../utils/time';
 import { logger } from '../utils/logger';
 import { MenuController } from '../controllers/menu.controller';
 import { escapeHtml } from '../utils/html';
 import { sendAudioMessage } from '../utils/telegram';
 
-const TRAIN_BTN: TelegramBot.InlineKeyboardButton = { text: '🏋️‍♂️ Já treinei! ✅', callback_data: 'mark_trained' };
-const CARDIO_BTN: TelegramBot.InlineKeyboardButton = { text: '🏃 Cárdio feito! ✅', callback_data: 'mark_cardio' };
+const buildTrainButton = (trained: boolean): TelegramBot.InlineKeyboardButton =>
+    ({ text: trained ? '🏋️‍♂️ Treino feito! ✅' : '🏋️‍♂️ Já treinei?', callback_data: 'mark_trained' });
+const buildCardioButton = (done: boolean): TelegramBot.InlineKeyboardButton =>
+    ({ text: done ? '🏃 Cárdio feito! ✅' : '🏃 Fiz cárdio?', callback_data: 'mark_cardio' });
 const WATER_ROW: TelegramBot.InlineKeyboardButton[] = [
     { text: '🥛 +250ml', callback_data: 'add_water_250' },
     { text: '🥤 +500ml', callback_data: 'add_water_500' }
@@ -60,6 +63,24 @@ export class SchedulerService {
                 this.memoryLocks.delete(lockKey);
             }
         }
+    }
+
+    /**
+     * Monta os botões de treino/cárdio refletindo o status REAL do dia.
+     * Evita exibir o ✅ de concluído sem o Mestre ter marcado a atividade.
+     */
+    private async getActionButtons(chatId: number): Promise<{ train: TelegramBot.InlineKeyboardButton; cardio: TelegramBot.InlineKeyboardButton }> {
+        let trained = false;
+        let cardioDone = false;
+        try {
+            const check = await workoutService.checkDailyMessages(this.bot, chatId);
+            trained = check?.trained ?? false;
+            const status = await habitsService.getStatus(chatId);
+            cardioDone = !!(status && status['cardio']);
+        } catch (e) {
+            logger.error('[Scheduler] Erro ao montar botões de ação:', e);
+        }
+        return { train: buildTrainButton(trained), cardio: buildCardioButton(cardioDone) };
     }
 
     private getChatId(): number | null {
@@ -138,10 +159,25 @@ export class SchedulerService {
             logger.info('❌ Usuário não treinou hoje.');
             workoutService.logWorkout(chatId, false);
             const roast = await memeService.getRoastMessage();
+            const { train, cardio } = await this.getActionButtons(chatId);
             // Adicionando termo de áudio para falha se não houver
-            await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[TRAIN_BTN, CARDIO_BTN]] } });
+            await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[train, cardio]] } });
         });
     }
+    public async sendGoodMorning() {
+        await this.withLock('lock:good_morning', async () => {
+            const chatId = this.getChatId();
+            if (!chatId) return;
+
+            const dayName = getBrasiliaDayName();
+            logger.info(`☀️ Enviando bom dia de ${dayName}...`);
+
+            const menu = new MenuController(this.bot);
+            await menu.sendGoodMorningMenu(chatId, chatId);
+            await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayName));
+        });
+    }
+
     public async sendMorningReminder() {
         await this.withLock('lock:morning_reminder', async () => {
             const chatId = this.getChatId();
@@ -157,6 +193,7 @@ export class SchedulerService {
                     `🍽️ <b>Almoço:</b> ${escapeHtml(diet.almoco)}\n` +
                     `🌙 <b>Jantar:</b> ${escapeHtml(diet.jantar)}`;
 
+             const { train, cardio } = await this.getActionButtons(chatId);
              const options: TelegramBot.SendMessageOptions = {
                  parse_mode: 'HTML',
                  reply_markup: {
@@ -166,7 +203,7 @@ export class SchedulerService {
                              { text: '🍽️ Almoço', callback_data: 'meal_done_almoco' },
                              { text: '🌙 Jantar', callback_data: 'meal_done_jantar' }
                          ],
-                         [TRAIN_BTN, CARDIO_BTN],
+                         [train, cardio],
                          [{ text: '📱 Abrir Menu Principal', callback_data: 'refresh_menu' }]
                      ]
                  }
@@ -189,7 +226,8 @@ export class SchedulerService {
                     const hour = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit' });
                     logger.info(`❌ Usuário não treinou. Enviando cobrança das ${hour}:00...`);
                     const roast = await memeService.getConditionalReminder(`${hour}:00`);
-                    await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[TRAIN_BTN, CARDIO_BTN]] } });
+                    const { train, cardio } = await this.getActionButtons(chatId);
+                    await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[train, cardio]] } });
                 } else {
                     logger.info('✅ Usuário já treinou hoje. Pulando cobrança.');
                 }
@@ -225,12 +263,13 @@ export class SchedulerService {
             const mealDescription = diet[meal];
 
             logger.info(`🍽️ Enviando lembrete de ${meal}...`);
+            const { train, cardio } = await this.getActionButtons(chatId);
             const options: TelegramBot.SendMessageOptions = {
                 parse_mode: 'HTML',
                 reply_markup: {
                     inline_keyboard: [
                         [{ text: `✅ Já ${label}!`, callback_data: `meal_done_${meal}` }],
-                        [TRAIN_BTN, CARDIO_BTN],
+                        [train, cardio],
                         WATER_ROW
                     ]
                 }
@@ -314,10 +353,64 @@ export class SchedulerService {
             msg += `──────────────────────\n`;
             msg += `<i>${escapeHtml(response.message)}</i>`;
 
+            const { train } = await this.getActionButtons(chatId);
             await this.bot.sendMessage(chatId, msg, {
                 parse_mode: 'HTML',
-                reply_markup: { inline_keyboard: [[TRAIN_BTN]] }
+                reply_markup: { inline_keyboard: [[train]] }
             });
+            await this.sendMikaVoice(chatId, response);
+        });
+    }
+
+    public async sendDailyReport() {
+        await this.withLock('lock:daily_report', async () => {
+            const chatId = this.getChatId();
+            if (!chatId) return;
+
+            logger.info('🌙 Gerando relatório de fim de dia...');
+
+            const [status, water, streak, check] = await Promise.all([
+                habitsService.getStatus(chatId).catch(() => ({} as Record<string, boolean>)),
+                metricsService.getTodaySum(chatId, 'water').catch(() => 0),
+                workoutService.getStreak(chatId).catch(() => 0),
+                workoutService.checkDailyMessages(this.bot, chatId).catch(() => ({ trained: false }))
+            ]);
+
+            const trained = check?.trained ?? false;
+            const cardioDone = !!status['cardio'];
+            const total = HABITS.length;
+            const completed = HABITS.filter(h => status[h.key]).length;
+            const waterRatio = Math.min(water / WATER_GOAL_ML, 1);
+
+            // Nota 1–10: hábitos (até 6) + treino (2) + água (até 2)
+            const nota = Math.max(1, Math.min(10, Math.round(
+                (completed / total) * 6 + (trained ? 2 : 0) + waterRatio * 2
+            )));
+            const notaEmoji = nota >= 8 ? '🏆' : nota >= 5 ? '👍' : '😬';
+
+            const dayName = getBrasiliaDayName();
+            let msg = `🌙 <b>RELATÓRIO DO DIA — ${dayName.toUpperCase()}</b>\n`;
+            msg += `──────────────────────\n`;
+            for (const h of HABITS) {
+                msg += `${status[h.key] ? '✅' : '❌'} ${h.emoji} ${escapeHtml(h.label)}\n`;
+            }
+            msg += `──────────────────────\n`;
+            msg += `📊 <b>Hábitos:</b> ${completed}/${total}\n`;
+            msg += `<code>${getProgressBar(completed, total)}</code>\n`;
+            msg += `💧 <b>Água:</b> ${water}ml / ${WATER_GOAL_ML}ml\n`;
+            msg += `💪 <b>Treino:</b> ${trained ? 'Feito ✅' : 'Não treinou ❌'}\n`;
+            msg += `🏃 <b>Cárdio:</b> ${cardioDone ? 'Feito ✅' : 'Não feito ❌'}\n`;
+            if (streak > 0) msg += `🔥 <b>Streak:</b> ${streak} dia${streak > 1 ? 's' : ''}\n`;
+            msg += `──────────────────────\n`;
+            msg += `${notaEmoji} <b>Nota do dia:</b> ${nota}/10`;
+
+            await this.bot.sendMessage(chatId, msg, { parse_mode: 'HTML' });
+
+            const response = await mikaService.response(
+                `Relatorio do dia do Mestre: ${completed} de ${total} habitos, treino ${trained ? 'feito' : 'nao feito'}, ` +
+                `cardio ${cardioDone ? 'feito' : 'nao feito'}, agua ${water}ml, nota ${nota} de 10. ` +
+                `Comente curto e sarcastico sobre a nota, no tom da Mika.`
+            );
             await this.sendMikaVoice(chatId, response);
         });
     }

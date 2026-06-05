@@ -12,6 +12,7 @@ import { sendAudioMessage } from '../utils/telegram';
 import { DIET_PLAN } from '../config/diet';
 import { GYM_PLAN } from '../config/gym';
 import { getBrasiliaDayName } from '../utils/time';
+import { WATER_GOAL_ML } from '../config/constants';
 
 export class MenuController {
   constructor(private bot: TelegramBot) {}
@@ -62,6 +63,17 @@ export class MenuController {
     });
   }
 
+  public async sendGoodMorningMenu(chatId: number, userId: number) {
+    const dayName = getBrasiliaDayName();
+    const greeting = `☀️ <b>Bom dia, Mestre!</b>\n` +
+      `Hoje é <b>${dayName}</b> — dia novo, buchinho a menos. Bora pra cima! 🔥`;
+    const { text, keyboard } = await this.buildMenuContent(userId);
+    await this.bot.sendMessage(chatId, `${greeting}\n\n${text}`, {
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: keyboard }
+    });
+  }
+
   public async refreshMenu(chatId: number, messageId: number, userId: number) {
     const { text, keyboard } = await this.buildMenuContent(userId);
     try {
@@ -82,16 +94,20 @@ export class MenuController {
       workoutService.getStreak(userId)
     ]);
     const bar = getProgressBar(completed, total);
+    const waterPct = Math.min(100, Math.round((water / WATER_GOAL_ML) * 100));
 
-    let text = `<b>🔥 Queima Buchinho - Menu do Dia 🔥</b>\n\n`;
-    text += `Progresso: ${completed}/${total} hábitos\n`;
-    text += `<code>${bar}</code>\n\n`;
-    text += `💧 Água hoje: ${water}ml\n`;
+    let text = `<b>🔥 QUEIMA BUCHINHO — MENU DO DIA 🔥</b>\n`;
+    text += `<i>${getBrasiliaDayName()}</i>\n`;
+    text += `──────────────────────\n`;
+    text += `📊 <b>Hábitos:</b> ${completed}/${total}\n`;
+    text += `<code>${bar}</code>\n`;
+    text += `💧 <b>Água:</b> ${water}ml / ${WATER_GOAL_ML}ml (${waterPct}%)\n`;
     if (streak > 0) {
       const flame = streak >= 7 ? '🔥🔥🔥' : streak >= 3 ? '🔥🔥' : '🔥';
-      text += `${flame} Streak: ${streak} dia${streak > 1 ? 's' : ''} seguido${streak > 1 ? 's' : ''}!\n`;
+      text += `${flame} <b>Streak:</b> ${streak} dia${streak > 1 ? 's' : ''} seguido${streak > 1 ? 's' : ''}!\n`;
     }
-    text += `\nToque para marcar/desmarcar:`;
+    text += `──────────────────────\n`;
+    text += `Toque para marcar/desmarcar:`;
 
     const keyboard = this.buildKeyboard(status);
     return { text, keyboard };

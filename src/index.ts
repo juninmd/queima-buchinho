@@ -150,8 +150,10 @@ function setupCronJobs() {
   
   const scheduler = new SchedulerService(bot);
   cron.schedule('30 22 * * *', () => scheduler.runDailyCheck(), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('0 6 * * *', () => scheduler.sendGoodMorning(), { timezone: 'America/Sao_Paulo' });
   cron.schedule('30 6 * * *', () => scheduler.sendMorningReminder(), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('0 6 * * *', () => scheduler.sendGymReminder(), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('10 6 * * *', () => scheduler.sendGymReminder(), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('30 21 * * *', () => scheduler.sendDailyReport(), { timezone: 'America/Sao_Paulo' });
   cron.schedule('30 15 * * *', () => scheduler.sendFoodReminder('cafe_tarde'), { timezone: 'America/Sao_Paulo' });
   cron.schedule('0 12,18 * * *', () => scheduler.sendConditionalReminder(), { timezone: 'America/Sao_Paulo' });
   cron.schedule('0 9,11,14,17 * * *', () => scheduler.sendWaterReminder(), { timezone: 'America/Sao_Paulo' });
@@ -174,10 +176,12 @@ function attachControllers() {
 async function runReminder(scheduler: SchedulerService, mode: string) {
   const m = mode.replace('reminder_', '');
   if (m === 'morning') await scheduler.sendMorningReminder();
+  else if (m === 'good_morning') await scheduler.sendGoodMorning();
   else if (m === 'conditional') await scheduler.sendConditionalReminder();
   else if (m === 'water') await scheduler.sendWaterReminder();
   else if (m === 'habits_check') await scheduler.sendHabitsCheckReminder();
   else if (m === 'daily_audit') await scheduler.runDailyMikaAudit();
+  else if (m === 'daily_report') await scheduler.sendDailyReport();
   else if (m === 'gym') await scheduler.sendGymReminder();
   else if (m.startsWith('food_')) await scheduler.sendFoodReminder(m.replace('food_', '') as any);
 }

@@ -377,9 +377,10 @@ export class SchedulerService {
             ]);
 
             const trained = check?.trained ?? false;
-            const cardioDone = !!status['cardio'];
+            const reportStatus: Record<string, boolean> = { ...status, treino: trained || !!status['treino'] };
+            const cardioDone = !!reportStatus['cardio'];
             const total = HABITS.length;
-            const completed = HABITS.filter(h => status[h.key]).length;
+            const completed = HABITS.filter(h => reportStatus[h.key]).length;
             const waterRatio = Math.min(water / WATER_GOAL_ML, 1);
 
             // Nota 1–10: hábitos (até 6) + treino (2) + água (até 2)
@@ -392,7 +393,7 @@ export class SchedulerService {
             let msg = `🌙 <b>RELATÓRIO DO DIA — ${dayName.toUpperCase()}</b>\n`;
             msg += `──────────────────────\n`;
             for (const h of HABITS) {
-                msg += `${status[h.key] ? '✅' : '❌'} ${h.emoji} ${escapeHtml(h.label)}\n`;
+                msg += `${reportStatus[h.key] ? '✅' : '❌'} ${h.emoji} ${escapeHtml(h.label)}\n`;
             }
             msg += `──────────────────────\n`;
             msg += `📊 <b>Hábitos:</b> ${completed}/${total}\n`;

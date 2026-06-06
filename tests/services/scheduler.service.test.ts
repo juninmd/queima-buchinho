@@ -3,6 +3,7 @@ import { SchedulerService } from '../../src/services/scheduler.service';
 import { workoutService } from '../../src/services/workout.service';
 import { memeService } from '../../src/services/meme.service';
 import { habitsService } from '../../src/services/habits.service';
+import { metricsService } from '../../src/services/metrics.service';
 import { ollamaService } from '../../src/services/ollama.service';
 import { myInstantsService } from '../../src/services/myinstants.service';
 import { sendAudioMessage } from '../../src/utils/telegram';
@@ -12,6 +13,7 @@ import { ttsService } from '../../src/services/tts.service';
 jest.mock('../../src/services/workout.service');
 jest.mock('../../src/services/meme.service');
 jest.mock('../../src/services/habits.service');
+jest.mock('../../src/services/metrics.service');
 jest.mock('../../src/services/ollama.service');
 jest.mock('../../src/services/mika.service', () => ({
     mikaService: { response: jest.fn().mockResolvedValue({ message: 'LLM Mika', audioSearchTerm: 'tone' }) }
@@ -136,6 +138,34 @@ describe('SchedulerService', () => {
             await scheduler.sendHabitsCheckReminder();
 
             expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), 'LLM Mika', expect.any(Object));
+        });
+    });
+
+    describe('sendDailyReport', () => {
+        it('should count official workout as completed treino habit', async () => {
+            (habitsService.getStatus as jest.Mock).mockResolvedValue({
+                treino: false,
+                cardio: false,
+                alongamento: false,
+                leitura: false,
+                meditacao: false,
+                suplemento: false,
+                cafe: false,
+                almoco: false,
+                cafe_tarde: false,
+                jantar: false,
+                sem_acucar: false,
+            });
+            (metricsService.getTodaySum as jest.Mock).mockResolvedValue(0);
+            (workoutService.getStreak as jest.Mock).mockResolvedValue(1);
+            (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: true });
+
+            await scheduler.sendDailyReport();
+
+            const report = (mockBot.sendMessage as jest.Mock).mock.calls[0][1];
+            expect(report).toContain('✅ 💪 Treino');
+            expect(report).toContain('📊 <b>Hábitos:</b> 1/11');
+            expect(report).toContain('💪 <b>Treino:</b> Feito ✅');
         });
     });
 });

@@ -43,7 +43,7 @@
   "devDependencies": {
     "@types/ioredis": "^5.0.0",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.9.1",
+    "@types/node": "^25.9.2",
     "@types/node-cron": "^3.0.11",
     "@types/node-telegram-bot-api": "^0.64.14",
     "jest": "^30.4.2",

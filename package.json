@@ -1,6 +1,7 @@
 {
   "name": "queima-buchinho",
   "version": "1.0.0",
+  "packageManager": "pnpm@9",
   "engines": {
     "node": ">=24"
   },
@@ -27,7 +28,7 @@
     "@ai-sdk/openai": "^3.0.68",
     "@ai-sdk/openai-compatible": "^2.0.48",
     "@types/pg": "^8.20.0",
-    "ai": "^6.0.193",
+    "ai": "^6.0.197",
     "ai-sdk-ollama": "^3.8.4",
     "axios": "^1.17.0",
     "cheerio": "^1.2.0",

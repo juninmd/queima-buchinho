@@ -1,6 +1,7 @@
 {
   "name": "queima-buchinho",
   "version": "1.0.0",
+  "packageManager": "pnpm@9",
   "engines": {
     "node": ">=24"
   },

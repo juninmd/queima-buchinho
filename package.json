@@ -4,6 +4,7 @@
   "engines": {
     "node": ">=24"
   },
+  "packageManager": "pnpm@9.15.0",
   "description": "Telegram bot para motivação de treinos",
   "main": "dist/index.js",
   "scripts": {

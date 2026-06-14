@@ -14,6 +14,7 @@ jest.mock('../../src/services/mika.service', () => ({
 }));
 jest.mock('../../src/services/myinstants.service');
 jest.mock('../../src/services/workout.service');
+jest.mock('../../src/services/media.service');
 
 describe('MenuController', () => {
   let bot: jest.Mocked<TelegramBot>;

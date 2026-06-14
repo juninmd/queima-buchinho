@@ -5,14 +5,16 @@ import { workoutService } from '../services/workout.service';
 import { ollamaService } from '../services/ollama.service';
 import { mikaService } from '../services/mika.service';
 import { myInstantsService } from '../services/myinstants.service';
+import { mediaService } from '../services/media.service';
 import { HABITS, getProgressBar } from '../config/habits';
 import { logger } from '../utils/logger';
 import { ttsService } from '../services/tts.service';
-import { sendAudioMessage } from '../utils/telegram';
+import { sendAudioMessage, sendGifMessage } from '../utils/telegram';
 import { DIET_PLAN } from '../config/diet';
 import { GYM_PLAN } from '../config/gym';
 import { getBrasiliaDayName } from '../utils/time';
 import { WATER_GOAL_ML } from '../config/constants';
+import { escapeHtml } from '../utils/html';
 
 export class MenuController {
   constructor(private bot: TelegramBot) {}
@@ -107,7 +109,7 @@ export class MenuController {
       text += `${flame} <b>Streak:</b> ${streak} dia${streak > 1 ? 's' : ''} seguido${streak > 1 ? 's' : ''}!\n`;
     }
     text += `──────────────────────\n`;
-    text += `Toque para marcar/desmarcar:`;
+    text += `Toque pra marcar o que já fez hoje 👇`;
 
     const keyboard = this.buildKeyboard(status);
     return { text, keyboard };
@@ -224,11 +226,14 @@ Treino e cardio: registre pelos botoes do /menu
       const wE = summary.current.metrics.water >= summary.previous.metrics.water ? '📈' : '📉';
       const tE = summary.current.workouts >= summary.previous.workouts ? '📈' : '📉';
 
-      let report = `📊 <b>Resumo Semanal</b>\n\n`;
-      report += `💪 Treinos: ${summary.current.workouts} vs ${summary.previous.workouts} ${tE}\n`;        
+      let report = `📊 <b>Resumo da Semana</b>\n`;
+      report += `Comparando com a semana passada, Mestre:\n\n`;
+      report += `💪 Treinos: ${summary.current.workouts} vs ${summary.previous.workouts} ${tE}\n`;
       report += `💧 Água: ${summary.current.metrics.water}ml vs ${summary.previous.metrics.water}ml ${wE}\n\n`;
-      report += `🗣️ <b>Mika diz:</b> ${response.message}`;
+      report += `🗣️ <b>Mika diz:</b> ${escapeHtml(response.message)}`;
 
+      const trendUp = summary.current.workouts >= summary.previous.workouts;
+      await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif(trendUp ? 'trophy' : 'fail'));
       await this.bot.sendMessage(chatId, report, { parse_mode: 'HTML' });
 
       // Gerar e enviar áudio da Mika
@@ -256,14 +261,16 @@ Treino e cardio: registre pelos botoes do /menu
     const dayName = getBrasiliaDayName();
     const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
 
-    let report = `🥗 <b>Cardápio de Hoje (${dayName})</b>\n\n`;
-    report += `🍳 <b>Café da Manhã:</b>\n${diet.cafe}\n\n`;
-    report += `☕ <b>Café da Tarde:</b>\n${diet.cafe_tarde}\n\n`;
-    report += `🍽️ <b>Almoço:</b>\n${diet.almoco}\n\n`;
-    report += `🌙 <b>Jantar:</b>\n${diet.jantar}\n\n`;
+    let report = `🥗 <b>Cardápio de hoje — ${dayName}</b>\n`;
+    report += `Seu mapa pra não cair na besteira 😏\n\n`;
+    report += `🍳 <b>Café da manhã</b>\n${diet.cafe}\n\n`;
+    report += `☕ <b>Café da tarde</b>\n${diet.cafe_tarde}\n\n`;
+    report += `🍽️ <b>Almoço</b>\n${diet.almoco}\n\n`;
+    report += `🌙 <b>Jantar</b>\n${diet.jantar}\n\n`;
     const response = await mikaService.response('Diga uma frase curta para seguir o cardapio de hoje, no tom da Mika.');
-    report += `<i>${response.message}</i>`;
+    report += `<i>${escapeHtml(response.message)}</i>`;
 
+    await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif('happy'));
     await this.bot.sendMessage(chatId, report, {
       parse_mode: 'HTML',
       reply_markup: {
@@ -282,12 +289,12 @@ Treino e cardio: registre pelos botoes do /menu
     const dayName = getBrasiliaDayName();
     const day = GYM_PLAN[dayName] || GYM_PLAN['segunda-feira'];
 
-    let report = `${day.emoji} <b>Ficha de Hoje — ${day.muscleGroup}</b>\n`;
+    let report = `${day.emoji} <b>Ficha de hoje — ${day.muscleGroup}</b>\n`;
     report += `<i>${day.focus}</i>\n\n`;
 
     if (day.rest) {
       const response = await mikaService.response('Hoje e dia de descanso. Explique curto que recuperacao faz parte do treino, no tom da Mika.');
-      report += `${response.message}\n\n`;
+      report += `${escapeHtml(response.message)}\n\n`;
     }
 
     for (const ex of day.exercises) {
@@ -296,9 +303,10 @@ Treino e cardio: registre pelos botoes do /menu
 
     if (!day.rest) {
       const response = await mikaService.response(`Hoje o treino e ${day.muscleGroup}. Mande uma frase curta para ir treinar, no tom da Mika.`);
-      report += `\n<i>${response.message}</i>`;
+      report += `\n<i>${escapeHtml(response.message)}</i>`;
     }
 
+    await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif(day.rest ? 'happy' : 'workout'));
     await this.bot.sendMessage(chatId, report, { parse_mode: 'HTML' });
   }
 }

@@ -4,11 +4,13 @@ import { metricsService } from '../services/metrics.service';
 import { memeService } from '../services/meme.service';
 import { mikaService } from '../services/mika.service';
 import { workoutService } from '../services/workout.service';
+import { mediaService } from '../services/media.service';
 import { HABIT_MAP } from '../config/habits';
 import { MenuController } from './menu.controller';
-import { sendMika } from '../utils/telegram';
+import { sendMika, sendGifMessage } from '../utils/telegram';
 import { logger } from '../utils/logger';
 import { BOT_MESSAGES, WATER_GOAL_ML, WATER_CELEBRATION_ML } from '../config/constants';
+import { getMikaContext, getMealTimeComment } from '../utils/time';
 
 export class HabitsController {
   constructor(private bot: TelegramBot, private menuController: MenuController) {}
@@ -124,7 +126,11 @@ export class HabitsController {
     }
 
     if (newValue) {
-      const response = await mikaService.response(`O Mestre marcou o habito ${habit.label}. Reaja curto, natural e sarcastico.`);
+      if (habitKey === 'treino') {
+        await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif('celebration'));
+      }
+      const ctx = getMikaContext();
+      const response = await mikaService.response(`${ctx} O Mestre marcou o habito "${habit.label}". Reaja curto, natural e sarcastico, mencionando o horario se for relevante (ex: dormir cedo tarde, suplemento a noite, etc).`);
       await sendMika(this.bot, chatId, response);
     }
   }
@@ -148,16 +154,39 @@ export class HabitsController {
     const crossed2L = prevTotal < WATER_GOAL_ML && total >= WATER_GOAL_ML;
     const crossed3L = prevTotal < WATER_CELEBRATION_ML && total >= WATER_CELEBRATION_ML;
 
+    const ctx = getMikaContext();
     if (crossed3L) {
-      const response = await mikaService.response(`O Mestre chegou a ${total}ml de agua hoje. Celebre 3 litros com sarcasmo curto.`);
+      await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif('celebration'));
+      const response = await mikaService.response(`${ctx} O Mestre chegou a ${total}ml de agua hoje, batendo 3 litros. Celebre com sarcasmo curto, mencione que isso so aconteceu agora (esse horario).`);
       await sendMika(this.bot, chatId, response);
     } else if (crossed2L) {
-      const response = await mikaService.response(`O Mestre chegou a ${total}ml de agua hoje. Celebre a meta de 2 litros com sarcasmo curto.`);
+      await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif('water'));
+      const response = await mikaService.response(`${ctx} O Mestre chegou a ${total}ml de agua hoje, batendo a meta de 2 litros. Celebre a meta com sarcasmo curto e mencione o horario.`);
       await sendMika(this.bot, chatId, response);
     } else {
-      const response = await mikaService.response(`O Mestre bebeu agua, total de hoje ${total}ml. Reaja curto e sarcastico.`);
+      const response = await mikaService.response(`${ctx} O Mestre bebeu agua, total de hoje ${total}ml. Reaja curto e sarcastico — se o total estiver baixo para o horario, provoque.`);
       await sendMika(this.bot, chatId, response);
     }
+  }
+
+  /**
+   * Atualiza no card o botão que acabou de ser tocado para o estado "feito ✅",
+   * preservando os demais botões (refeições, água, cárdio). Antes a gente apagava
+   * o teclado inteiro — o que sumia com os outros botões e não confirmava a ação.
+   */
+  private async flipButtonDone(
+    query: TelegramBot.CallbackQuery, chatId: number, messageId: number, callbackData: string, doneText: string
+  ) {
+    const keyboard = query.message?.reply_markup?.inline_keyboard;
+    if (!keyboard) return;
+    const updated = keyboard.map(row =>
+      row.map(btn => btn.callback_data === callbackData ? { ...btn, text: doneText } : btn)
+    );
+    try {
+      await this.bot.editMessageReplyMarkup(
+        { inline_keyboard: updated }, { chat_id: chatId, message_id: messageId }
+      );
+    } catch (_) {}
   }
 
   private async handleMarkTrained(
@@ -168,16 +197,13 @@ export class HabitsController {
 
     await this.bot.answerCallbackQuery(query.id, { text: '🏋️‍♂️ Treino registrado!' }).catch(() => {});
 
+    if (messageId) {
+      await this.flipButtonDone(query, chatId, messageId, 'mark_trained', '🏋️‍♂️ Treino feito! ✅');
+    }
+
+    await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif('celebration'));
     const congrats = await memeService.getCongratsMessage();
     await sendMika(this.bot, chatId, congrats);
-
-    if (messageId) {
-      try {
-        await this.bot.editMessageReplyMarkup(
-          { inline_keyboard: [] }, { chat_id: chatId, message_id: messageId }
-        );
-      } catch (_) {}
-    }
   }
 
   private async handleMarkCardio(
@@ -187,16 +213,14 @@ export class HabitsController {
 
     await this.bot.answerCallbackQuery(query.id, { text: '🏃 Cárdio registrado!' }).catch(() => {});
 
-    const response = await mikaService.response('O Mestre marcou cardio concluido. Reaja curto, natural e sarcastico.');
-    await sendMika(this.bot, chatId, response);
-
     if (messageId) {
-      try {
-        await this.bot.editMessageReplyMarkup(
-          { inline_keyboard: [] }, { chat_id: chatId, message_id: messageId }
-        );
-      } catch (_) {}
+      await this.flipButtonDone(query, chatId, messageId, 'mark_cardio', '🏃 Cárdio feito! ✅');
     }
+
+    await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif('cardio'));
+    const ctx = getMikaContext();
+    const response = await mikaService.response(`${ctx} O Mestre marcou cardio concluido. Reaja curto, natural e sarcastico — se o horario for estranho (ex: cardio a noite tarde ou de manha cedo), comente.`);
+    await sendMika(this.bot, chatId, response);
   }
 
   private async handleRefreshMenu(
@@ -218,20 +242,24 @@ export class HabitsController {
     query: TelegramBot.CallbackQuery, chatId: number
   ) {
     await this.bot.answerCallbackQuery(query.id, { text: '🚀 Buscando motivação...' }).catch(() => {});
-    const response = await mikaService.response('Mande uma motivacao curta para o Mestre treinar agora, sarcastica e natural.');
+    const ctx = getMikaContext();
+    const response = await mikaService.response(`${ctx} Mande uma motivacao curta para o Mestre treinar agora, sarcastica e natural. Se o horario for tarde (ex: 22h), faz comentario ironico mas ainda manda treinar.`);
     await sendMika(this.bot, chatId, response);
   }
 
   private async handleMealDone(
     query: TelegramBot.CallbackQuery, userId: number, chatId: number
   ) {
-    const meal = query.data!.replace('meal_done_', '');
+    const meal = query.data!.replace('meal_done_', '') as 'cafe' | 'almoco' | 'cafe_tarde' | 'jantar';
     await habitsService.markHabit(userId, meal, true);
     const habit = HABIT_MAP.get(meal);
     await this.bot.answerCallbackQuery(query.id, {
       text: `${habit?.emoji || '✅'} ${habit?.label || meal} marcado!`
     }).catch(() => {});
-    const response = await mikaService.response(`O Mestre marcou ${habit?.label || meal} como feito. Reaja curto e sarcastico.`);
+    await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif('happy'));
+    const mealComment = getMealTimeComment(meal);
+    const ctx = getMikaContext();
+    const response = await mikaService.response(`${ctx} O Mestre marcou "${mealComment}" como feito. Reaja curto e sarcastico — se o horario for inusual para essa refeicao, zoe com isso.`);
     await sendMika(this.bot, chatId, response);
   }
 

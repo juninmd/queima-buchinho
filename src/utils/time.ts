@@ -72,8 +72,60 @@ export function getSurpriseMessage(): string {
  * Retorna o nome do dia da semana em português (minúsculo).
  */
 export function getBrasiliaDayName(): string {
-  return new Date().toLocaleDateString('pt-BR', { 
-    timeZone: BRASILIA_TIMEZONE, 
-    weekday: 'long' 
+  return new Date().toLocaleDateString('pt-BR', {
+    timeZone: BRASILIA_TIMEZONE,
+    weekday: 'long'
   }).toLowerCase();
+}
+
+/**
+ * Contexto de tempo para os prompts da Mika: hora atual + dia da semana + aniversário se for hoje.
+ */
+export function getMikaContext(): string {
+  const time = formatBrasiliaTime();
+  const day = getBrasiliaDayName();
+  const birthdayNote = isTodayBirthday() ? ' HOJE É ANIVERSÁRIO DO MESTRE!' : '';
+  return `Agora são ${time} de ${day}.${birthdayNote}`;
+}
+
+/**
+ * Retorna o nome da refeição e o horário atual para o LLM decidir o tom da reação.
+ * Sem piadas hardcoded — o LLM faz o julgamento de horário.
+ */
+export function getMealTimeComment(meal: 'cafe' | 'almoco' | 'cafe_tarde' | 'jantar'): string {
+  const time = formatBrasiliaTime();
+  const names = { cafe: 'café da manhã', almoco: 'almoço', cafe_tarde: 'café da tarde', jantar: 'jantar' };
+  return `${names[meal]} às ${time}`;
+}
+
+/**
+ * Verifica se hoje é o aniversário do usuário (lê USER_BIRTHDAY do .env, formato DD/MM ou DD/MM/YYYY).
+ */
+export function isTodayBirthday(): boolean {
+  const raw = process.env.USER_BIRTHDAY;
+  if (!raw) return false;
+  const parts = raw.split('/');
+  if (parts.length < 2) return false;
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  if (isNaN(day) || isNaN(month)) return false;
+
+  const today = getBrasiliaDateString();
+  const todayDay = parseInt(today.split('-')[2], 10);
+  const todayMonth = parseInt(today.split('-')[1], 10);
+  return todayDay === day && todayMonth === month;
+}
+
+/**
+ * Retorna a idade do usuário se USER_BIRTHDAY incluir o ano (DD/MM/YYYY).
+ */
+export function getBirthdayAge(): number | null {
+  const raw = process.env.USER_BIRTHDAY;
+  if (!raw) return null;
+  const parts = raw.split('/');
+  if (parts.length < 3) return null;
+  const birthYear = parseInt(parts[2], 10);
+  if (isNaN(birthYear)) return null;
+  const currentYear = parseInt(getBrasiliaDateString().split('-')[0], 10);
+  return currentYear - birthYear;
 }

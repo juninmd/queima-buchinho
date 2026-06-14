@@ -3,9 +3,11 @@ import { workoutService } from '../../services/workout.service';
 import { myInstantsService } from '../../services/myinstants.service';
 import { memeService } from '../../services/meme.service';
 import { mikaService } from '../../services/mika.service';
+import { mediaService } from '../../services/media.service';
 import { ttsService } from '../../services/tts.service';
 import { BOT_MESSAGES } from '../../config/constants';
-import { sendAudioMessage } from '../../utils/telegram';
+import { sendAudioMessage, sendGifMessage } from '../../utils/telegram';
+import { getMikaContext } from '../../utils/time';
 import { logger } from '../../utils/logger';
 
 const reportCooldowns = new Map<number, number>();
@@ -22,16 +24,18 @@ async function sendMika(bot: TelegramBot, chatId: number, prompt: string) {
 }
 
 export async function handleStatus(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
-    await sendMika(bot, msg.chat.id, 'Diga que o status oficial sai as 22h e que /menu mostra os habitos. Curto, no tom da Mika.');
+    const ctx = getMikaContext();
+    await sendMika(bot, msg.chat.id, `${ctx} Diga que o status oficial sai as 22h e que /menu mostra os habitos. Se o horario atual for proximo das 22h, comente. Curto, no tom da Mika.`);
 }
 
 export async function handleHora(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
-    const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-    await sendMika(bot, msg.chat.id, `Informe que o horario de Brasilia agora e ${now}. Curto, no tom da Mika.`);
+    const ctx = getMikaContext();
+    await sendMika(bot, msg.chat.id, `${ctx} Informe o horario atual de Brasilia de forma natural e no tom da Mika. Adicione um comentario ironico sobre o que o Mestre deveria estar fazendo nesse horario.`);
 }
 
 export async function handleMotivar(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
-    await sendMika(bot, msg.chat.id, 'Mande uma motivacao curta para o Mestre treinar agora, sarcastica e natural.');
+    const ctx = getMikaContext();
+    await sendMika(bot, msg.chat.id, `${ctx} Mande uma motivacao curta para o Mestre treinar agora, sarcastica e natural. Adapte ao horario: se for manha, charge matinal; se for tarde, cobranca; se for noite tarde, ironia mas ainda incentivando.`);
 }
 
 export async function handleStreak(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
@@ -41,7 +45,8 @@ export async function handleStreak(bot: TelegramBot, msg: TelegramBot.Message): 
     try {
         await bot.sendChatAction(msg.chat.id, 'typing');
         const streak = await workoutService.getStreak(userId);
-        await sendMika(bot, msg.chat.id, `Pessoa com streak de ${streak} dias. Responda curto, sarcastico e motivador.`);
+        const ctx = getMikaContext();
+        await sendMika(bot, msg.chat.id, `${ctx} Pessoa com streak de ${streak} dia${streak !== 1 ? 's' : ''}. Responda curto, sarcastico e motivador. Mencione o horario de forma ironica se fizer sentido.`);
     } catch (error) {
         logger.error('Erro ao verificar streak:', error);
         await bot.sendMessage(msg.chat.id, BOT_MESSAGES.ERROR_GENERIC);
@@ -62,7 +67,8 @@ export async function handleRelatorio(bot: TelegramBot, msg: TelegramBot.Message
         reportCooldowns.set(userId, Date.now());
 
         await bot.sendChatAction(chatId, 'typing');
-        await sendMika(bot, chatId, 'Gere um relatorio diario sarcastico da Mika. Breve e ironico.');
+        const ctx = getMikaContext();
+        await sendMika(bot, chatId, `${ctx} Gere um relatorio diario sarcastico da Mika. Breve, ironico e mencione que e ${ctx.split(' de ')[1] || 'hoje'} e que ainda ha tempo (ou nao) para recuperar o dia.`);
     } catch (error) {
         logger.error('Erro ao processar /relatorio:', error);
         await bot.sendMessage(chatId, BOT_MESSAGES.ERROR_GENERIC);
@@ -78,6 +84,7 @@ export async function handleCheckTreino(bot: TelegramBot, msg: TelegramBot.Messa
         const response = trained ? await memeService.getCongratsMessage() : await memeService.getRoastMessage();
         const roastAudio = trained ? null : memeService.getRoastAudio();
 
+        await sendGifMessage(bot, chatId, await mediaService.getRandomGif(trained ? 'celebration' : 'roast'));
         await mikaReply(bot, chatId, response.message);
         if (response.audioSearchTerm) {
             const button = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
@@ -101,7 +108,8 @@ export async function handleCardio(bot: TelegramBot, msg: TelegramBot.Message): 
 
     try {
         await bot.sendChatAction(msg.chat.id, 'typing');
-        await sendMika(bot, msg.chat.id, 'Diga que cardio so registra pelo botao do /menu, nao por texto. Curto e sarcastico.');
+        const ctx = getMikaContext();
+        await sendMika(bot, msg.chat.id, `${ctx} Diga que cardio so registra pelo botao do /menu, nao por texto. Curto e sarcastico. Se o horario sugerir que o Mestre ja deveria ter feito cardio, provoque.`);
     } catch (error) {
         logger.error('Erro ao registrar cardio:', error);
         await bot.sendMessage(msg.chat.id, BOT_MESSAGES.ERROR_GENERIC);
@@ -113,5 +121,6 @@ export async function handleReset(bot: TelegramBot, msg: TelegramBot.Message): P
     if (!userId) return;
 
     await workoutService.resetWorkout(userId);
-    await sendMika(bot, msg.chat.id, 'Diga que o status de treino de hoje foi resetado. Curto, no tom da Mika.');
+    const ctx = getMikaContext();
+    await sendMika(bot, msg.chat.id, `${ctx} Diga que o status de treino de hoje foi resetado. Se o horario for tarde, adicione ironia sobre resetar treino tao tarde. Curto, no tom da Mika.`);
 }

@@ -8,15 +8,17 @@ import { mikaService } from './mika.service';
 import { redisService } from './redis.service';
 import { ttsService } from './tts.service';
 import { myInstantsService } from './myinstants.service';
+import { mediaService, MediaCategory } from './media.service';
 import { DIET_PLAN } from '../config/diet';
 import { GYM_PLAN } from '../config/gym';
 import { HABIT_MAP, HABITS, getProgressBar } from '../config/habits';
 import { WATER_GOAL_ML } from '../config/constants';
-import { getBrasiliaDayName } from '../utils/time';
+import { getBrasiliaDayName, isTodayBirthday } from '../utils/time';
+import { sendBirthdayCelebration } from './birthday.service';
 import { logger } from '../utils/logger';
 import { MenuController } from '../controllers/menu.controller';
 import { escapeHtml } from '../utils/html';
-import { sendAudioMessage } from '../utils/telegram';
+import { sendAudioMessage, sendGifMessage } from '../utils/telegram';
 
 const buildTrainButton = (trained: boolean): TelegramBot.InlineKeyboardButton =>
     ({ text: trained ? '🏋️‍♂️ Treino feito! ✅' : '🏋️‍♂️ Já treinei?', callback_data: 'mark_trained' });
@@ -81,6 +83,19 @@ export class SchedulerService {
             logger.error('[Scheduler] Erro ao montar botões de ação:', e);
         }
         return { train: buildTrainButton(trained), cardio: buildCardioButton(cardioDone) };
+    }
+
+    /**
+     * Busca um GIF da categoria (Giphy + fallback local). Nunca lança: se não houver
+     * mídia disponível, retorna null e o card segue só com texto/áudio.
+     */
+    private async getCardGif(category: MediaCategory): Promise<string | null> {
+        try {
+            return await mediaService.getRandomGif(category);
+        } catch (e) {
+            logger.error('[Scheduler] Erro ao buscar GIF do card:', e);
+            return null;
+        }
     }
 
     private getChatId(): number | null {
@@ -152,6 +167,7 @@ export class SchedulerService {
 
             if (trained) {
                 logger.info('✅ Usuário treinou hoje!');
+                await sendGifMessage(this.bot, chatId, await this.getCardGif('celebration'));
                 await this.sendWithAudio(chatId, await memeService.getCongratsMessage());
                 return;
             }
@@ -160,7 +176,7 @@ export class SchedulerService {
             workoutService.logWorkout(chatId, false);
             const roast = await memeService.getRoastMessage();
             const { train, cardio } = await this.getActionButtons(chatId);
-            // Adicionando termo de áudio para falha se não houver
+            await sendGifMessage(this.bot, chatId, await this.getCardGif('roast'));
             await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[train, cardio]] } });
         });
     }
@@ -172,6 +188,7 @@ export class SchedulerService {
             const dayName = getBrasiliaDayName();
             logger.info(`☀️ Enviando bom dia de ${dayName}...`);
 
+            await sendGifMessage(this.bot, chatId, await this.getCardGif('morning'));
             const menu = new MenuController(this.bot);
             await menu.sendGoodMorningMenu(chatId, chatId);
             await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayName));
@@ -187,11 +204,11 @@ export class SchedulerService {
             const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
 
             logger.info(`⏰ Enviando lembrete matinal de ${dayName}...`);
-             let msg = `🍴 <b>CARDAPIO DE HOJE</b>\n` +
-                    `──────────────────────\n` +
-                    `🍳 <b>Café:</b> ${escapeHtml(diet.cafe)}\n` +
-                    `🍽️ <b>Almoço:</b> ${escapeHtml(diet.almoco)}\n` +
-                    `🌙 <b>Jantar:</b> ${escapeHtml(diet.jantar)}`;
+             let msg = `🍴 <b>Cardápio de hoje</b>\n` +
+                    `Esse é o plano do prato pra hoje, Mestre 👇\n\n` +
+                    `🍳 <b>Café</b> — ${escapeHtml(diet.cafe)}\n` +
+                    `🍽️ <b>Almoço</b> — ${escapeHtml(diet.almoco)}\n` +
+                    `🌙 <b>Jantar</b> — ${escapeHtml(diet.jantar)}`;
 
              const { train, cardio } = await this.getActionButtons(chatId);
              const options: TelegramBot.SendMessageOptions = {
@@ -210,6 +227,7 @@ export class SchedulerService {
              };
 
              await this.bot.sendMessage(chatId, msg, options);
+             await sendGifMessage(this.bot, chatId, await this.getCardGif('morning'));
              await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayName));
         });
     }
@@ -227,6 +245,7 @@ export class SchedulerService {
                     logger.info(`❌ Usuário não treinou. Enviando cobrança das ${hour}:00...`);
                     const roast = await memeService.getConditionalReminder(`${hour}:00`);
                     const { train, cardio } = await this.getActionButtons(chatId);
+                    await sendGifMessage(this.bot, chatId, await this.getCardGif('roast'));
                     await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[train, cardio]] } });
                 } else {
                     logger.info('✅ Usuário já treinou hoje. Pulando cobrança.');
@@ -247,6 +266,7 @@ export class SchedulerService {
                 reply_markup: { inline_keyboard: [WATER_ROW, [{ text: '🍼 +1L', callback_data: 'add_water_1000' }]] }
             };
             const reminder = await memeService.getWaterReminder();
+            await sendGifMessage(this.bot, chatId, await this.getCardGif('water'));
             await this.sendWithAudio(chatId, reminder, options);
         });
     }
@@ -257,7 +277,10 @@ export class SchedulerService {
             if (!chatId) return;
 
             const habit = HABIT_MAP.get(meal);
-            const label = habit?.emoji ? `${habit.emoji} ${habit.label}` : meal;
+            const mealNames: Record<typeof meal, string> = {
+                cafe: 'café da manhã', almoco: 'almoço', cafe_tarde: 'café da tarde', jantar: 'jantar'
+            };
+            const mealName = mealNames[meal];
             const dayName = getBrasiliaDayName();
             const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
             const mealDescription = diet[meal];
@@ -268,7 +291,7 @@ export class SchedulerService {
                 parse_mode: 'HTML',
                 reply_markup: {
                     inline_keyboard: [
-                        [{ text: `✅ Já ${label}!`, callback_data: `meal_done_${meal}` }],
+                        [{ text: `✅ Já comi!`, callback_data: `meal_done_${meal}` }],
                         [train, cardio],
                         WATER_ROW
                     ]
@@ -277,11 +300,10 @@ export class SchedulerService {
 
             const reminder = await memeService.getFoodReminder(meal);
             reminder.message = `${reminder.message}\n\n` +
-                               `🍴 <b>HORA DO ${meal.toUpperCase()}!</b>\n` +
-                               `──────────────────────\n` +
-                               `✅ <b>O que comer:</b>\n${escapeHtml(mealDescription)}\n\n` +
-                               `──────────────────────`;
-            
+                               `${habit?.emoji ?? '🍴'} <b>Hora do ${mealName}, Mestre</b>\n` +
+                               `No prato de hoje:\n${escapeHtml(mealDescription)}`;
+
+            await sendGifMessage(this.bot, chatId, await this.getCardGif('happy'));
             await this.sendWithAudio(chatId, reminder, options);
         });
     }
@@ -296,6 +318,7 @@ export class SchedulerService {
                 const uncompleted = await habitsService.getUncompletedHabits(chatId);
                 if (uncompleted.length === 0) {
                     const allDone = await mikaService.response('O Mestre completou todos os habitos do dia. Elogie de forma curta e genuina.');
+                    await sendGifMessage(this.bot, chatId, await this.getCardGif('celebration'));
                     await this.sendWithAudio(chatId, allDone);
                     return;
                 }
@@ -316,6 +339,7 @@ export class SchedulerService {
                     return rows;
                 }, []);
 
+                await sendGifMessage(this.bot, chatId, await this.getCardGif('motivation'));
                 await this.sendWithAudio(chatId, response, { reply_markup: { inline_keyboard: keyboard } });
             } catch (error) {
                 logger.error('❌ Erro ao enviar verificação de hábitos:', error);
@@ -336,28 +360,28 @@ export class SchedulerService {
             if (day.rest) {
                 const response = await mikaService.response('Hoje e dia de descanso. Explique curto que recuperacao faz parte do treino, no tom da Mika.');
                 await this.bot.sendMessage(chatId,
-                    `${day.emoji} <b>DESCANSO</b>\n\n${escapeHtml(response.message)}`,
+                    `${day.emoji} <b>Hoje é dia de descanso</b>\n\n${escapeHtml(response.message)}`,
                     { parse_mode: 'HTML' }
                 );
+                await sendGifMessage(this.bot, chatId, await this.getCardGif('happy'));
                 await this.sendMikaVoice(chatId, response);
                 return;
             }
 
-            let msg = `${day.emoji} <b>FICHA DE HOJE — ${day.muscleGroup.toUpperCase()}</b>\n`;
-            msg += `<i>${day.focus}</i>\n`;
-            msg += `──────────────────────\n`;
+            let msg = `${day.emoji} <b>Treino de hoje — ${day.muscleGroup}</b>\n`;
+            msg += `<i>${day.focus}</i>\n\n`;
             for (const ex of day.exercises) {
                 msg += `• <b>${escapeHtml(ex.name)}</b> — ${ex.sets}\n`;
             }
             const response = await mikaService.response(`Hoje o treino e ${day.muscleGroup}. Mande uma frase curta para ir treinar, no tom da Mika.`);
-            msg += `──────────────────────\n`;
-            msg += `<i>${escapeHtml(response.message)}</i>`;
+            msg += `\n<i>${escapeHtml(response.message)}</i>`;
 
             const { train } = await this.getActionButtons(chatId);
             await this.bot.sendMessage(chatId, msg, {
                 parse_mode: 'HTML',
                 reply_markup: { inline_keyboard: [[train]] }
             });
+            await sendGifMessage(this.bot, chatId, await this.getCardGif('workout'));
             await this.sendMikaVoice(chatId, response);
         });
     }
@@ -376,8 +400,10 @@ export class SchedulerService {
                 workoutService.checkDailyMessages(this.bot, chatId).catch(() => ({ trained: false }))
             ]);
 
-            const trained = check?.trained ?? false;
-            const reportStatus: Record<string, boolean> = { ...status, treino: trained || !!status['treino'] };
+            // Fonte única de verdade: reconcilia workout_logs (check.trained) com daily_habits.
+            // Tudo que é exibido (checklist, linha "Treino", nota) usa o MESMO valor.
+            const reportStatus: Record<string, boolean> = { ...status, treino: (check?.trained ?? false) || !!status['treino'] };
+            const treinoDone = reportStatus['treino'];
             const cardioDone = !!reportStatus['cardio'];
             const total = HABITS.length;
             const completed = HABITS.filter(h => reportStatus[h.key]).length;
@@ -385,34 +411,45 @@ export class SchedulerService {
 
             // Nota 1–10: hábitos (até 6) + treino (2) + água (até 2)
             const nota = Math.max(1, Math.min(10, Math.round(
-                (completed / total) * 6 + (trained ? 2 : 0) + waterRatio * 2
+                (completed / total) * 6 + (treinoDone ? 2 : 0) + waterRatio * 2
             )));
             const notaEmoji = nota >= 8 ? '🏆' : nota >= 5 ? '👍' : '😬';
 
             const dayName = getBrasiliaDayName();
-            let msg = `🌙 <b>RELATÓRIO DO DIA — ${dayName.toUpperCase()}</b>\n`;
-            msg += `──────────────────────\n`;
+            let msg = `🌙 <b>Fechamento do dia — ${dayName}</b>\n`;
+            msg += `Olha como foi seu ${dayName}, Mestre:\n\n`;
             for (const h of HABITS) {
-                msg += `${reportStatus[h.key] ? '✅' : '❌'} ${h.emoji} ${escapeHtml(h.label)}\n`;
+                msg += `${reportStatus[h.key] ? '✅' : '⬜'} ${h.emoji} ${escapeHtml(h.label)}\n`;
             }
-            msg += `──────────────────────\n`;
+            msg += `\n`;
             msg += `📊 <b>Hábitos:</b> ${completed}/${total}\n`;
             msg += `<code>${getProgressBar(completed, total)}</code>\n`;
             msg += `💧 <b>Água:</b> ${water}ml / ${WATER_GOAL_ML}ml\n`;
-            msg += `💪 <b>Treino:</b> ${trained ? 'Feito ✅' : 'Não treinou ❌'}\n`;
-            msg += `🏃 <b>Cárdio:</b> ${cardioDone ? 'Feito ✅' : 'Não feito ❌'}\n`;
-            if (streak > 0) msg += `🔥 <b>Streak:</b> ${streak} dia${streak > 1 ? 's' : ''}\n`;
-            msg += `──────────────────────\n`;
-            msg += `${notaEmoji} <b>Nota do dia:</b> ${nota}/10`;
+            msg += `💪 <b>Treino:</b> ${treinoDone ? 'Feito ✅' : 'Ficou pra amanhã ❌'}\n`;
+            msg += `🏃 <b>Cárdio:</b> ${cardioDone ? 'Feito ✅' : 'Ficou pra amanhã ❌'}\n`;
+            if (streak > 0) msg += `🔥 <b>Sequência:</b> ${streak} dia${streak > 1 ? 's' : ''} sem parar!\n`;
+            msg += `\n${notaEmoji} <b>Nota do dia:</b> ${nota}/10`;
 
+            // Texto primeiro: o GIF é decorativo e não pode atrasar o relatório se o Giphy travar.
             await this.bot.sendMessage(chatId, msg, { parse_mode: 'HTML' });
+            await sendGifMessage(this.bot, chatId, await this.getCardGif(treinoDone && nota >= 7 ? 'trophy' : nota <= 4 ? 'fail' : 'happy'));
 
             const response = await mikaService.response(
-                `Relatorio do dia do Mestre: ${completed} de ${total} habitos, treino ${trained ? 'feito' : 'nao feito'}, ` +
+                `Relatorio do dia do Mestre: ${completed} de ${total} habitos, treino ${treinoDone ? 'feito' : 'nao feito'}, ` +
                 `cardio ${cardioDone ? 'feito' : 'nao feito'}, agua ${water}ml, nota ${nota} de 10. ` +
                 `Comente curto e sarcastico sobre a nota, no tom da Mika.`
             );
             await this.sendMikaVoice(chatId, response);
+        });
+    }
+
+    public async sendBirthdayIfToday() {
+        if (!isTodayBirthday()) return;
+        await this.withLock('lock:birthday', async () => {
+            const chatId = this.getChatId();
+            if (!chatId) return;
+            logger.info('🎂 [Scheduler] Hoje é aniversário! Disparando celebração...');
+            await sendBirthdayCelebration(this.bot, chatId);
         });
     }
 

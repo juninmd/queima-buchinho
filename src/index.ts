@@ -162,6 +162,7 @@ function setupCronJobs() {
   cron.schedule('0 19 * * *', () => scheduler.sendFoodReminder('jantar'), { timezone: 'America/Sao_Paulo' });
   cron.schedule('0 20 * * *', () => scheduler.sendHabitsCheckReminder(), { timezone: 'America/Sao_Paulo' });
   cron.schedule('0 22 * * *', () => scheduler.runDailyMikaAudit(), { timezone: 'America/Sao_Paulo' });
+  cron.schedule('0 9 * * *', () => scheduler.sendBirthdayIfToday(), { timezone: 'America/Sao_Paulo' });
   
   logger.info('⏰ CronJobs internos inicializados!');
 }
@@ -182,6 +183,7 @@ async function runReminder(scheduler: SchedulerService, mode: string) {
   else if (m === 'habits_check') await scheduler.sendHabitsCheckReminder();
   else if (m === 'daily_audit') await scheduler.runDailyMikaAudit();
   else if (m === 'daily_report') await scheduler.sendDailyReport();
+  else if (m === 'birthday') await scheduler.sendBirthdayIfToday();
   else if (m === 'gym') await scheduler.sendGymReminder();
   else if (m.startsWith('food_')) await scheduler.sendFoodReminder(m.replace('food_', '') as any);
 }

@@ -21,8 +21,8 @@ importers:
         specifier: ^6.0.205
         version: 6.0.205(zod@4.4.3)
       ai-sdk-ollama:
-        specifier: ^3.8.4
-        version: 3.8.4(ai@6.0.205(zod@4.4.3))(zod@4.4.3)
+        specifier: ^3.8.7
+        version: 3.8.7(ai@6.0.205(zod@4.4.3))(zod@4.4.3)
       axios:
         specifier: ^1.17.0
         version: 1.17.0
@@ -654,11 +654,11 @@ packages:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
 
-  ai-sdk-ollama@3.8.4:
-    resolution: {integrity: sha512-vvhLHo9MrOhDxsxRWfOGqBmQsnbDPKQHqDG5vSYMkdu6q8RPxJIYag001jQIAKA2MO37Nf96gCAPWM+dufvglw==}
+  ai-sdk-ollama@3.8.7:
+    resolution: {integrity: sha512-q4oN8gWc5fxnzXnc96sveE6vy4BoKOZQr8uAYywKzu3r5CR+jwwI7csmdzxMqhEdj5TUJ7OT5O9jTGZr5YDYng==}
     engines: {node: '>=22'}
     peerDependencies:
-      ai: ^6.0.177
+      ai: ^6.0.197
 
   ai@6.0.205:
     resolution: {integrity: sha512-F4akEGF41UdgJO3L4v+D5noVD1/czhJy6x0k9R/i1EXfxqrkBh/PdYSgRSLPiGFvrw76dzI8h4w3NYmLrTb8dw==}
@@ -2852,10 +2852,10 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai-sdk-ollama@3.8.4(ai@6.0.205(zod@4.4.3))(zod@4.4.3):
+  ai-sdk-ollama@3.8.7(ai@6.0.205(zod@4.4.3))(zod@4.4.3):
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+      '@ai-sdk/provider-utils': 4.0.29(zod@4.4.3)
       ai: 6.0.205(zod@4.4.3)
       jsonrepair: 3.14.0
       ollama: 0.6.3

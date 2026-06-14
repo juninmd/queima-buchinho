@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { mikaService } from './mika.service';
+import { getMikaContext } from '../utils/time';
 
 const AUDIO_FILES = {
     MOTIVATION: 'tai-lung-como-nao-posso_NrQYPc2.mp3',
@@ -20,36 +21,41 @@ export class MemeService {
     }
 
     public async getRoastMessage(): Promise<MemeResponse> {
+        const ctx = getMikaContext();
         return mikaService.response(
-            'O Mestre nao treinou hoje. Zoar de leve e mandar fazer cardio. Curto, natural, sarcastico.'
+            `${ctx} O Mestre nao treinou hoje. Zoar levando em conta o horario atual — se for tarde, sem desculpas; se for cedo, ainda da tempo. Curto, natural, sarcastico.`
         );
     }
 
     public async getCongratsMessage(): Promise<MemeResponse> {
+        const ctx = getMikaContext();
         return mikaService.response(
-            'O Mestre treinou hoje. Elogiar de forma genuina, acida e curta. Zero coach de Instagram.'
+            `${ctx} O Mestre treinou hoje. Elogiar de forma genuina e acida, mencionando que treinou num horario decente (ou tardio). Zero coach de Instagram.`
         );
     }
 
     public async getMorningReminder(dayOfWeek: string): Promise<MemeResponse> {
+        const ctx = getMikaContext();
         return mikaService.response(
-            `E ${dayOfWeek} de manha. Mandar bom dia natural e chamar pra vida, sem frase motivacional corporativa.`
+            `${ctx} E ${dayOfWeek} de manha. Mandar bom dia natural e chamar pra vida, sem frase motivacional corporativa.`
         );
     }
 
     public async getConditionalReminder(time: string): Promise<MemeResponse> {
         return mikaService.response(
-            `Sao ${time} e a Lenda ainda nao treinou. Cutucada ironica curta, sem drama.`
+            `Sao ${time} e a Lenda ainda nao treinou. Cutucada ironica curta mencionando o horario, sem drama.`
         );
     }
 
     public async getWaterReminder(): Promise<MemeResponse> {
-        return mikaService.response('Lembrar o Mestre de beber agua agora, com zoeira leve e direta.');
+        const ctx = getMikaContext();
+        return mikaService.response(`${ctx} Lembrar o Mestre de beber agua agora, com zoeira leve sobre o horario e direta.`);
     }
 
     public async getFoodReminder(meal: 'cafe' | 'almoco' | 'cafe_tarde' | 'jantar'): Promise<MemeResponse> {
+        const ctx = getMikaContext();
         const mealMap = { cafe: 'cafe da manha', almoco: 'almoco', cafe_tarde: 'cafe da tarde', jantar: 'jantar' };
-        return mikaService.response(`Hora do ${mealMap[meal]}. Mandar o Mestre comer, direto e sarcastico.`);
+        return mikaService.response(`${ctx} Hora do ${mealMap[meal]}. Mandar o Mestre comer, direto e sarcastico.`);
     }
 
     getRoastAudio(): string | null {

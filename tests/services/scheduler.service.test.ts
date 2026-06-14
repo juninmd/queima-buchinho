@@ -22,6 +22,7 @@ jest.mock('../../src/services/myinstants.service');
 jest.mock('../../src/utils/telegram');
 jest.mock('../../src/services/redis.service');
 jest.mock('../../src/services/tts.service');
+jest.mock('../../src/services/media.service');
 
 describe('SchedulerService', () => {
     let scheduler: SchedulerService;
@@ -121,7 +122,7 @@ describe('SchedulerService', () => {
         it('should send food reminder', async () => {
             (memeService.getFoodReminder as jest.Mock).mockResolvedValue({ message: 'Eat healthy!' });    
             await scheduler.sendFoodReminder('almoco');
-            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), expect.stringContaining('HORA DO ALMOCO'), expect.any(Object));
+            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), expect.stringContaining('Hora do almoço'), expect.any(Object));
         });
     });
 

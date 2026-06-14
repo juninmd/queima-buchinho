@@ -43,10 +43,16 @@ export class WorkoutService {
     public async logWorkout(userId: number, trained: boolean, userMessage?: string): Promise<void> {
         try {
             const today = getBrasiliaDateString();
+            // "true vence": um treino confirmado (true) sempre sobrescreve um registro
+            // anterior false (ex: a cobrança das 22h marca false antes do Mestre treinar).
+            // Assim "fiz treino" SEMPRE persiste e a streak conta certo.
             await query(
                 `INSERT INTO workout_logs (user_id, brasilia_date, trained, user_message)
                  VALUES ($1, $2, $3, $4)
-                 ON CONFLICT (user_id, brasilia_date) DO NOTHING`,
+                 ON CONFLICT (user_id, brasilia_date)
+                 DO UPDATE SET
+                   trained = workout_logs.trained OR EXCLUDED.trained,
+                   user_message = COALESCE(EXCLUDED.user_message, workout_logs.user_message)`,
                 [userId, today, trained, userMessage ?? null]
             );
             logger.info(`Treino registrado: user=${userId} data=${today} trained=${trained}`);

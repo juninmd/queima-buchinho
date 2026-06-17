@@ -9,6 +9,7 @@ import { BOT_MESSAGES } from '../../config/constants';
 import { sendAudioMessage, sendGifMessage } from '../../utils/telegram';
 import { getMikaContext } from '../../utils/time';
 import { logger } from '../../utils/logger';
+import { SchedulerService } from '../../services/scheduler.service';
 
 const reportCooldowns = new Map<number, number>();
 const REPORT_COOLDOWN_MS = 60_000;
@@ -67,8 +68,8 @@ export async function handleRelatorio(bot: TelegramBot, msg: TelegramBot.Message
         reportCooldowns.set(userId, Date.now());
 
         await bot.sendChatAction(chatId, 'typing');
-        const ctx = getMikaContext();
-        await sendMika(bot, chatId, `${ctx} Gere um relatorio diario sarcastico da Mika. Breve, ironico e mencione que e ${ctx.split(' de ')[1] || 'hoje'} e que ainda ha tempo (ou nao) para recuperar o dia.`);
+        const scheduler = new SchedulerService(bot);
+        await scheduler.sendDailyReport(chatId);
     } catch (error) {
         logger.error('Erro ao processar /relatorio:', error);
         await bot.sendMessage(chatId, BOT_MESSAGES.ERROR_GENERIC);

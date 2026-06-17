@@ -1,4 +1,4 @@
-﻿import TelegramBot from 'node-telegram-bot-api';
+import TelegramBot from 'node-telegram-bot-api';
 import { workoutService } from './workout.service';
 import { habitsService } from './habits.service';
 import { metricsService } from './metrics.service';
@@ -227,7 +227,6 @@ export class SchedulerService {
              };
 
              await this.bot.sendMessage(chatId, msg, options);
-             await sendGifMessage(this.bot, chatId, await this.getCardGif('morning'));
              await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayName));
         });
     }
@@ -266,7 +265,6 @@ export class SchedulerService {
                 reply_markup: { inline_keyboard: [WATER_ROW, [{ text: '🍼 +1L', callback_data: 'add_water_1000' }]] }
             };
             const reminder = await memeService.getWaterReminder();
-            await sendGifMessage(this.bot, chatId, await this.getCardGif('water'));
             await this.sendWithAudio(chatId, reminder, options);
         });
     }
@@ -303,7 +301,6 @@ export class SchedulerService {
                                `${habit?.emoji ?? '🍴'} <b>Hora do ${mealName}, Mestre</b>\n` +
                                `No prato de hoje:\n${escapeHtml(mealDescription)}`;
 
-            await sendGifMessage(this.bot, chatId, await this.getCardGif('happy'));
             await this.sendWithAudio(chatId, reminder, options);
         });
     }
@@ -339,7 +336,6 @@ export class SchedulerService {
                     return rows;
                 }, []);
 
-                await sendGifMessage(this.bot, chatId, await this.getCardGif('motivation'));
                 await this.sendWithAudio(chatId, response, { reply_markup: { inline_keyboard: keyboard } });
             } catch (error) {
                 logger.error('❌ Erro ao enviar verificação de hábitos:', error);
@@ -363,7 +359,6 @@ export class SchedulerService {
                     `${day.emoji} <b>Hoje é dia de descanso</b>\n\n${escapeHtml(response.message)}`,
                     { parse_mode: 'HTML' }
                 );
-                await sendGifMessage(this.bot, chatId, await this.getCardGif('happy'));
                 await this.sendMikaVoice(chatId, response);
                 return;
             }
@@ -381,7 +376,6 @@ export class SchedulerService {
                 parse_mode: 'HTML',
                 reply_markup: { inline_keyboard: [[train]] }
             });
-            await sendGifMessage(this.bot, chatId, await this.getCardGif('workout'));
             await this.sendMikaVoice(chatId, response);
         });
     }

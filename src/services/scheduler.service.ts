@@ -380,10 +380,11 @@ export class SchedulerService {
         });
     }
 
-    public async sendDailyReport() {
-        await this.withLock('lock:daily_report', async () => {
-            const chatId = this.getChatId();
-            if (!chatId) return;
+    public async sendDailyReport(targetChatId?: number) {
+        const chatId = targetChatId || this.getChatId();
+        if (!chatId) return;
+
+        await this.withLock(`lock:daily_report_${chatId}`, async () => {
 
             logger.info('🌙 Gerando relatório de fim de dia...');
 

@@ -7,45 +7,45 @@ export interface MealPlan {
 
 export const DIET_PLAN: Record<string, MealPlan> = {
   'segunda-feira': {
-    cafe: '🍳 2 Ovos mexidos + 1 fatia de pão integral + Café sem açúcar',
-    almoco: '🍗 Frango grelhado + 3 colheres de arroz integral + Feijão + Salada verde',
-    cafe_tarde: '🥜 Mix de castanhas + 1 fruta + Café ou Chá',
-    jantar: '🥣 Sopa de legumes com frango desfiado ou Omelete'
+    cafe: '🍳 1 Pão francês (50g) + 1 Ovo mexido + 1 fatia de Queijo muçarela sem lactose + Mamão (100g) + Chá/Café',
+    almoco: '🐟 Filé de peixe grelhado (140g) + 2 colheres de Arroz branco (90g) + 1 concha de Feijão preto (140g) + Couve-flor (192g) + Salada à vontade + 1 colher de sobremesa de Azeite (5g)',
+    cafe_tarde: '🥪 2 fatias de Pão integral + Peito de frango desfiado (30g) + Café c/ 1 colher de chá de açúcar',
+    jantar: '🥩 Carne magra grelhada (110g) + 2 colheres de Arroz branco (90g) + 1 concha rasa de Feijão carioca (80g) + Berinjela grelhada (75g) + Salada à vontade + 1 colher de sobremesa de Azeite (5g)'
   },
   'terça-feira': {
-    cafe: '🥣 Iogurte natural + 2 colheres de aveia + 1 Banana',
-    almoco: '🥩 Patinho moído + Batata doce cozida + Brócolis no vapor',
-    cafe_tarde: '🥪 Wrap integral com frango desfiado + Cenoura ralada',
-    jantar: '🥗 Salada completa com Atum ou Frango + Azeite'
+    cafe: '🥪 2 fatias de Pão integral + 2 colheres de sopa de Queijo cottage sem lactose + 8 Morangos grandes + Café preto',
+    almoco: '🍗 Peito de frango grelhado (170g) + 3 fatias de Batata doce cozida (120g) + 1 concha de Feijão carioca (140g) + Brócolis refogado + Salada + 1 colher de sobremesa de Azeite (5g)',
+    cafe_tarde: '🥛 Iogurte natural sem lactose (200g) + 1 colher de sopa de Granola sem açúcar (13g) + 2 colheres de Geleia diet linea (40g)',
+    jantar: '🌯 Wrap Proteico: 1 Tortilha integral Rap10 + Atum em água (100g) + 1 colher de sopa de Queijo cottage (30g) + Alface e Tomate'
   },
   'quarta-feira': {
-    cafe: '🥪 Sanduíche integral com queijo branco e peito de peru + Suco natural',
-    almoco: '🐟 Peixe grelhado + Purê de mandioquinha + Aspargos ou Vagem',
-    cafe_tarde: '🥑 1 fatia de pão integral + Pasta de abacate + Tomate cereja',
-    jantar: '🍳 Crepioca (1 ovo + 2 col. goma de tapioca) com recheio leve'
+    cafe: '🥞 Panqueca de Aveia: 2 colheres de aveia (30g) + 1 Ovo + 1 colher de requeijão zero lactose + 1 Maçã + Chá',
+    almoco: '🥩 Carne magra (135g) + Macarrão integral (100g) + Lentilha (52g) + Abobrinha cozida (180g) + Salada + Azeite (5g)',
+    cafe_tarde: '🍳 Wrap 10 com ovo: 1 Rap10 (35g) + 1 ovo mexido + alface e tomate',
+    jantar: '🥗 Salada Caesar Proteica: 100g de frango grelhado + alface romana + 10g de parmesão zero lactose + Molho Caesar sem lactose + Azeite (5ml)'
   },
   'quinta-feira': {
-    cafe: '🥚 2 Ovos cozidos + Meio abacate com limão + Café',
-    almoco: '🍗 Sobrecoxa assada (sem pele) + Arroz de couve-flor + Feijão',
-    cafe_tarde: '🥛 Iogurte proteico + 1 col. pasta de amendoim + 1 banana',
-    jantar: '🥣 Caldo de abóbora com carne seca desfiada'
+    cafe: '🥞 Crepioca: 3 colheres de goma de tapioca (45g) + 1 Ovo + 1 fatia de Queijo muçarela sem lactose + Mamão (100g) + Café',
+    almoco: '🐟 Filé de salmão (120g) + Mandioca cozida (100g) + Grão de bico (60g) + Repolho branco cozido + Salada + Azeite (5g)',
+    cafe_tarde: '🥪 2 fatias de Pão integral + Atum em água (100g) + 1 colher de Maionese light + Alface',
+    jantar: '🥣 Sopa Cremosa: Peito de frango desfiado (80g) + 100g de batata-doce + cenoura + espinafre + 1 colher de chá de azeite'
   },
   'sexta-feira': {
-    cafe: '🥞 Panqueca de banana (1 banana + 1 ovo + 1 col. aveia)',
-    almoco: '🥩 Bife acebolado + Arroz integral + Salada de tomate e pepino',
-    cafe_tarde: '🥨 2 torradas integrais + Queijo cottage + Chá verde',
-    jantar: '🍕 "Pizza" de Rap10 integral (molho tomate, queijo, orégano)'
+    cafe: '🍳 Ovos mexidos (2 un) + 1 fatia de Pão de forma integral + Mamão (100g) + Chá',
+    almoco: '🥩 Carne magra (135g) + Purê de batata baroa (114g) + Feijão preto + Couve refogada + Salada + Azeite (5g)',
+    cafe_tarde: '🥛 Iogurte natural sem lactose (200g) + 1 colher de sopa de Granola sem açúcar (13g) + 2 colheres de Geleia diet linea (40g)',
+    jantar: '🥪 Sanduíche de Carne: 1 Pão francês + 80g de carne magra grelhada + 1 fatia de Queijo minas frescal zero lactose + Rúcula + Mostarda'
   },
   'sábado': {
-    cafe: '🍳 Ovos mexidos com bacon (pouco!) + 1 fatia de pão de forma',
-    almoco: '🥘 Feijoada LEVE (apenas carnes magras) + Couve + Laranja',
-    cafe_tarde: '🥤 Vitamina de frutas + 1 col. aveia + Granola',
-    jantar: '🍔 Hambúrguer caseiro (sem pão ou pão integral) + Salada'
+    cafe: '🌽 Cuscuz Nordestino: 1 pedaço médio (135g) + 1 Ovo mexido + 1 fatia de Queijo muçarela sem lactose + Café',
+    almoco: '🍗 Frango desfiado (150g) + Arroz integral cozido (110g) + Feijão preto + Brócolis + Salada + Azeite (5g)',
+    cafe_tarde: '🥞 Panquecas de aveia com mel: 2 colheres de aveia + 1 ovo + 1 colher de chá de mel',
+    jantar: '🌯 Wrap de Frango com Abacate: 1 Rap10 (50g) + 80g de frango + 1 colher de sopa de abacate (30g) + Alface e Cenoura'
   },
   'domingo': {
-    cafe: '🥐 Café da manhã especial (com moderação!)',
-    almoco: '🍝 Macarrão integral à bolonhesa + Salada de folhas',
-    cafe_tarde: '🍿 Pipoca (sem manteiga) + 1 fruta + Chá',
-    jantar: '🥪 Sanduíche natural de frango com maionese light'
+    cafe: '🥚 2 Ovos cozidos + 2 torradas integrais + 100g de Mamão + Café',
+    almoco: '🥩 Bife de alcatra grelhado (135g) + 2 colheres de Arroz + Feijão carioca + Brócolis/Couve-flor + Salada + Azeite (5g)',
+    cafe_tarde: '🥪 2 fatias de pão integral + 30g de queijo cottage sem lactose + Café',
+    jantar: '🌮 Tapioca com Frango: 3 colheres de tapioca (90g) + 80g de frango desfiado + 1 colher de requeijão light + Alface e Cenoura'
   }
 };

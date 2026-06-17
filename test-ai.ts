@@ -7,6 +7,7 @@ const litellm = createOpenAICompatible({
     name: 'litellm',
     apiKey: process.env.LITELLM_API_KEY ?? '',
     baseURL: process.env.LITELLM_BASE_URL ?? '',
+    supportsStructuredOutputs: true,
 });
 
 const model = process.env.AI_MODEL || 'gemini-2.5-flash-lite';

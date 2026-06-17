@@ -270,7 +270,6 @@ Treino e cardio: registre pelos botoes do /menu
     const response = await mikaService.response('Diga uma frase curta para seguir o cardapio de hoje, no tom da Mika.');
     report += `<i>${escapeHtml(response.message)}</i>`;
 
-    await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif('happy'));
     await this.bot.sendMessage(chatId, report, {
       parse_mode: 'HTML',
       reply_markup: {
@@ -306,7 +305,6 @@ Treino e cardio: registre pelos botoes do /menu
       report += `\n<i>${escapeHtml(response.message)}</i>`;
     }
 
-    await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif(day.rest ? 'happy' : 'workout'));
     await this.bot.sendMessage(chatId, report, { parse_mode: 'HTML' });
   }
 }

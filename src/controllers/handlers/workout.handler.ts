@@ -1,12 +1,10 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { workoutService } from '../../services/workout.service';
-import { myInstantsService } from '../../services/myinstants.service';
 import { memeService } from '../../services/meme.service';
 import { mikaService } from '../../services/mika.service';
 import { mediaService } from '../../services/media.service';
-import { ttsService } from '../../services/tts.service';
 import { BOT_MESSAGES } from '../../config/constants';
-import { sendAudioMessage, sendGifMessage } from '../../utils/telegram';
+import { sendGifMessage } from '../../utils/telegram';
 import { getMikaContext } from '../../utils/time';
 import { logger } from '../../utils/logger';
 import { SchedulerService } from '../../services/scheduler.service';
@@ -15,8 +13,8 @@ const reportCooldowns = new Map<number, number>();
 const REPORT_COOLDOWN_MS = 60_000;
 
 async function mikaReply(bot: TelegramBot, chatId: number, text: string) {
-    const audioPath = await ttsService.generateMikaAudio(text);
-    await sendAudioMessage(bot, chatId, audioPath, text);
+    // Texto apenas: áudio fica reservado ao relatório final.
+    await bot.sendMessage(chatId, text);
 }
 
 async function sendMika(bot: TelegramBot, chatId: number, prompt: string) {
@@ -83,20 +81,9 @@ export async function handleCheckTreino(bot: TelegramBot, msg: TelegramBot.Messa
         await bot.sendChatAction(chatId, 'typing');
         const { trained } = await workoutService.checkDailyMessages(bot, chatId);
         const response = trained ? await memeService.getCongratsMessage() : await memeService.getRoastMessage();
-        const roastAudio = trained ? null : memeService.getRoastAudio();
 
         await sendGifMessage(bot, chatId, await mediaService.getRandomGif(trained ? 'celebration' : 'roast'));
         await mikaReply(bot, chatId, response.message);
-        if (response.audioSearchTerm) {
-            const button = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
-            if (button?.audioUrl) {
-                await bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
-            } else if (roastAudio) {
-                await bot.sendAudio(chatId, roastAudio);
-            }
-        } else if (roastAudio) {
-            await bot.sendAudio(chatId, roastAudio);
-        }
     } catch (error) {
         logger.error('Erro ao verificar treino:', error);
         await bot.sendMessage(chatId, BOT_MESSAGES.ERROR_GENERIC);

@@ -1,7 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { metricsService, MetricType } from '../../services/metrics.service';
 import { mikaService } from '../../services/mika.service';
-import { myInstantsService } from '../../services/myinstants.service';
 import { METRIC_LIMITS, BOT_MESSAGES } from '../../config/constants';
 import { replyMika } from '../../utils/telegram';
 
@@ -43,10 +42,4 @@ export async function handleMetric(
 
     const response = await mikaService.response(prompt);
     await replyMika(bot, chatId, response.message);
-    if (response.audioSearchTerm) {
-        const button = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
-        if (button?.audioUrl) {
-            await bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
-        }
-    }
 }

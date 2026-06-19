@@ -18,7 +18,7 @@ import { sendBirthdayCelebration } from './birthday.service';
 import { logger } from '../utils/logger';
 import { MenuController } from '../controllers/menu.controller';
 import { escapeHtml } from '../utils/html';
-import { sendAudioMessage, sendGifMessage } from '../utils/telegram';
+import { sendGifMessage } from '../utils/telegram';
 
 const buildTrainButton = (trained: boolean): TelegramBot.InlineKeyboardButton =>
     ({ text: trained ? '🏋️‍♂️ Treino feito! ✅' : '🏋️‍♂️ Já treinei?', callback_data: 'mark_trained' });
@@ -107,27 +107,12 @@ export class SchedulerService {
         return Number(chatIdStr);
     }
 
-    private async sendWithAudio(chatId: number, response: { message: string; audioSearchTerm?: string }, options?: TelegramBot.SendMessageOptions) {
-        try {
-            const audioPath = await ttsService.generateMikaAudio(response.message);
-            await sendAudioMessage(this.bot, chatId, audioPath, response.message, options);
-            await ttsService.cleanup(audioPath);
-        } catch (e) {
-            logger.error('[Scheduler] Erro ao gerar TTS:', e);
-            await this.bot.sendMessage(chatId, response.message, options);
-        }
-
-        // Se tiver termo de áudio (ou se for falha), tentar enviar MyInstants também
-        if (response.audioSearchTerm) {
-            try {
-                const instant = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
-                if (instant?.audioUrl) {
-                    await this.bot.sendAudio(chatId, instant.audioUrl, { caption: `🎶 ${instant.title}` });
-                }
-            } catch (err) {
-                logger.error('[Scheduler] Erro ao enviar áudio do MyInstants:', err);
-            }
-        }
+    /**
+     * Envia um aviso da Mika apenas como TEXTO. Áudio (voz TTS + efeito MyInstants)
+     * fica reservado exclusivamente ao relatório final, para evitar poluição sonora.
+     */
+    private async sendNotice(chatId: number, response: { message: string }, options?: TelegramBot.SendMessageOptions) {
+        await this.bot.sendMessage(chatId, response.message, options);
     }
 
     /**
@@ -168,7 +153,7 @@ export class SchedulerService {
             if (trained) {
                 logger.info('✅ Usuário treinou hoje!');
                 await sendGifMessage(this.bot, chatId, await this.getCardGif('celebration'));
-                await this.sendWithAudio(chatId, await memeService.getCongratsMessage());
+                await this.sendNotice(chatId, await memeService.getCongratsMessage());
                 return;
             }
 
@@ -177,7 +162,7 @@ export class SchedulerService {
             const roast = await memeService.getRoastMessage();
             const { train, cardio } = await this.getActionButtons(chatId);
             await sendGifMessage(this.bot, chatId, await this.getCardGif('roast'));
-            await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[train, cardio]] } });
+            await this.sendNotice(chatId, roast, { reply_markup: { inline_keyboard: [[train, cardio]] } });
         });
     }
     public async sendGoodMorning() {
@@ -191,7 +176,7 @@ export class SchedulerService {
             await sendGifMessage(this.bot, chatId, await this.getCardGif('morning'));
             const menu = new MenuController(this.bot);
             await menu.sendGoodMorningMenu(chatId, chatId);
-            await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayName));
+            await this.sendNotice(chatId, await memeService.getMorningReminder(dayName));
         });
     }
 
@@ -227,7 +212,7 @@ export class SchedulerService {
              };
 
              await this.bot.sendMessage(chatId, msg, options);
-             await this.sendWithAudio(chatId, await memeService.getMorningReminder(dayName));
+             await this.sendNotice(chatId, await memeService.getMorningReminder(dayName));
         });
     }
 
@@ -245,7 +230,7 @@ export class SchedulerService {
                     const roast = await memeService.getConditionalReminder(`${hour}:00`);
                     const { train, cardio } = await this.getActionButtons(chatId);
                     await sendGifMessage(this.bot, chatId, await this.getCardGif('roast'));
-                    await this.sendWithAudio(chatId, roast, { reply_markup: { inline_keyboard: [[train, cardio]] } });
+                    await this.sendNotice(chatId, roast, { reply_markup: { inline_keyboard: [[train, cardio]] } });
                 } else {
                     logger.info('✅ Usuário já treinou hoje. Pulando cobrança.');
                 }
@@ -265,7 +250,7 @@ export class SchedulerService {
                 reply_markup: { inline_keyboard: [WATER_ROW, [{ text: '🍼 +1L', callback_data: 'add_water_1000' }]] }
             };
             const reminder = await memeService.getWaterReminder();
-            await this.sendWithAudio(chatId, reminder, options);
+            await this.sendNotice(chatId, reminder, options);
         });
     }
 
@@ -301,7 +286,7 @@ export class SchedulerService {
                                `${habit?.emoji ?? '🍴'} <b>Hora do ${mealName}, Mestre</b>\n` +
                                `No prato de hoje:\n${escapeHtml(mealDescription)}`;
 
-            await this.sendWithAudio(chatId, reminder, options);
+            await this.sendNotice(chatId, reminder, options);
         });
     }
 
@@ -316,7 +301,7 @@ export class SchedulerService {
                 if (uncompleted.length === 0) {
                     const allDone = await mikaService.response('O Mestre completou todos os habitos do dia. Elogie de forma curta e genuina.');
                     await sendGifMessage(this.bot, chatId, await this.getCardGif('celebration'));
-                    await this.sendWithAudio(chatId, allDone);
+                    await this.sendNotice(chatId, allDone);
                     return;
                 }
 
@@ -336,7 +321,7 @@ export class SchedulerService {
                     return rows;
                 }, []);
 
-                await this.sendWithAudio(chatId, response, { reply_markup: { inline_keyboard: keyboard } });
+                await this.sendNotice(chatId, response, { reply_markup: { inline_keyboard: keyboard } });
             } catch (error) {
                 logger.error('❌ Erro ao enviar verificação de hábitos:', error);
             }
@@ -359,7 +344,6 @@ export class SchedulerService {
                     `${day.emoji} <b>Hoje é dia de descanso</b>\n\n${escapeHtml(response.message)}`,
                     { parse_mode: 'HTML' }
                 );
-                await this.sendMikaVoice(chatId, response);
                 return;
             }
 
@@ -376,7 +360,6 @@ export class SchedulerService {
                 parse_mode: 'HTML',
                 reply_markup: { inline_keyboard: [[train]] }
             });
-            await this.sendMikaVoice(chatId, response);
         });
     }
 
@@ -477,17 +460,9 @@ export class SchedulerService {
                     throw new Error('Mika LLM response unavailable');
                 }
 
-                // 3. Converter para Áudio (edge-tts)
-                const audioPath = await ttsService.generateMikaAudio(response.message);
+                // Aviso: só texto. Áudio fica reservado ao relatório final.
+                await this.bot.sendMessage(chatId, `🗒️ <b>Auditoria do Dia - Mika</b>\n\n${escapeHtml(response.message)}`, { parse_mode: 'HTML' });
 
-                // 4. Enviar para o Telegram
-                await this.bot.sendAudio(chatId, audioPath, {
-                    caption: `🎙️ Auditoria do Dia - Mika\n\n"${response.message.substring(0, 100)}..."`
-                });
-
-                // 5. Cleanup
-                await ttsService.cleanup(audioPath);
-                
                 logger.info('✅ Auditoria diária enviada com sucesso!');
             } catch (error) {
                 logger.error('❌ Erro na auditoria diária:', error);

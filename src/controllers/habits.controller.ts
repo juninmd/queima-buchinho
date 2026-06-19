@@ -1,7 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { habitsService } from '../services/habits.service';
 import { metricsService } from '../services/metrics.service';
-import { memeService } from '../services/meme.service';
 import { mikaService } from '../services/mika.service';
 import { workoutService } from '../services/workout.service';
 import { mediaService } from '../services/media.service';
@@ -9,7 +8,6 @@ import { HABIT_MAP } from '../config/habits';
 import { MenuController } from './menu.controller';
 import { sendMika, sendGifMessage } from '../utils/telegram';
 import { logger } from '../utils/logger';
-import { BOT_MESSAGES, WATER_GOAL_ML, WATER_CELEBRATION_ML } from '../config/constants';
 import { getMikaContext, getMealTimeComment } from '../utils/time';
 
 export class HabitsController {
@@ -125,10 +123,8 @@ export class HabitsController {
       await this.menuController.refreshMenu(chatId, messageId, userId);
     }
 
-    if (newValue) {
-      if (habitKey === 'treino') {
-        await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif('celebration'));
-      }
+    // Treino não dispara resposta (texto/áudio/GIF): só atualiza o ✅ do menu e o relatório final.
+    if (newValue && habitKey !== 'treino') {
       const ctx = getMikaContext();
       const response = await mikaService.response(`${ctx} O Mestre marcou o habito "${habit.label}". Reaja curto, natural e sarcastico, mencionando o horario se for relevante (ex: dormir cedo tarde, suplemento a noite, etc).`);
       await sendMika(this.bot, chatId, response);
@@ -139,7 +135,6 @@ export class HabitsController {
     query: TelegramBot.CallbackQuery, userId: number, chatId: number, messageId?: number
   ) {
     const amount = parseInt(query.data!.replace('add_water_', ''));
-    const prevTotal = await metricsService.getTodaySum(userId, 'water');
     await metricsService.logMetric(userId, 'water', amount, 'ml');
     const total = await metricsService.getTodaySum(userId, 'water');
 
@@ -150,23 +145,7 @@ export class HabitsController {
     if (messageId) {
       await this.menuController.refreshMenu(chatId, messageId, userId);
     }
-
-    const crossed2L = prevTotal < WATER_GOAL_ML && total >= WATER_GOAL_ML;
-    const crossed3L = prevTotal < WATER_CELEBRATION_ML && total >= WATER_CELEBRATION_ML;
-
-    const ctx = getMikaContext();
-    if (crossed3L) {
-      await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif('celebration'));
-      const response = await mikaService.response(`${ctx} O Mestre chegou a ${total}ml de agua hoje, batendo 3 litros. Celebre com sarcasmo curto, mencione que isso so aconteceu agora (esse horario).`);
-      await sendMika(this.bot, chatId, response);
-    } else if (crossed2L) {
-      await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif('water'));
-      const response = await mikaService.response(`${ctx} O Mestre chegou a ${total}ml de agua hoje, batendo a meta de 2 litros. Celebre a meta com sarcasmo curto e mencione o horario.`);
-      await sendMika(this.bot, chatId, response);
-    } else {
-      const response = await mikaService.response(`${ctx} O Mestre bebeu agua, total de hoje ${total}ml. Reaja curto e sarcastico — se o total estiver baixo para o horario, provoque.`);
-      await sendMika(this.bot, chatId, response);
-    }
+    // Água não dispara resposta (texto/áudio/GIF): só o toast do botão, o ✅ do menu e o relatório final.
   }
 
   /**
@@ -200,10 +179,7 @@ export class HabitsController {
     if (messageId) {
       await this.flipButtonDone(query, chatId, messageId, 'mark_trained', '🏋️‍♂️ Treino feito! ✅');
     }
-
-    await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif('celebration'));
-    const congrats = await memeService.getCongratsMessage();
-    await sendMika(this.bot, chatId, congrats);
+    // Sem resposta (texto/áudio/GIF): só o ✅ no botão/menu e o relatório final.
   }
 
   private async handleMarkCardio(

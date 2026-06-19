@@ -1,11 +1,10 @@
 {
   "name": "queima-buchinho",
   "version": "1.0.0",
-  "packageManager": "pnpm@9",
+  "packageManager": "pnpm@9.15.0",
   "engines": {
     "node": ">=24"
   },
-  "packageManager": "pnpm@9.15.0",
   "description": "Telegram bot para motivação de treinos",
   "main": "dist/index.js",
   "scripts": {
@@ -37,7 +36,7 @@
     "edge-tts-universal": "^1.4.0",
     "ioredis": "^5.11.1",
     "node-cron": "^4.2.1",
-    "node-telegram-bot-api": "^1.1.0",
+    "node-telegram-bot-api": "^0.67.0",
     "ollama": "^0.6.3",
     "pg": "^8.21.0",
     "zod": "^4.4.3"

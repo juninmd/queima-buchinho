@@ -4,12 +4,10 @@ import { metricsService } from '../services/metrics.service';
 import { workoutService } from '../services/workout.service';
 import { ollamaService } from '../services/ollama.service';
 import { mikaService } from '../services/mika.service';
-import { myInstantsService } from '../services/myinstants.service';
 import { mediaService } from '../services/media.service';
 import { HABITS, getProgressBar } from '../config/habits';
 import { logger } from '../utils/logger';
-import { ttsService } from '../services/tts.service';
-import { sendAudioMessage, sendGifMessage } from '../utils/telegram';
+import { sendGifMessage } from '../utils/telegram';
 import { DIET_PLAN } from '../config/diet';
 import { GYM_PLAN } from '../config/gym';
 import { getBrasiliaDayName } from '../utils/time';
@@ -235,22 +233,7 @@ Treino e cardio: registre pelos botoes do /menu
       const trendUp = summary.current.workouts >= summary.previous.workouts;
       await sendGifMessage(this.bot, chatId, await mediaService.getRandomGif(trendUp ? 'trophy' : 'fail'));
       await this.bot.sendMessage(chatId, report, { parse_mode: 'HTML' });
-
-      // Gerar e enviar áudio da Mika
-      try {
-        const audioPath = await ttsService.generateMikaAudio(response.message);
-        await sendAudioMessage(this.bot, chatId, audioPath, `🎙️ Comentário da Mika`);
-        await ttsService.cleanup(audioPath);
-      } catch (error) {
-        logger.error('Erro ao gerar áudio do resumo semanal:', error);
-      }
-
-      if (response.audioSearchTerm) {
-        const button = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
-        if (button?.audioUrl) {
-          await this.bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
-        }
-      }
+      // Texto apenas: áudio fica reservado ao relatório final.
     } catch (error) {
       logger.error('Erro no showWeekly:', error);
       await this.bot.sendMessage(chatId, '❌ Erro ao processar resumo semanal.');

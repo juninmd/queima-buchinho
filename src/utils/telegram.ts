@@ -2,30 +2,6 @@ import TelegramBot from 'node-telegram-bot-api';
 import { logger } from './logger';
 
 /**
- * Envia uma mensagem de áudio com caption.
- * Se falhar (ex: formato inválido), envia apenas o caption como texto.
- */
-export async function sendAudioMessage(
-    bot: TelegramBot,
-    chatId: number,
-    audioPath: string | null,
-    caption: string,
-    options?: TelegramBot.SendMessageOptions
-) {
-    if (audioPath) {
-        try {
-            await bot.sendChatAction(chatId, 'record_voice');
-            await bot.sendVoice(chatId, audioPath, { caption, ...options });
-        } catch (e) {
-            logger.error('Erro ao enviar áudio:', e);
-            await bot.sendMessage(chatId, caption, options);
-        }
-    } else {
-        await bot.sendMessage(chatId, caption, options);
-    }
-}
-
-/**
  * Envia uma foto com caption.
  * Suporta URL ou caminho de arquivo local.
  */
@@ -112,24 +88,16 @@ export async function sendGifMessage(
 }
 
 /**
- * Responde ao chat com áudio da Mika gerado por TTS, fazendo fallback para texto em caso de falha.
+ * Responde ao chat com a fala da Mika em TEXTO. Áudio fica reservado
+ * exclusivamente ao relatório final, para evitar poluição sonora.
  */
 export async function replyMika(bot: TelegramBot, chatId: number, text: string) {
-    try {
-        const { ttsService } = require('../services/tts.service');
-        const audioPath = await ttsService.generateMikaAudio(text);
-        await sendAudioMessage(bot, chatId, audioPath, text);
-        await ttsService.cleanup(audioPath);
-    } catch (error) {
-        logger.error('Erro ao responder com áudio da Mika:', error);
-        await bot.sendMessage(chatId, text);
-    }
+    await bot.sendMessage(chatId, text);
 }
 
 /**
- * Envia uma resposta da Mika SEMPRE acompanhada de áudio.
- * Preferência: efeito sonoro do MyInstants (audioSearchTerm). Se não houver
- * match, garante áudio com a voz TTS da Mika (replyMika).
+ * Envia uma resposta da Mika apenas em TEXTO (sem voz TTS nem efeito MyInstants).
+ * Áudio fica reservado exclusivamente ao relatório final.
  */
 export async function sendMika(
     bot: TelegramBot,
@@ -137,20 +105,5 @@ export async function sendMika(
     response: { message: string; audioSearchTerm?: string },
     options?: TelegramBot.SendMessageOptions
 ) {
-    const term = response.audioSearchTerm;
-    if (term) {
-        try {
-            const { myInstantsService } = require('../services/myinstants.service');
-            const button = await myInstantsService.getBestMatchAudio(term);
-            if (button?.audioUrl) {
-                await bot.sendMessage(chatId, response.message, options);
-                await bot.sendAudio(chatId, button.audioUrl, { caption: `🎶 ${button.title}` });
-                return;
-            }
-        } catch (e) {
-            logger.error('Erro ao buscar áudio MyInstants da Mika:', e);
-        }
-    }
-    // Sem efeito MyInstants: garante áudio com a voz TTS da Mika.
-    await replyMika(bot, chatId, response.message);
+    await bot.sendMessage(chatId, response.message, options);
 }

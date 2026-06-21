@@ -46,7 +46,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^25.9.2",
     "@types/node-cron": "^3.0.11",
-    "@types/node-telegram-bot-api": "^0.64.14",
+    "@types/node-telegram-bot-api": "^0.64.15",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.1",

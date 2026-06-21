@@ -38,7 +38,7 @@
     "node-cron": "^4.2.1",
     "node-telegram-bot-api": "^0.67.0",
     "ollama": "^0.6.3",
-    "pg": "^8.21.0",
+    "pg": "^8.22.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

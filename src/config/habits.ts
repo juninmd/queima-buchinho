@@ -11,6 +11,7 @@ export const HABITS: HabitDefinition[] = [
   { key: 'alongamento', emoji: '🧘', label: 'Along.', category: 'fitness' },
   { key: 'leitura', emoji: '📖', label: 'Leitura', category: 'wellness' },
   { key: 'meditacao', emoji: '🧘‍♀️', label: 'Medit.', category: 'wellness' },
+  { key: 'fio_dental', emoji: '🦷', label: 'Fio Dental', category: 'wellness' },
   { key: 'suplemento', emoji: '💊', label: 'Suplem.', category: 'nutrition' },
   { key: 'cafe', emoji: '🍳', label: 'Café', category: 'nutrition' },
   { key: 'almoco', emoji: '🍽️', label: 'Almoço', category: 'nutrition' },

@@ -71,13 +71,13 @@ export class SchedulerService {
      * Monta os botões de treino/cárdio refletindo o status REAL do dia.
      * Evita exibir o ✅ de concluído sem o Mestre ter marcado a atividade.
      */
-    private async getActionButtons(chatId: number): Promise<{ train: TelegramBot.InlineKeyboardButton; cardio: TelegramBot.InlineKeyboardButton }> {
+    private async getActionButtons(userId: number): Promise<{ train: TelegramBot.InlineKeyboardButton; cardio: TelegramBot.InlineKeyboardButton }> {
         let trained = false;
         let cardioDone = false;
         try {
-            const check = await workoutService.checkDailyMessages(this.bot, chatId);
+            const check = await workoutService.checkDailyMessages(this.bot, userId);
             trained = check?.trained ?? false;
-            const status = await habitsService.getStatus(chatId);
+            const status = await habitsService.getStatus(userId);
             cardioDone = !!(status && status['cardio']);
         } catch (e) {
             logger.error('[Scheduler] Erro ao montar botões de ação:', e);
@@ -105,6 +105,21 @@ export class SchedulerService {
             return null;
         }
         return Number(chatIdStr);
+    }
+
+    /**
+     * ID dono dos dados (hábitos/água/treino). Os handlers interativos gravam sob
+     * `query.from.id` (id PESSOAL do Mestre). Em grupo, esse id ≠ `CHAT_ID` (id do grupo),
+     * então o cron precisa ler/gravar sob o mesmo id pessoal — senão lê vazio (0/12).
+     * Fallback p/ CHAT_ID mantém o comportamento em chat privado (onde from.id == chat.id).
+     */
+    private getUserId(): number | null {
+        const userIdStr = process.env.USER_ID || process.env.CHAT_ID;
+        if (!userIdStr) {
+            logger.error('❌ USER_ID/CHAT_ID não definido.');
+            return null;
+        }
+        return Number(userIdStr);
     }
 
     /**
@@ -146,9 +161,10 @@ export class SchedulerService {
         await this.withLock('lock:daily_check', async () => {
             logger.info('⏰ Executando verificação diária...');
             const chatId = this.getChatId();
-            if (!chatId) return;
+            const userId = this.getUserId();
+            if (!chatId || !userId) return;
 
-            const { trained } = await workoutService.checkDailyMessages(this.bot, chatId);
+            const { trained } = await workoutService.checkDailyMessages(this.bot, userId);
 
             if (trained) {
                 logger.info('✅ Usuário treinou hoje!');
@@ -158,9 +174,9 @@ export class SchedulerService {
             }
 
             logger.info('❌ Usuário não treinou hoje.');
-            workoutService.logWorkout(chatId, false);
+            workoutService.logWorkout(userId, false);
             const roast = await memeService.getRoastMessage();
-            const { train, cardio } = await this.getActionButtons(chatId);
+            const { train, cardio } = await this.getActionButtons(userId);
             await sendGifMessage(this.bot, chatId, await this.getCardGif('roast'));
             await this.sendNotice(chatId, roast, { reply_markup: { inline_keyboard: [[train, cardio]] } });
         });
@@ -195,7 +211,8 @@ export class SchedulerService {
                     `🍽️ <b>Almoço</b> — ${escapeHtml(diet.almoco)}\n` +
                     `🌙 <b>Jantar</b> — ${escapeHtml(diet.jantar)}`;
 
-             const { train, cardio } = await this.getActionButtons(chatId);
+             const userId = this.getUserId() ?? chatId;
+             const { train, cardio } = await this.getActionButtons(userId);
              const options: TelegramBot.SendMessageOptions = {
                  parse_mode: 'HTML',
                  reply_markup: {
@@ -222,13 +239,14 @@ export class SchedulerService {
             if (!chatId) return;
 
             logger.info('⏰ Verificando treino para cobrança...');
+            const userId = this.getUserId() ?? chatId;
             try {
-                const { trained } = await workoutService.checkDailyMessages(this.bot, chatId);
+                const { trained } = await workoutService.checkDailyMessages(this.bot, userId);
                 if (!trained) {
                     const hour = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit' });
                     logger.info(`❌ Usuário não treinou. Enviando cobrança das ${hour}:00...`);
                     const roast = await memeService.getConditionalReminder(`${hour}:00`);
-                    const { train, cardio } = await this.getActionButtons(chatId);
+                    const { train, cardio } = await this.getActionButtons(userId);
                     await sendGifMessage(this.bot, chatId, await this.getCardGif('roast'));
                     await this.sendNotice(chatId, roast, { reply_markup: { inline_keyboard: [[train, cardio]] } });
                 } else {
@@ -269,7 +287,7 @@ export class SchedulerService {
             const mealDescription = diet[meal];
 
             logger.info(`🍽️ Enviando lembrete de ${meal}...`);
-            const { train, cardio } = await this.getActionButtons(chatId);
+            const { train, cardio } = await this.getActionButtons(this.getUserId() ?? chatId);
             const options: TelegramBot.SendMessageOptions = {
                 parse_mode: 'HTML',
                 reply_markup: {
@@ -296,8 +314,9 @@ export class SchedulerService {
             if (!chatId) return;
 
             logger.info('📋 Enviando verificação de hábitos do dia...');
+            const userId = this.getUserId() ?? chatId;
             try {
-                const uncompleted = await habitsService.getUncompletedHabits(chatId);
+                const uncompleted = await habitsService.getUncompletedHabits(userId);
                 if (uncompleted.length === 0) {
                     const allDone = await mikaService.response('O Mestre completou todos os habitos do dia. Elogie de forma curta e genuina.');
                     await sendGifMessage(this.bot, chatId, await this.getCardGif('celebration'));
@@ -355,7 +374,7 @@ export class SchedulerService {
             const response = await mikaService.response(`Hoje o treino e ${day.muscleGroup}. Mande uma frase curta para ir treinar, no tom da Mika.`);
             msg += `\n<i>${escapeHtml(response.message)}</i>`;
 
-            const { train } = await this.getActionButtons(chatId);
+            const { train } = await this.getActionButtons(this.getUserId() ?? chatId);
             await this.bot.sendMessage(chatId, msg, {
                 parse_mode: 'HTML',
                 reply_markup: { inline_keyboard: [[train]] }
@@ -363,19 +382,21 @@ export class SchedulerService {
         });
     }
 
-    public async sendDailyReport(targetChatId?: number) {
+    public async sendDailyReport(targetChatId?: number, targetUserId?: number) {
         const chatId = targetChatId || this.getChatId();
-        if (!chatId) return;
+        // Dados sempre pelo id pessoal do Mestre (USER_ID); entrega pelo chat de origem.
+        const userId = targetUserId || this.getUserId();
+        if (!chatId || !userId) return;
 
         await this.withLock(`lock:daily_report_${chatId}`, async () => {
 
             logger.info('🌙 Gerando relatório de fim de dia...');
 
             const [status, water, streak, check] = await Promise.all([
-                habitsService.getStatus(chatId).catch(() => ({} as Record<string, boolean>)),
-                metricsService.getTodaySum(chatId, 'water').catch(() => 0),
-                workoutService.getStreak(chatId).catch(() => 0),
-                workoutService.checkDailyMessages(this.bot, chatId).catch(() => ({ trained: false }))
+                habitsService.getStatus(userId).catch(() => ({} as Record<string, boolean>)),
+                metricsService.getTodaySum(userId, 'water').catch(() => 0),
+                workoutService.getStreak(userId).catch(() => 0),
+                workoutService.checkDailyMessages(this.bot, userId).catch(() => ({ trained: false }))
             ]);
 
             // Fonte única de verdade: reconcilia workout_logs (check.trained) com daily_habits.
@@ -434,16 +455,17 @@ export class SchedulerService {
     public async runDailyMikaAudit() {
         await this.withLock('lock:daily_mika_audit', async () => {
             const chatId = this.getChatId();
-            if (!chatId) return;
+            const userId = this.getUserId();
+            if (!chatId || !userId) return;
 
             logger.info('🎙️ Iniciando auditoria diária da Mika...');
             try {
                 // 1. Coletar dados do dia
                 const [{ trained }, summary, streak, habitsCount] = await Promise.all([
-                    workoutService.checkDailyMessages(this.bot, chatId),
-                    metricsService.getDailySummary(chatId),
-                    workoutService.getStreak(chatId),
-                    habitsService.getCompletedCount(chatId),
+                    workoutService.checkDailyMessages(this.bot, userId),
+                    metricsService.getDailySummary(userId),
+                    workoutService.getStreak(userId),
+                    habitsService.getCompletedCount(userId),
                 ]);
 
                 const auditContext = {

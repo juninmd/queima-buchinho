@@ -67,7 +67,7 @@ export async function handleRelatorio(bot: TelegramBot, msg: TelegramBot.Message
 
         await bot.sendChatAction(chatId, 'typing');
         const scheduler = new SchedulerService(bot);
-        await scheduler.sendDailyReport(chatId);
+        await scheduler.sendDailyReport(chatId, userId);
     } catch (error) {
         logger.error('Erro ao processar /relatorio:', error);
         await bot.sendMessage(chatId, BOT_MESSAGES.ERROR_GENERIC);

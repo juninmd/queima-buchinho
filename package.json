@@ -36,7 +36,7 @@
     "edge-tts-universal": "^1.4.0",
     "ioredis": "^5.11.1",
     "node-cron": "^4.4.1",
-    "node-telegram-bot-api": "^0.67.0",
+    "node-telegram-bot-api": "^1.1.2",
     "ollama": "^0.6.3",
     "pg": "^8.22.0",
     "zod": "^4.4.3"

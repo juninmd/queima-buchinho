@@ -25,7 +25,7 @@
   "license": "MIT",
   "dependencies": {
     "@ai-sdk/openai": "^3.0.71",
-    "@ai-sdk/openai-compatible": "^2.0.50",
+    "@ai-sdk/openai-compatible": "^3.0.1",
     "@types/pg": "^8.20.0",
     "ai": "^6.0.205",
     "ai-sdk-ollama": "^3.8.8",

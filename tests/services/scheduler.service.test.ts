@@ -6,9 +6,9 @@ import { habitsService } from '../../src/services/habits.service';
 import { metricsService } from '../../src/services/metrics.service';
 import { ollamaService } from '../../src/services/ollama.service';
 import { myInstantsService } from '../../src/services/myinstants.service';
-import { sendAudioMessage } from '../../src/utils/telegram';
 import { redisService } from '../../src/services/redis.service';
 import { ttsService } from '../../src/services/tts.service';
+import { HABITS } from '../../src/config/habits';
 
 jest.mock('../../src/services/workout.service');
 jest.mock('../../src/services/meme.service');
@@ -70,20 +70,25 @@ describe('SchedulerService', () => {
             await scheduler.runDailyCheck();
 
             expect(workoutService.logWorkout).not.toHaveBeenCalledWith(chatId, true, expect.anything());
-            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), 'Congrats!', undefined);
-            expect(mockBot.sendAudio).toHaveBeenCalledWith(chatId, 'http://audio.url', expect.any(Object));
+            // Aviso é só texto: parabeniza via sendMessage, sem áudio.
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(chatId, 'Congrats!', undefined);
+            expect(mockBot.sendAudio).not.toHaveBeenCalled();
         });
 
-        it('should handle untrained user with instant audio', async () => {
-            (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: false });       
+        it('should handle untrained user with text roast and action buttons', async () => {
+            (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: false });
             (memeService.getRoastMessage as jest.Mock).mockResolvedValue({ message: 'Roast!', audioSearchTerm: 'sad' });
-            (myInstantsService.getBestMatchAudio as jest.Mock).mockResolvedValue({ audioUrl: 'http://sad.url', title: 'Sad' });
 
             await scheduler.runDailyCheck();
 
             expect(workoutService.logWorkout).toHaveBeenCalledWith(chatId, false);
-            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), 'Roast!', expect.any(Object));
-            expect(mockBot.sendAudio).toHaveBeenCalledWith(chatId, 'http://sad.url', expect.any(Object));   
+            // Cobrança é só texto, com botões de treino/cárdio. Sem áudio.
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(
+                chatId,
+                'Roast!',
+                expect.objectContaining({ reply_markup: expect.any(Object) })
+            );
+            expect(mockBot.sendAudio).not.toHaveBeenCalled();
         });
     });
 
@@ -94,8 +99,9 @@ describe('SchedulerService', () => {
 
             await scheduler.sendMorningReminder();
 
+            // Cardápio (com teclado) + lembrete da Mika, ambos só texto.
             expect(mockBot.sendMessage).toHaveBeenCalledWith(chatId, expect.any(String), expect.any(Object));
-            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), 'Good morning!', undefined);
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(chatId, 'Good morning!', undefined);
         });
     });
 
@@ -106,7 +112,11 @@ describe('SchedulerService', () => {
 
             await scheduler.sendConditionalReminder();
 
-            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), 'Train now!', expect.any(Object));
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(
+                chatId,
+                'Train now!',
+                expect.objectContaining({ reply_markup: expect.any(Object) })
+            );
         });
     });
 
@@ -114,7 +124,11 @@ describe('SchedulerService', () => {
         it('should send water reminder', async () => {
             (memeService.getWaterReminder as jest.Mock).mockResolvedValue({ message: 'Drink water!' });   
             await scheduler.sendWaterReminder();
-            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), 'Drink water!', expect.any(Object));
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(
+                chatId,
+                'Drink water!',
+                expect.objectContaining({ reply_markup: expect.any(Object) })
+            );
         });
     });
 
@@ -122,7 +136,11 @@ describe('SchedulerService', () => {
         it('should send food reminder', async () => {
             (memeService.getFoodReminder as jest.Mock).mockResolvedValue({ message: 'Eat healthy!' });    
             await scheduler.sendFoodReminder('almoco');
-            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), expect.stringContaining('Hora do almoço'), expect.any(Object));
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(
+                chatId,
+                expect.stringContaining('Hora do almoço'),
+                expect.objectContaining({ reply_markup: expect.any(Object) })
+            );
         });
     });
 
@@ -130,7 +148,7 @@ describe('SchedulerService', () => {
         it('should congratulate if all habits done', async () => {
             (habitsService.getUncompletedHabits as jest.Mock).mockResolvedValue([]);
             await scheduler.sendHabitsCheckReminder();
-            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), 'LLM Mika', undefined);
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(chatId, 'LLM Mika', undefined);
         });
 
         it('should send reminder if habits pending', async () => {
@@ -138,7 +156,11 @@ describe('SchedulerService', () => {
 
             await scheduler.sendHabitsCheckReminder();
 
-            expect(sendAudioMessage).toHaveBeenCalledWith(mockBot, chatId, expect.any(String), 'LLM Mika', expect.any(Object));
+            expect(mockBot.sendMessage).toHaveBeenCalledWith(
+                chatId,
+                'LLM Mika',
+                expect.objectContaining({ reply_markup: expect.any(Object) })
+            );
         });
     });
 
@@ -150,6 +172,7 @@ describe('SchedulerService', () => {
                 alongamento: false,
                 leitura: false,
                 meditacao: false,
+                fio_dental: false,
                 suplemento: false,
                 cafe: false,
                 almoco: false,
@@ -165,7 +188,7 @@ describe('SchedulerService', () => {
 
             const report = (mockBot.sendMessage as jest.Mock).mock.calls[0][1];
             expect(report).toContain('✅ 💪 Treino');
-            expect(report).toContain('📊 <b>Hábitos:</b> 1/11');
+            expect(report).toContain(`📊 <b>Hábitos:</b> 1/${HABITS.length}`);
             expect(report).toContain('💪 <b>Treino:</b> Feito ✅');
         });
     });

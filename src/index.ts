@@ -8,6 +8,7 @@ import { HabitsController } from './controllers/habits.controller';
 import { redisService } from './services/redis.service';
 import { logger } from './utils/logger';
 import { HealthServer, markPollingAlive, setPollingMode } from './utils/server';
+import { DashboardApiServer } from './api/dashboard.server';
 import { pool } from './config/database';
 import { notifyStartup, notifyShutdown, notifyCrash } from './utils/notifications';
 
@@ -23,6 +24,12 @@ if (!token) throw new Error('TELEGRAM_BOT_TOKEN ou BOT_TOKEN não definido');
 const healthServer = new HealthServer(healthPort);
 healthServer.start();
 
+const dashboardUserId = Number(process.env.USER_ID || process.env.CHAT_ID) || 0;
+const dashboardPort = Number(process.env.DASHBOARD_PORT) || 8081;
+const dashboardServer = new DashboardApiServer(dashboardPort, dashboardUserId);
+if (process.env.DASHBOARD_TOKEN) dashboardServer.start();
+else logger.warn('⚠️ DASHBOARD_TOKEN não definido — Dashboard API desativada');
+
 let bot: TelegramBot;
 let botMode: 'polling' | 'webhook' | 'none' = 'none';
 
@@ -34,6 +41,7 @@ async function shutdown(signal: string) {
     else if (botMode === 'webhook') await (bot as any)?.closeWebHook?.();
   } catch { /* ignore */ }
   await healthServer.close();
+  await dashboardServer.close();
   await redisService.disconnect();
   await pool.end();
   process.exit(0);

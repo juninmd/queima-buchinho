@@ -23,6 +23,7 @@ Construído com foco em altíssima performance, baixo consumo de memória e inic
 - 🤖 **Interação Inteligente (Mika)**: Respostas dinâmicas geradas por IA (Ollama ou OpenRouter) com a persona ácida de Mika.
 - 🗣️ **Respostas de Voz (TTS)**: Conversão de texto para fala em tempo real integrada utilizando a API Edge-TTS.
 - 📊 **Relatórios Consolidados**: Resumos diários e relatórios semanais com gráficos de barra gerados diretamente no chat.
+- 🖥️ **Dashboard Web**: App React (`dashboard/`) com progresso diário/semanal/mensal, evolução de peso, água e hábitos — ver seção abaixo.
 - ⚡ **Execução Resiliente**: Auto-reconnect em caso de falhas de polling e smart liveness check para monitorar a saúde da aplicação.
 
 ---
@@ -95,6 +96,26 @@ docker-compose up --build
 ```
 
 ---
+
+## 🖥️ Dashboard de Progresso
+
+App web (Bun + Vite + React + TypeScript) em `dashboard/` que consome a Dashboard API do bot
+(`src/api/dashboard.server.ts`) e mostra progresso diário, semanal e mensal: evolução de peso,
+ingestão de água, conclusão de hábitos e calendário de treinos.
+
+```bash
+# 1. Habilite a API no .env do bot (raiz)
+DASHBOARD_TOKEN=algum-token-secreto
+DASHBOARD_PORT=8081
+
+# 2. Configure o frontend
+cd dashboard
+cp .env.example .env   # aponte VITE_API_URL/VITE_API_TOKEN pro bot
+
+# 3. Rode
+bun install
+bun run dev
+```
 
 ## 🛡️ Diretrizes do Protocolo Antigravity
 

@@ -1,11 +1,12 @@
 import TelegramBot from 'node-telegram-bot-api';
+import type { Message } from 'node-telegram-bot-api';
 import { getBrasiliaDateString } from '../utils/time';
 import { query } from '../config/database';
 import { logger } from '../utils/logger';
 import { DatabaseError, toError } from '../utils/errors';
 
 export class WorkoutService {
-    public async checkDailyMessages(_bot: TelegramBot, targetChatId?: number): Promise<{ trained: boolean; message?: TelegramBot.Message }> {
+    public async checkDailyMessages(_bot: TelegramBot, targetChatId?: number): Promise<{ trained: boolean; message?: Message }> {
         try {
             const today = getBrasiliaDateString();
             return { trained: await this.hasWorkoutToday(targetChatId ?? 0, today) };
@@ -83,22 +84,24 @@ export class WorkoutService {
             );
             if (rows.length === 0) return 0;
 
+            const toDateStr = (v: unknown): string => typeof v === 'string' ? v : (v as Date).toISOString().slice(0, 10);
+            const prevDay = (date: string): string => {
+                const d = new Date(date + 'T12:00:00-03:00');
+                d.setDate(d.getDate() - 1);
+                return d.toISOString().slice(0, 10);
+            };
+
             let streak = 0;
             const today = getBrasiliaDateString();
-            let expected = today;
+            // Sem treino registrado hoje, a sequência de ontem continua viva (só quebra ao
+            // virar o dia sem treinar). Antes, o /menu das 6h mostrava streak 0 mesmo após
+            // 10 dias seguidos, porque exigia o treino de HOJE como primeiro elo.
+            let expected = toDateStr(rows[0].brasilia_date) === today ? today : prevDay(today);
 
             for (const row of rows) {
-                const date = typeof row.brasilia_date === 'string'
-                    ? row.brasilia_date
-                    : (row.brasilia_date as Date).toISOString().slice(0, 10);
-                if (date === expected) {
-                    streak++;
-                    const d = new Date(expected + 'T12:00:00-03:00');
-                    d.setDate(d.getDate() - 1);
-                    expected = d.toISOString().slice(0, 10);
-                } else {
-                    break;
-                }
+                if (toDateStr(row.brasilia_date) !== expected) break;
+                streak++;
+                expected = prevDay(expected);
             }
             return streak;
         } catch (e) {

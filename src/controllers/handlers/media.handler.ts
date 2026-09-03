@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import type { Message } from 'node-telegram-bot-api';
 import { myInstantsService } from '../../services/myinstants.service';
 import { mediaService } from '../../services/media.service';
 import { sendGifMessage, sendStickerMessage } from '../../utils/telegram';
@@ -6,7 +7,7 @@ import { logger } from '../../utils/logger';
 
 export async function handleInstante(
     bot: TelegramBot,
-    msg: TelegramBot.Message,
+    msg: Message,
     match: RegExpExecArray | null
 ): Promise<void> {
     const query = match ? match[2] : '';
@@ -25,7 +26,7 @@ export async function handleInstante(
     }
 }
 
-export async function handleMemeRandom(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
+export async function handleMemeRandom(bot: TelegramBot, msg: Message): Promise<void> {
     const chatId = msg.chat.id;
     try {
         await bot.sendChatAction(chatId, 'find_location');
@@ -48,7 +49,7 @@ export async function handleMemeRandom(bot: TelegramBot, msg: TelegramBot.Messag
 
 export async function handleMeme(
     bot: TelegramBot,
-    msg: TelegramBot.Message,
+    msg: Message,
     match: RegExpExecArray | null
 ): Promise<void> {
     const chatId = msg.chat.id;
@@ -73,7 +74,7 @@ export async function handleMeme(
     }
 }
 
-export async function handleStickerRandom(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
+export async function handleStickerRandom(bot: TelegramBot, msg: Message): Promise<void> {
     const chatId = msg.chat.id;
     try {
         await bot.sendChatAction(chatId, 'typing');
@@ -91,7 +92,7 @@ export async function handleStickerRandom(bot: TelegramBot, msg: TelegramBot.Mes
 
 export async function handleSticker(
     bot: TelegramBot,
-    msg: TelegramBot.Message,
+    msg: Message,
     match: RegExpExecArray | null
 ): Promise<void> {
     const chatId = msg.chat.id;
@@ -118,7 +119,7 @@ export async function handleSticker(
 
 export async function handleGif(
     bot: TelegramBot,
-    msg: TelegramBot.Message,
+    msg: Message,
     match: RegExpExecArray | null
 ): Promise<void> {
     const chatId = msg.chat.id;

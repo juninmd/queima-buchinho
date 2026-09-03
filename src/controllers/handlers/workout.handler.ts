@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import type { Message } from 'node-telegram-bot-api';
 import { workoutService } from '../../services/workout.service';
 import { memeService } from '../../services/meme.service';
 import { mikaService } from '../../services/mika.service';
@@ -22,22 +23,22 @@ async function sendMika(bot: TelegramBot, chatId: number, prompt: string) {
     await mikaReply(bot, chatId, response.message);
 }
 
-export async function handleStatus(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
+export async function handleStatus(bot: TelegramBot, msg: Message): Promise<void> {
     const ctx = getMikaContext();
     await sendMika(bot, msg.chat.id, `${ctx} Diga que o status oficial sai as 22h e que /menu mostra os habitos. Se o horario atual for proximo das 22h, comente. Curto, no tom da Mika.`);
 }
 
-export async function handleHora(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
+export async function handleHora(bot: TelegramBot, msg: Message): Promise<void> {
     const ctx = getMikaContext();
     await sendMika(bot, msg.chat.id, `${ctx} Informe o horario atual de Brasilia de forma natural e no tom da Mika. Adicione um comentario ironico sobre o que o Mestre deveria estar fazendo nesse horario.`);
 }
 
-export async function handleMotivar(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
+export async function handleMotivar(bot: TelegramBot, msg: Message): Promise<void> {
     const ctx = getMikaContext();
     await sendMika(bot, msg.chat.id, `${ctx} Mande uma motivacao curta para o Mestre treinar agora, sarcastica e natural. Adapte ao horario: se for manha, charge matinal; se for tarde, cobranca; se for noite tarde, ironia mas ainda incentivando.`);
 }
 
-export async function handleStreak(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
+export async function handleStreak(bot: TelegramBot, msg: Message): Promise<void> {
     const userId = msg.from?.id || msg.sender_chat?.id;
     if (!userId) return;
 
@@ -52,7 +53,7 @@ export async function handleStreak(bot: TelegramBot, msg: TelegramBot.Message): 
     }
 }
 
-export async function handleRelatorio(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
+export async function handleRelatorio(bot: TelegramBot, msg: Message): Promise<void> {
     const userId = msg.from?.id || msg.sender_chat?.id;
     const chatId = msg.chat.id;
     if (!userId) return;
@@ -74,7 +75,7 @@ export async function handleRelatorio(bot: TelegramBot, msg: TelegramBot.Message
     }
 }
 
-export async function handleCheckTreino(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
+export async function handleCheckTreino(bot: TelegramBot, msg: Message): Promise<void> {
     const chatId = msg.chat.id;
 
     try {
@@ -90,7 +91,7 @@ export async function handleCheckTreino(bot: TelegramBot, msg: TelegramBot.Messa
     }
 }
 
-export async function handleCardio(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
+export async function handleCardio(bot: TelegramBot, msg: Message): Promise<void> {
     const userId = msg.from?.id || msg.sender_chat?.id;
     if (!userId) return;
 
@@ -104,7 +105,7 @@ export async function handleCardio(bot: TelegramBot, msg: TelegramBot.Message): 
     }
 }
 
-export async function handleReset(bot: TelegramBot, msg: TelegramBot.Message): Promise<void> {
+export async function handleReset(bot: TelegramBot, msg: Message): Promise<void> {
     const userId = msg.from?.id || msg.sender_chat?.id;
     if (!userId) return;
 

@@ -69,8 +69,13 @@ export class MetricsService {
     public async getDailySummary(userId: number): Promise<DailySummary | null> {
         try {
             const today = getBrasiliaDateString();
+            // Peso é um valor pontual: vale o ÚLTIMO do dia. Somar (/peso 80 duas vezes = 160kg)
+            // corrompia o relatório, a auditoria da Mika e o dashboard.
             const { rows } = await query<{ type: string; total: string }>(
-                `SELECT type, SUM(value) as total
+                `SELECT type,
+                        CASE WHEN type = 'weight'
+                             THEN (array_agg(value ORDER BY created_at DESC))[1]
+                             ELSE SUM(value) END as total
                  FROM user_metrics
                  WHERE user_id = $1 AND brasilia_date = $2
                  GROUP BY type`,

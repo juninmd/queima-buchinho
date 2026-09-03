@@ -61,6 +61,16 @@ describe('MetricsService', () => {
         });
 
 
+        it('should take the latest weight of the day instead of summing entries', async () => {
+            mockQuery.mockResolvedValue({ rows: [] });
+
+            await metricsService.getDailySummary(userId);
+
+            const [sql] = mockQuery.mock.calls.find(([q]) => String(q).includes('GROUP BY type'))!;
+            expect(sql).toMatch(/CASE WHEN type = 'weight'/);
+            expect(sql).toMatch(/array_agg\(value ORDER BY created_at DESC\)/);
+        });
+
         it('should handle missing data by returning 0 or null', async () => {
             mockQuery.mockResolvedValue({ rows: [] });
 

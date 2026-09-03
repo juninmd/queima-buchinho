@@ -1,4 +1,5 @@
 import http from 'http';
+import { timingSafeEqual } from 'crypto';
 import { logger } from '../utils/logger';
 import { dashboardService } from '../services/dashboard.service';
 import { dashboardAnalysisService, DashboardRange } from '../services/dashboard-analysis.service';
@@ -17,8 +18,9 @@ function send(res: http.ServerResponse, status: number, body: unknown): void {
 function isAuthorized(req: http.IncomingMessage): boolean {
   const token = process.env.DASHBOARD_TOKEN;
   if (!token) return false;
-  const header = req.headers.authorization || '';
-  return header === `Bearer ${token}`;
+  const expected = Buffer.from(`Bearer ${token}`);
+  const given = Buffer.from(req.headers.authorization || '');
+  return expected.length === given.length && timingSafeEqual(expected, given);
 }
 
 export class DashboardApiServer {

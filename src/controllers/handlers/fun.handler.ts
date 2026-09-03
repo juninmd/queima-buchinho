@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import type { Message } from 'node-telegram-bot-api';
 import { replyMika } from '../../utils/telegram';
 
 const CANTADAS = [
@@ -11,7 +12,7 @@ const CANTADAS = [
   "Bora fazer uma série de três de 15 de 'olhar nos meus olhos'? 😉"
 ];
 
-export async function handleCantada(bot: TelegramBot, msg: TelegramBot.Message) {
+export async function handleCantada(bot: TelegramBot, msg: Message) {
   const line = CANTADAS[Math.floor(Math.random() * CANTADAS.length)];
   await replyMika(bot, msg.chat.id, line);
 }

@@ -77,11 +77,15 @@ export class DashboardService {
 
       type MetricRow = { brasilia_date: string; type: string; total: string };
       type WorkoutRow = { brasilia_date: string; trained: boolean };
-      type HabitRow = { brasilia_date: string; completed: string; total: string };
+      type HabitRow = { brasilia_date: string; completed: string };
 
       const [metrics, workouts, habits] = await Promise.all([
         query<MetricRow>(
-          `SELECT brasilia_date, type, SUM(value) as total FROM user_metrics
+          `SELECT brasilia_date, type,
+                  CASE WHEN type = 'weight'
+                       THEN (array_agg(value ORDER BY created_at DESC))[1]
+                       ELSE SUM(value) END as total
+           FROM user_metrics
            WHERE user_id = $1 AND brasilia_date >= $2 AND type IN ('water', 'weight')
            GROUP BY brasilia_date, type`,
           [userId, from]
@@ -92,7 +96,7 @@ export class DashboardService {
           [userId, from]
         ),
         query<HabitRow>(
-          `SELECT brasilia_date::text, COUNT(*) FILTER (WHERE completed) as completed, COUNT(*) as total
+          `SELECT brasilia_date::text, COUNT(*) FILTER (WHERE completed) as completed
            FROM daily_habits WHERE user_id = $1 AND brasilia_date >= $2 GROUP BY brasilia_date`,
           [userId, from]
         ),
@@ -105,15 +109,17 @@ export class DashboardService {
         if (map) map.set(r.brasilia_date, parseFloat(r.total));
       });
       const trainedMap = new Map(workouts.rows.map(r => [r.brasilia_date, r.trained]));
-      const habitsMap = new Map(habits.rows.map(r => [r.brasilia_date, { c: parseInt(r.completed), t: parseInt(r.total) }]));
+      const habitsMap = new Map(habits.rows.map(r => [r.brasilia_date, parseInt(r.completed)]));
 
+      // habitsTotal é sempre o catálogo completo: daily_habits só tem linha para hábito
+      // já tocado, então COUNT(*) inflava o % (2 feitos de 3 tocados = 67% em vez de 2/12).
       return dates.map(date => ({
         date,
         water: water.get(date) ?? 0,
         weight: weight.has(date) ? (weight.get(date) as number) : null,
         trained: trainedMap.get(date) ?? false,
-        habitsCompleted: habitsMap.get(date)?.c ?? 0,
-        habitsTotal: habitsMap.get(date)?.t ?? HABITS.length,
+        habitsCompleted: habitsMap.get(date) ?? 0,
+        habitsTotal: HABITS.length,
       }));
     } catch (e) {
       logger.error('Erro ao gerar série do dashboard:', new DatabaseError(toError(e).message));

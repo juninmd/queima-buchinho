@@ -129,16 +129,17 @@ describe('MenuController', () => {
         expect(bot.sendMessage).toHaveBeenCalledWith(123, '❌ Erro ao processar resumo semanal.');
     });
 
-    it('should handle audio if provided', async () => {
-        (metricsService.getWeeklySummary as jest.Mock).mockResolvedValue({ 
-            current: { workouts: 1, metrics: { water: 100 } }, 
-            previous: { workouts: 0, metrics: { water: 50 } } 
+    it('should send the report as text only (audio is reserved for the daily report)', async () => {
+        (metricsService.getWeeklySummary as jest.Mock).mockResolvedValue({
+            current: { workouts: 1, metrics: { water: 100 } },
+            previous: { workouts: 0, metrics: { water: 50 } }
         });
         (ollamaService.getWeeklyReport as jest.Mock).mockResolvedValue({ message: 'Ok', audioSearchTerm: 'ok' });
-        (myInstantsService.getBestMatchAudio as jest.Mock).mockResolvedValue({ audioUrl: 'url', title: 'title' });
-        
+
         await menuController.showWeekly({ chat: { id: 123 }, from: { id: 456 } } as any);
-        expect(bot.sendAudio).toHaveBeenCalled();
+
+        expect(bot.sendMessage).toHaveBeenCalledWith(123, expect.stringContaining('Mika diz'), expect.anything());
+        expect(bot.sendAudio).not.toHaveBeenCalled();
     });
   });
 });

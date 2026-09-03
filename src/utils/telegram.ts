@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import type { SendMessageOptions } from '../types/telegram';
 import { logger } from './logger';
 
 /**
@@ -10,7 +11,7 @@ export async function sendPhotoMessage(
     chatId: number,
     photoPath: string | null,
     caption?: string,
-    options?: TelegramBot.SendMessageOptions
+    options?: SendMessageOptions
 ) {
     if (!photoPath) {
         if (caption) await bot.sendMessage(chatId, caption, options);
@@ -38,7 +39,7 @@ export async function sendStickerMessage(
     bot: TelegramBot,
     chatId: number,
     stickerPath: string | null,
-    options?: TelegramBot.SendMessageOptions
+    options?: SendMessageOptions
 ) {
     if (!stickerPath) return;
 
@@ -63,7 +64,7 @@ export async function sendGifMessage(
     chatId: number,
     gifUrl: string | null,
     caption?: string,
-    options?: TelegramBot.SendMessageOptions
+    options?: SendMessageOptions
 ) {
     if (!gifUrl) return;
 
@@ -103,7 +104,7 @@ export async function sendMika(
     bot: TelegramBot,
     chatId: number,
     response: { message: string; audioSearchTerm?: string },
-    options?: TelegramBot.SendMessageOptions
+    options?: SendMessageOptions
 ) {
     await bot.sendMessage(chatId, response.message, options);
 }

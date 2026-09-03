@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import type { Message, CallbackQuery } from 'node-telegram-bot-api';
 import { habitsService } from '../services/habits.service';
 import { metricsService } from '../services/metrics.service';
 import { mikaService } from '../services/mika.service';
@@ -19,7 +20,7 @@ export class HabitsController {
     });
   }
 
-  private async handleCallback(query: TelegramBot.CallbackQuery) {
+  private async handleCallback(query: CallbackQuery) {
     const userId = query.from.id;
     const chatId = query.message?.chat.id;
     const messageId = query.message?.message_id;
@@ -94,7 +95,7 @@ export class HabitsController {
   }
 
   private async handleHabitToggle(
-    query: TelegramBot.CallbackQuery, userId: number, chatId: number, messageId?: number
+    query: CallbackQuery, userId: number, chatId: number, messageId?: number
   ) {
     const habitKey = query.data!.replace('habit_', '');
     const habit = HABIT_MAP.get(habitKey);
@@ -132,7 +133,7 @@ export class HabitsController {
   }
 
   private async handleWaterAdd(
-    query: TelegramBot.CallbackQuery, userId: number, chatId: number, messageId?: number
+    query: CallbackQuery, userId: number, chatId: number, messageId?: number
   ) {
     const amount = parseInt(query.data!.replace('add_water_', ''));
     await metricsService.logMetric(userId, 'water', amount, 'ml');
@@ -154,9 +155,11 @@ export class HabitsController {
    * o teclado inteiro — o que sumia com os outros botões e não confirmava a ação.
    */
   private async flipButtonDone(
-    query: TelegramBot.CallbackQuery, chatId: number, messageId: number, callbackData: string, doneText: string
+    query: CallbackQuery, chatId: number, messageId: number, callbackData: string, doneText: string
   ) {
-    const keyboard = query.message?.reply_markup?.inline_keyboard;
+    // Mensagens antigas (>48h) chegam como InaccessibleMessage, sem reply_markup.
+    const msg = query.message;
+    const keyboard = msg && 'reply_markup' in msg ? msg.reply_markup?.inline_keyboard : undefined;
     if (!keyboard) return;
     const updated = keyboard.map(row =>
       row.map(btn => btn.callback_data === callbackData ? { ...btn, text: doneText } : btn)
@@ -169,7 +172,7 @@ export class HabitsController {
   }
 
   private async handleMarkTrained(
-    query: TelegramBot.CallbackQuery, userId: number, chatId: number, messageId?: number
+    query: CallbackQuery, userId: number, chatId: number, messageId?: number
   ) {
     await workoutService.logWorkout(userId, true, 'Button click');
     await habitsService.markHabit(userId, 'treino', true);
@@ -183,7 +186,7 @@ export class HabitsController {
   }
 
   private async handleMarkCardio(
-    query: TelegramBot.CallbackQuery, userId: number, chatId: number, messageId?: number
+    query: CallbackQuery, userId: number, chatId: number, messageId?: number
   ) {
     await habitsService.markHabit(userId, 'cardio', true);
 
@@ -200,22 +203,22 @@ export class HabitsController {
   }
 
   private async handleRefreshMenu(
-    query: TelegramBot.CallbackQuery, chatId: number, messageId: number, userId: number
+    query: CallbackQuery, chatId: number, messageId: number, userId: number
   ) {
     await this.bot.answerCallbackQuery(query.id, { text: '🔄 Atualizando...' }).catch(() => {});
     await this.menuController.refreshMenu(chatId, messageId, userId);
   }
 
   private async handleWeeklySummary(
-    query: TelegramBot.CallbackQuery, chatId: number, userId: number
+    query: CallbackQuery, chatId: number, userId: number
   ) {
     await this.bot.answerCallbackQuery(query.id, { text: '📊 Gerando resumo...' }).catch(() => {});
-    const fakeMsg = { chat: { id: chatId }, from: { id: userId } } as TelegramBot.Message;
+    const fakeMsg = { chat: { id: chatId }, from: { id: userId } } as Message;
     await this.menuController.showWeekly(fakeMsg);
   }
   
   private async handleMotivation(
-    query: TelegramBot.CallbackQuery, chatId: number
+    query: CallbackQuery, chatId: number
   ) {
     await this.bot.answerCallbackQuery(query.id, { text: '🚀 Buscando motivação...' }).catch(() => {});
     const ctx = getMikaContext();
@@ -224,7 +227,7 @@ export class HabitsController {
   }
 
   private async handleMealDone(
-    query: TelegramBot.CallbackQuery, userId: number, chatId: number
+    query: CallbackQuery, userId: number, chatId: number
   ) {
     const meal = query.data!.replace('meal_done_', '') as 'cafe' | 'almoco' | 'cafe_tarde' | 'jantar';
     await habitsService.markHabit(userId, meal, true);
@@ -239,7 +242,7 @@ export class HabitsController {
     await sendMika(this.bot, chatId, response);
   }
 
-  private async handleShowDiet(query: TelegramBot.CallbackQuery, chatId: number) {
+  private async handleShowDiet(query: CallbackQuery, chatId: number) {
     await this.bot.answerCallbackQuery(query.id).catch(() => {});
     await this.menuController.showDiet(chatId);
   }

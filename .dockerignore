@@ -1,0 +1,19 @@
+# Segredos e artefatos locais nunca entram na imagem
+.env
+.env.*
+!.env.example
+*.log
+
+# Dependências/builds do host (Windows) sobrescreveriam o node_modules do builder
+node_modules
+**/node_modules
+dist
+coverage
+
+# Não usados pelo bot em runtime
+.git
+.github
+dashboard
+docs
+scratch
+tests

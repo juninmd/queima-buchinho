@@ -25,7 +25,8 @@ jest.mock('../../src/services/redis.service', () => ({
     redisService: {
         get: jest.fn(),
         set: jest.fn(),
-        del: jest.fn()
+        del: jest.fn(),
+        isConnected: jest.fn().mockReturnValue(false)
     }
 }));
 jest.mock('../../src/utils/telegram');
@@ -191,17 +192,15 @@ describe('BotController', () => {
             expect(bot.sendMessage).toHaveBeenCalledWith(123, 'LLM Mika');
         });
 
-        it('should handle /peso', async () => {
+        it('should handle /peso (text only, no audio)', async () => {
             (metricsService.logMetric as jest.Mock).mockResolvedValue(undefined);
             (metricsService.getWeightDiffFromStart as jest.Mock).mockResolvedValue(-2.5);
-            (ollamaService.getWeightUpdate as jest.Mock).mockResolvedValue({ message: 'Ã“timo!', audioSearchTerm: 'applause' });
-            (myInstantsService.getBestMatchAudio as jest.Mock).mockResolvedValue({ audioUrl: 'url', title: 'title' });
 
             await commandHandler({ text: '/peso 80.5', chat: { id: 123 }, from: { id: 456, first_name: 'User' } });
 
             expect(metricsService.logMetric).toHaveBeenCalledWith(456, 'weight', 80.5, 'kg');
             expect(telegramUtils.replyMika).toHaveBeenCalledWith(expect.anything(), 123, 'LLM Mika');
-            expect(bot.sendAudio).toHaveBeenCalled();
+            expect(bot.sendAudio).not.toHaveBeenCalled();
         });
 
         it('should handle /peso without ollama response', async () => {
@@ -255,15 +254,19 @@ describe('BotController', () => {
         });
 
         it('should handle /relatorio with cooldown', async () => {
-            // First call sets timestamp
+            // First call sets timestamp and generates the real report.
             (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: true });
-            (metricsService.getDailySummary as jest.Mock).mockResolvedValue({ water: 2000, weight: 80 });
-            (habitsService.getCompletedCount as jest.Mock).mockResolvedValue({ completed: 5, total: 9 });
-            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: 'RelatÃ³rio!' });
+            (habitsService.getStatus as jest.Mock).mockResolvedValue({});
+            (metricsService.getTodaySum as jest.Mock).mockResolvedValue(2000);
+            (workoutService.getStreak as jest.Mock).mockResolvedValue(1);
+            (ollamaService.generateDynamicResponse as jest.Mock).mockResolvedValue({ message: 'Relatório!' });
             await commandHandler({ text: '/relatorio', chat: { id: 999 }, from: { id: 456 } });
-            // Second call within cooldown
+            expect(habitsService.getStatus).toHaveBeenCalledTimes(1);
+
+            // Second call within cooldown: no new report is generated, just the cooldown notice.
             await commandHandler({ text: '/relatorio', chat: { id: 999 }, from: { id: 456 } });
-            expect(telegramUtils.sendAudioMessage).toHaveBeenCalledWith(expect.anything(), 999, expect.any(String), 'LLM Mika');
+            expect(habitsService.getStatus).toHaveBeenCalledTimes(1);
+            expect(bot.sendMessage).toHaveBeenLastCalledWith(999, 'LLM Mika');
         });
 
         it('should handle /meme random', async () => {

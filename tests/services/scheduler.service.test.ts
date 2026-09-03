@@ -9,6 +9,7 @@ import { myInstantsService } from '../../src/services/myinstants.service';
 import { redisService } from '../../src/services/redis.service';
 import { ttsService } from '../../src/services/tts.service';
 import { HABITS } from '../../src/config/habits';
+import { MenuController } from '../../src/controllers/menu.controller';
 
 jest.mock('../../src/services/workout.service');
 jest.mock('../../src/services/meme.service');
@@ -190,6 +191,31 @@ describe('SchedulerService', () => {
             expect(report).toContain('✅ 💪 Treino');
             expect(report).toContain(`📊 <b>Hábitos:</b> 1/${HABITS.length}`);
             expect(report).toContain('💪 <b>Treino:</b> Feito ✅');
+        });
+    });
+
+    describe('sendGoodMorning', () => {
+        afterEach(() => { delete process.env.USER_ID; });
+
+        it('should build the menu with USER_ID (data owner), delivering to CHAT_ID', async () => {
+            process.env.USER_ID = '777';
+            const menuSpy = jest.spyOn(MenuController.prototype, 'sendGoodMorningMenu').mockResolvedValue();
+            (memeService.getMorningReminder as jest.Mock).mockResolvedValue({ message: 'Bom dia!' });
+
+            await scheduler.sendGoodMorning();
+
+            expect(menuSpy).toHaveBeenCalledWith(chatId, 777);
+            menuSpy.mockRestore();
+        });
+
+        it('should fall back to CHAT_ID as user when USER_ID is absent', async () => {
+            const menuSpy = jest.spyOn(MenuController.prototype, 'sendGoodMorningMenu').mockResolvedValue();
+            (memeService.getMorningReminder as jest.Mock).mockResolvedValue({ message: 'Bom dia!' });
+
+            await scheduler.sendGoodMorning();
+
+            expect(menuSpy).toHaveBeenCalledWith(chatId, chatId);
+            menuSpy.mockRestore();
         });
     });
 });

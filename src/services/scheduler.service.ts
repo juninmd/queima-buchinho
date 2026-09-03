@@ -1,4 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
+import type { InlineKeyboardButton } from 'node-telegram-bot-api';
+import type { SendMessageOptions } from '../types/telegram';
 import { workoutService } from './workout.service';
 import { habitsService } from './habits.service';
 import { metricsService } from './metrics.service';
@@ -20,11 +22,11 @@ import { MenuController } from '../controllers/menu.controller';
 import { escapeHtml } from '../utils/html';
 import { sendGifMessage } from '../utils/telegram';
 
-const buildTrainButton = (trained: boolean): TelegramBot.InlineKeyboardButton =>
+const buildTrainButton = (trained: boolean): InlineKeyboardButton =>
     ({ text: trained ? '🏋️‍♂️ Treino feito! ✅' : '🏋️‍♂️ Já treinei?', callback_data: 'mark_trained' });
-const buildCardioButton = (done: boolean): TelegramBot.InlineKeyboardButton =>
+const buildCardioButton = (done: boolean): InlineKeyboardButton =>
     ({ text: done ? '🏃 Cárdio feito! ✅' : '🏃 Fiz cárdio?', callback_data: 'mark_cardio' });
-const WATER_ROW: TelegramBot.InlineKeyboardButton[] = [
+const WATER_ROW: InlineKeyboardButton[] = [
     { text: '🥛 +250ml', callback_data: 'add_water_250' },
     { text: '🥤 +500ml', callback_data: 'add_water_500' }
 ];
@@ -71,7 +73,7 @@ export class SchedulerService {
      * Monta os botões de treino/cárdio refletindo o status REAL do dia.
      * Evita exibir o ✅ de concluído sem o Mestre ter marcado a atividade.
      */
-    private async getActionButtons(userId: number): Promise<{ train: TelegramBot.InlineKeyboardButton; cardio: TelegramBot.InlineKeyboardButton }> {
+    private async getActionButtons(userId: number): Promise<{ train: InlineKeyboardButton; cardio: InlineKeyboardButton }> {
         let trained = false;
         let cardioDone = false;
         try {
@@ -126,7 +128,7 @@ export class SchedulerService {
      * Envia um aviso da Mika apenas como TEXTO. Áudio (voz TTS + efeito MyInstants)
      * fica reservado exclusivamente ao relatório final, para evitar poluição sonora.
      */
-    private async sendNotice(chatId: number, response: { message: string }, options?: TelegramBot.SendMessageOptions) {
+    private async sendNotice(chatId: number, response: { message: string }, options?: SendMessageOptions) {
         await this.bot.sendMessage(chatId, response.message, options);
     }
 
@@ -191,7 +193,8 @@ export class SchedulerService {
 
             await sendGifMessage(this.bot, chatId, await this.getCardGif('morning'));
             const menu = new MenuController(this.bot);
-            await menu.sendGoodMorningMenu(chatId, chatId);
+            // Dados pelo id pessoal (USER_ID): em grupo, chatId é o id do grupo e leria 0/12.
+            await menu.sendGoodMorningMenu(chatId, this.getUserId() ?? chatId);
             await this.sendNotice(chatId, await memeService.getMorningReminder(dayName));
         });
     }
@@ -213,7 +216,7 @@ export class SchedulerService {
 
              const userId = this.getUserId() ?? chatId;
              const { train, cardio } = await this.getActionButtons(userId);
-             const options: TelegramBot.SendMessageOptions = {
+             const options: SendMessageOptions = {
                  parse_mode: 'HTML',
                  reply_markup: {
                      inline_keyboard: [
@@ -264,7 +267,7 @@ export class SchedulerService {
             if (!chatId) return;
 
             logger.info('💧 Enviando lembrete de água...');
-            const options: TelegramBot.SendMessageOptions = {
+            const options: SendMessageOptions = {
                 reply_markup: { inline_keyboard: [WATER_ROW, [{ text: '🍼 +1L', callback_data: 'add_water_1000' }]] }
             };
             const reminder = await memeService.getWaterReminder();
@@ -288,7 +291,7 @@ export class SchedulerService {
 
             logger.info(`🍽️ Enviando lembrete de ${meal}...`);
             const { train, cardio } = await this.getActionButtons(this.getUserId() ?? chatId);
-            const options: TelegramBot.SendMessageOptions = {
+            const options: SendMessageOptions = {
                 parse_mode: 'HTML',
                 reply_markup: {
                     inline_keyboard: [
@@ -333,7 +336,7 @@ export class SchedulerService {
                     `Habitos ainda nao feitos hoje: ${labels.join(', ')}. Cobra de forma amigavel mas direta, sem sermao.`
                 );
 
-                const keyboard = uncompleted.slice(0, 4).reduce<TelegramBot.InlineKeyboardButton[][]>((rows, key, i) => {
+                const keyboard = uncompleted.slice(0, 4).reduce<InlineKeyboardButton[][]>((rows, key, i) => {
                     const h = HABIT_MAP.get(key);
                     const btn = { text: `${h?.emoji || '✅'} ${h?.label || key}`, callback_data: `habit_${key}` };
                     i % 2 === 0 ? rows.push([btn]) : rows[rows.length - 1].push(btn);

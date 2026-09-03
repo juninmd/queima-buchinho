@@ -3,7 +3,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { logger } from '../utils/logger';
 
-const GIPHY_API_KEY = process.env.GIPHY_API_KEY || 'dc6zaTOxFJmzC';
+// Sem chave própria, Giphy fica desligado e cai na mídia local (a chave pública beta é banida).
+const GIPHY_API_KEY = process.env.GIPHY_API_KEY || '';
 const GIPHY_BASE_URL = 'https://api.giphy.com/v1';
 
 export interface GiphyResult {
@@ -96,6 +97,7 @@ export class MediaService {
     }
 
     public async searchGifs(query: string, limit = 5): Promise<GiphyResult[]> {
+        if (!GIPHY_API_KEY) return [];
         try {
             const { data } = await axios.get(`${GIPHY_BASE_URL}/gifs/search`, {
                 params: {
@@ -123,6 +125,7 @@ export class MediaService {
     }
 
     public async searchStickers(query: string, limit = 5): Promise<GiphyResult[]> {
+        if (!GIPHY_API_KEY) return [];
         try {
             const { data } = await axios.get(`${GIPHY_BASE_URL}/stickers/search`, {
                 params: {

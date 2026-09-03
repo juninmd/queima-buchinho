@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import type { Message, InlineKeyboardButton } from 'node-telegram-bot-api';
 import { habitsService } from '../services/habits.service';
 import { metricsService } from '../services/metrics.service';
 import { workoutService } from '../services/workout.service';
@@ -18,7 +19,7 @@ export class MenuController {
   constructor(private bot: TelegramBot) {}
 
   public init() {
-    const handleCommand = async (msg: TelegramBot.Message) => {
+    const handleCommand = async (msg: Message) => {
       const text = msg.text || '';
       logger.info(`[MenuController] Recebido comando: ${text} de ${msg.from?.id}`);
 
@@ -47,7 +48,7 @@ export class MenuController {
     });
   }
 
-  public async showMenu(msg: TelegramBot.Message) {
+  public async showMenu(msg: Message) {
     const userId = msg.from?.id || msg.sender_chat?.id;
     const chatId = msg.chat.id;
     if (!userId) return;
@@ -113,8 +114,8 @@ export class MenuController {
     return { text, keyboard };
   }
 
-  private buildKeyboard(status: Record<string, boolean>): TelegramBot.InlineKeyboardButton[][] {
-    const rows: TelegramBot.InlineKeyboardButton[][] = [];
+  private buildKeyboard(status: Record<string, boolean>): InlineKeyboardButton[][] {
+    const rows: InlineKeyboardButton[][] = [];
     const pairs = [];
     for (let i = 0; i < HABITS.length; i += 2) {
       const row = [HABITS[i]];
@@ -151,7 +152,7 @@ export class MenuController {
     return rows;
   }
 
-  private async showHelp(msg: TelegramBot.Message) {
+  private async showHelp(msg: Message) {
     const text = `<b>🔥 Queima Buchinho Bot 🔥</b>
 
 <b>📋 Hábitos:</b>
@@ -183,7 +184,7 @@ Treino e cardio: registre pelos botoes do /menu
     await this.bot.sendMessage(msg.chat.id, text, { parse_mode: 'HTML' });
   }
 
-  private async showWater(msg: TelegramBot.Message) {
+  private async showWater(msg: Message) {
     const userId = msg.from?.id || msg.sender_chat?.id;
     if (!userId) return;
 
@@ -203,7 +204,7 @@ Treino e cardio: registre pelos botoes do /menu
       });
   }
 
-  public async showWeekly(msg: TelegramBot.Message) {
+  public async showWeekly(msg: Message) {
     const userId = msg.from?.id || msg.sender_chat?.id;
     const chatId = msg.chat.id;
     if (!userId) return;

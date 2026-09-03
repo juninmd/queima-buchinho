@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import type { Message } from 'node-telegram-bot-api';
 import { metricsService, MetricType } from '../../services/metrics.service';
 import { mikaService } from '../../services/mika.service';
 import { METRIC_LIMITS, BOT_MESSAGES } from '../../config/constants';
@@ -6,7 +7,7 @@ import { replyMika } from '../../utils/telegram';
 
 export async function handleMetric(
     bot: TelegramBot,
-    msg: TelegramBot.Message,
+    msg: Message,
     match: RegExpExecArray | null,
     type: MetricType,
     unit: string

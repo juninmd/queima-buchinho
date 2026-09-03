@@ -1,5 +1,6 @@
 import { workoutService } from '../src/services/workout.service';
 import { query } from '../src/config/database';
+import { getBrasiliaDateString } from '../src/utils/time';
 import TelegramBot from 'node-telegram-bot-api';
 
 jest.mock('../src/config/database', () => ({
@@ -154,6 +155,46 @@ describe('WorkoutService', () => {
             
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('resetar treino'));
             consoleSpy.mockRestore();
+        });
+    });
+
+    describe('getStreak', () => {
+        const today = getBrasiliaDateString();
+        const daysAgo = (n: number) => {
+            const d = new Date(today + 'T12:00:00-03:00');
+            d.setDate(d.getDate() - n);
+            return d.toISOString().slice(0, 10);
+        };
+        const rowsFor = (dates: string[]) => ({ rows: dates.map(brasilia_date => ({ brasilia_date })) });
+
+        it('should count consecutive days ending today', async () => {
+            mockQuery.mockResolvedValueOnce(rowsFor([today, daysAgo(1), daysAgo(2)]));
+            expect(await workoutService.getStreak(123)).toBe(3);
+        });
+
+        it('should keep the streak alive when today is not logged yet', async () => {
+            mockQuery.mockResolvedValueOnce(rowsFor([daysAgo(1), daysAgo(2)]));
+            expect(await workoutService.getStreak(123)).toBe(2);
+        });
+
+        it('should break the streak after a missed day', async () => {
+            mockQuery.mockResolvedValueOnce(rowsFor([today, daysAgo(2), daysAgo(3)]));
+            expect(await workoutService.getStreak(123)).toBe(1);
+        });
+
+        it('should return 0 when the last workout was two days ago', async () => {
+            mockQuery.mockResolvedValueOnce(rowsFor([daysAgo(2), daysAgo(3)]));
+            expect(await workoutService.getStreak(123)).toBe(0);
+        });
+
+        it('should accept Date objects from pg', async () => {
+            mockQuery.mockResolvedValueOnce({ rows: [{ brasilia_date: new Date(today + 'T12:00:00Z') }] });
+            expect(await workoutService.getStreak(123)).toBe(1);
+        });
+
+        it('should return 0 when there are no rows', async () => {
+            mockQuery.mockResolvedValueOnce({ rows: [] });
+            expect(await workoutService.getStreak(123)).toBe(0);
         });
     });
 });

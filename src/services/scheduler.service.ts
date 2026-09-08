@@ -12,7 +12,6 @@ import { ttsService } from './tts.service';
 import { myInstantsService } from './myinstants.service';
 import { mediaService, MediaCategory } from './media.service';
 import { DIET_PLAN } from '../config/diet';
-import { GYM_PLAN } from '../config/gym';
 import { HABIT_MAP, HABITS, getProgressBar } from '../config/habits';
 import { WATER_GOAL_ML } from '../config/constants';
 import { getBrasiliaDayName, isTodayBirthday } from '../utils/time';
@@ -347,41 +346,6 @@ export class SchedulerService {
             } catch (error) {
                 logger.error('❌ Erro ao enviar verificação de hábitos:', error);
             }
-        });
-    }
-
-    public async sendGymReminder() {
-        await this.withLock('lock:gym_reminder', async () => {
-            const chatId = this.getChatId();
-            if (!chatId) return;
-
-            const dayName = getBrasiliaDayName();
-            const day = GYM_PLAN[dayName] || GYM_PLAN['segunda-feira'];
-
-            logger.info(`🏋️‍♂️ Enviando ficha de treino de ${dayName}...`);
-
-            if (day.rest) {
-                const response = await mikaService.response('Hoje e dia de descanso. Explique curto que recuperacao faz parte do treino, no tom da Mika.');
-                await this.bot.sendMessage(chatId,
-                    `${day.emoji} <b>Hoje é dia de descanso</b>\n\n${escapeHtml(response.message)}`,
-                    { parse_mode: 'HTML' }
-                );
-                return;
-            }
-
-            let msg = `${day.emoji} <b>Treino de hoje — ${day.muscleGroup}</b>\n`;
-            msg += `<i>${day.focus}</i>\n\n`;
-            for (const ex of day.exercises) {
-                msg += `• <b>${escapeHtml(ex.name)}</b> — ${ex.sets}\n`;
-            }
-            const response = await mikaService.response(`Hoje o treino e ${day.muscleGroup}. Mande uma frase curta para ir treinar, no tom da Mika.`);
-            msg += `\n<i>${escapeHtml(response.message)}</i>`;
-
-            const { train } = await this.getActionButtons(this.getUserId() ?? chatId);
-            await this.bot.sendMessage(chatId, msg, {
-                parse_mode: 'HTML',
-                reply_markup: { inline_keyboard: [[train]] }
-            });
         });
     }
 

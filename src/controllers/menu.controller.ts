@@ -10,7 +10,7 @@ import { HABITS, getProgressBar } from '../config/habits';
 import { logger } from '../utils/logger';
 import { sendGifMessage } from '../utils/telegram';
 import { DIET_PLAN } from '../config/diet';
-import { GYM_PLAN } from '../config/gym';
+import { publishFicha, getFichaUserId } from '../features/ficha/ficha.publisher';
 import { getBrasiliaDayName } from '../utils/time';
 import { WATER_GOAL_ML } from '../config/constants';
 import { escapeHtml } from '../utils/html';
@@ -268,27 +268,8 @@ Treino e cardio: registre pelos botoes do /menu
     });
   }
 
+  /** `/ficha` e o botão do menu entregam a mesma ficha do dia publicada às 6h. */
   public async showGym(chatId: number) {
-    const dayName = getBrasiliaDayName();
-    const day = GYM_PLAN[dayName] || GYM_PLAN['segunda-feira'];
-
-    let report = `${day.emoji} <b>Ficha de hoje — ${day.muscleGroup}</b>\n`;
-    report += `<i>${day.focus}</i>\n\n`;
-
-    if (day.rest) {
-      const response = await mikaService.response('Hoje e dia de descanso. Explique curto que recuperacao faz parte do treino, no tom da Mika.');
-      report += `${escapeHtml(response.message)}\n\n`;
-    }
-
-    for (const ex of day.exercises) {
-      report += `• <b>${ex.name}</b> — ${ex.sets}\n`;
-    }
-
-    if (!day.rest) {
-      const response = await mikaService.response(`Hoje o treino e ${day.muscleGroup}. Mande uma frase curta para ir treinar, no tom da Mika.`);
-      report += `\n<i>${escapeHtml(response.message)}</i>`;
-    }
-
-    await this.bot.sendMessage(chatId, report, { parse_mode: 'HTML' });
+    await publishFicha(this.bot, chatId, getFichaUserId() ?? chatId);
   }
 }

@@ -11,6 +11,7 @@ import { HealthServer, markPollingAlive, setPollingMode } from './utils/server';
 import { DashboardApiServer } from './api/dashboard.server';
 import { pool } from './config/database';
 import { notifyStartup, notifyShutdown, notifyCrash } from './utils/notifications';
+import { sendDailyFicha } from './features/ficha/ficha.publisher';
 
 dotenv.config();
 const token = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN;
@@ -160,7 +161,8 @@ function setupCronJobs() {
   cron.schedule('30 22 * * *', () => scheduler.runDailyCheck(), { timezone: 'America/Sao_Paulo' });
   cron.schedule('0 6 * * *', () => scheduler.sendGoodMorning(), { timezone: 'America/Sao_Paulo' });
   cron.schedule('30 6 * * *', () => scheduler.sendMorningReminder(), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('10 6 * * *', () => scheduler.sendGymReminder(), { timezone: 'America/Sao_Paulo' });
+  // Ficha de treino: 06:00, segunda a sábado. Substitui o lembrete estático das 06:10.
+  cron.schedule('0 6 * * 1-6', () => sendDailyFicha(bot), { timezone: 'America/Sao_Paulo' });
   cron.schedule('30 21 * * *', () => scheduler.sendDailyReport(), { timezone: 'America/Sao_Paulo' });
   cron.schedule('30 15 * * *', () => scheduler.sendFoodReminder('cafe_tarde'), { timezone: 'America/Sao_Paulo' });
   cron.schedule('0 12,18 * * *', () => scheduler.sendConditionalReminder(), { timezone: 'America/Sao_Paulo' });
@@ -192,6 +194,6 @@ async function runReminder(scheduler: SchedulerService, mode: string) {
   else if (m === 'daily_audit') await scheduler.runDailyMikaAudit();
   else if (m === 'daily_report') await scheduler.sendDailyReport();
   else if (m === 'birthday') await scheduler.sendBirthdayIfToday();
-  else if (m === 'gym') await scheduler.sendGymReminder();
+  else if (m === 'gym' || m === 'ficha') await sendDailyFicha(bot);
   else if (m.startsWith('food_')) await scheduler.sendFoodReminder(m.replace('food_', '') as any);
 }

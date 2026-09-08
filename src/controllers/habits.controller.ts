@@ -7,12 +7,17 @@ import { workoutService } from '../services/workout.service';
 import { mediaService } from '../services/media.service';
 import { HABIT_MAP } from '../config/habits';
 import { MenuController } from './menu.controller';
+import { FichaController } from '../features/ficha/ficha.controller';
 import { sendMika, sendGifMessage } from '../utils/telegram';
 import { logger } from '../utils/logger';
 import { getMikaContext, getMealTimeComment } from '../utils/time';
 
 export class HabitsController {
-  constructor(private bot: TelegramBot, private menuController: MenuController) {}
+  private readonly ficha: FichaController;
+
+  constructor(private bot: TelegramBot, private menuController: MenuController) {
+    this.ficha = new FichaController(bot);
+  }
 
   public init() {
     this.bot.on('callback_query', (query) => {
@@ -36,6 +41,13 @@ export class HabitsController {
 
     try {
       let handled = false;
+
+      // A ficha de treino usa o prefixo `fx:` e é despachada aqui para manter um único
+      // dono de `callback_query` — dois listeners disputariam o mesmo answerCallbackQuery.
+      if (FichaController.handles(data)) {
+        await this.ficha.handle(query);
+        return;
+      }
 
       if (data.startsWith('habit_')) {
         await this.handleHabitToggle(query, userId, chatId, messageId);

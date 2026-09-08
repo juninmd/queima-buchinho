@@ -17,6 +17,7 @@ Construído com foco em altíssima performance, baixo consumo de memória e inic
 
 ## ✨ Recursos Principais
 
+- 🏋️ **Ficha de Treino (queima de gordura)**: publicada automaticamente às **06:00 BRT, de segunda a sábado**, com foto do aparelho, nome do exercício, séries/repetições, carga atual e o bloco de cárdio (esteira ou bicicleta). Botões no card ajustam a carga em ±2,5/±5 kg — o valor fica salvo e volta no treino seguinte. Ver seção abaixo.
 - 📅 **Rastreamento de Hábitos Diários**: Controle interativo de hábitos como treino, cárdio, alongamento, leitura, meditação, suplementos, refeições e restrição de açúcar.
 - 💧 **Registro de Água Simplificado**: Menu rápido para registrar consumo de água ao longo do dia em ml.
 - 📈 **Registro de Métricas Corporais**: Acompanhe seu peso, altura, passos diários, gordura corporal e massa muscular com comandos simples.
@@ -28,6 +29,39 @@ Construído com foco em altíssima performance, baixo consumo de memória e inic
 
 ---
 
+## 🏋️ Ficha de Treino
+
+Substitui a antiga ficha estática. O treino é **determinístico**: o split e os exercícios saem de
+um catálogo curado (`src/features/ficha/`), e a IA escreve apenas a provocação da Mika — se o LLM
+estiver fora, a ficha das 6h sai do mesmo jeito, sem provocação.
+
+**Protocolo (queima de gordura):** multiarticular primeiro, repetição alta, descanso curto
+(40-60 s) e cárdio **depois** da musculação.
+
+| Dia | Treino | Cárdio |
+|---|---|---|
+| Segunda | Full Body Metabólico A | Esteira — HIIT 1:2 (15 min) |
+| Terça | Superior Metabólico | Bicicleta — Z2 (25 min) |
+| Quarta | Inferior + Glúteo | Esteira — inclinada 12% (30 min) |
+| Quinta | Full Body Metabólico B | Bicicleta — HIIT 30/60 s (15 min) |
+| Sexta | Superior + Core | Esteira — intervalado 1:1 (20 min) |
+| Sábado | Inferior + Cárdio Longo | Esteira — trote Z2 (35 min) |
+| Domingo | descanso — o cron não dispara | — |
+
+**Botões do card:** `🏋️ Treinei` grava em `workout_logs` + hábito `treino` (streak, `/relatorio` e
+dashboard continuam corretos), `🏃 Fiz o cárdio` grava o hábito `cardio`, e `⚖️ Ajustar carga` abre
+a lista de exercícios e o seletor de ±2,5/±5 kg.
+
+**Tabelas** (criadas por `bun run migrate`):
+
+- `exercise_loads` — carga por exercício e usuário; é ela que faz a progressão de carga.
+- `ficha_sessions` — ficha entregue no dia (JSONB) e se treino/cárdio foram concluídos.
+
+Imagens: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (domínio público, CDN do
+GitHub); todas as URLs do catálogo foram verificadas em 200 na geração.
+
+---
+
 ## 🛠️ Stack Tecnológica
 
 - **Runtime**: [Bun](https://bun.sh/) (para boot ultra-rápido, testes acelerados e economia de memória)
@@ -35,7 +69,7 @@ Construído com foco em altíssima performance, baixo consumo de memória e inic
 - **Banco de Dados**: PostgreSQL (armazenamento persistente de treinos, hábitos e métricas)
 - **Cache / Estado**: Redis (armazenamento temporário e controle de concorrência)
 - **IA/LLM**: Provedores de API Ollama e OpenRouter via `@openrouter/ai-sdk-provider`
-- **Agendador**: `node-cron` para controle interno de notificações de refeições e lembretes diários
+- **Agendador**: `node-cron` para a ficha de treino das 6h, notificações de refeições e lembretes diários
 - **Testes**: Jest com `ts-jest`
 
 ---
@@ -49,7 +83,7 @@ Construído com foco em altíssima performance, baixo consumo de memória e inic
 - `/semana` — Exibe o relatório de progresso dos hábitos da semana corrente.
 - `/relatorio` — Relatório consolidado do dia.
 - `/cardapio` — Exibe a dieta/refeição recomendada para o dia atual.
-- `/ficha` — Exibe a rotina de exercícios físicos configurada para o dia.
+- `/ficha` — Publica a **Ficha de Treino** de hoje (mesma que sai às 6h): imagens dos aparelhos, repetições, cargas e botões.
 - `/hora` — Consulta o horário oficial de Brasília.
 
 ### 💪 Treino & Streak

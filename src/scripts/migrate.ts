@@ -43,6 +43,29 @@ const migrationQuery = `
 
   CREATE INDEX IF NOT EXISTS idx_daily_habits_lookup
     ON daily_habits (user_id, brasilia_date);
+
+  CREATE TABLE IF NOT EXISTS exercise_loads (
+    user_id BIGINT NOT NULL,
+    exercise_key VARCHAR(60) NOT NULL,
+    load_kg NUMERIC(6,2) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (user_id, exercise_key)
+  );
+
+  CREATE TABLE IF NOT EXISTS ficha_sessions (
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    brasilia_date DATE NOT NULL,
+    plan_key VARCHAR(40) NOT NULL,
+    payload JSONB NOT NULL,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+    completed_at TIMESTAMPTZ,
+    cardio_done BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, brasilia_date)
+  );
+
+  ALTER TABLE ficha_sessions ADD COLUMN IF NOT EXISTS cardio_done BOOLEAN NOT NULL DEFAULT FALSE;
 `;
 
 async function migrate() {

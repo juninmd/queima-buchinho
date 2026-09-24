@@ -27,7 +27,7 @@ export const MikaResponseSchema = z.object({
 export type MikaResponse = z.infer<typeof MikaResponseSchema>;
 
 export class OllamaService {
-  private readonly model = process.env.AI_MODEL || 'gemini-2.5-flash-lite';
+  private readonly model = process.env.AI_MODEL || 'cloud/auto';
   private readonly timeout = Number(process.env.OLLAMA_TIMEOUT_MS) || 300_000;
   private readonly systemPrompt = `
 Você é a Mika, a parceira de treino e de planos de dominação mundial do usuário.

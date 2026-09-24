@@ -10,7 +10,7 @@ const litellm = createOpenAICompatible({
     supportsStructuredOutputs: true,
 });
 
-const model = process.env.AI_MODEL || 'gemini-2.5-flash-lite';
+const model = process.env.AI_MODEL || 'cloud/auto';
 console.log(`Using model: ${model}`);
 
 const schema = z.object({

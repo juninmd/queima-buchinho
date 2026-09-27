@@ -176,7 +176,7 @@ describe('MetricsService', () => {
         it('should handle DB error gracefully', async () => {
             mockQuery.mockRejectedValueOnce(new Error('insert fail'));
             const spy = jest.spyOn(console, 'error').mockImplementation();
-            await expect(metricsService.logMetric(userId, 'weight', 80, 'kg')).resolves.toBeUndefined();
+            await expect(metricsService.logMetric(userId, 'weight', 80, 'kg')).resolves.toBeNull();
             spy.mockRestore();
         });
     });

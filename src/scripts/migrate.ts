@@ -44,6 +44,18 @@ const migrationQuery = `
   CREATE INDEX IF NOT EXISTS idx_daily_habits_lookup
     ON daily_habits (user_id, brasilia_date);
 
+  -- /pausar: dias sem cobrança que não quebram a sequência. Rollback: DROP TABLE bot_pauses.
+  CREATE TABLE IF NOT EXISTS bot_pauses (
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL CHECK (end_date >= start_date),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_bot_pauses_user_end
+    ON bot_pauses (user_id, end_date);
+
   CREATE TABLE IF NOT EXISTS exercise_loads (
     user_id BIGINT NOT NULL,
     exercise_key VARCHAR(60) NOT NULL,

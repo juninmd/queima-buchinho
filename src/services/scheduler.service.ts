@@ -21,6 +21,7 @@ import { MenuController } from '../controllers/menu.controller';
 import { escapeHtml } from '../utils/html';
 import { sendGifMessage } from '../utils/telegram';
 import { sendDailyDashboard } from '../features/daily-dashboard/dashboard.publisher';
+import { getBrasiliaHour, isBehindWaterPace } from '../features/reminders/water-pace';
 
 const buildTrainButton = (trained: boolean): InlineKeyboardButton =>
     ({ text: trained ? '🏋️‍♂️ Treino feito! ✅' : '🏋️‍♂️ Já treinei?', callback_data: 'mark_trained' });
@@ -191,11 +192,15 @@ export class SchedulerService {
             const dayName = getBrasiliaDayName();
             logger.info(`☀️ Enviando bom dia de ${dayName}...`);
 
+            // Um card só pela manhã: saudação + cardápio + fala da Mika + menu (antes eram 3 envios).
+            const mika = await memeService.getMorningReminder(dayName);
+            const extra = `${this.buildDietBlock(dayName)}
+
+<i>${escapeHtml(mika.message)}</i>`;
             await sendGifMessage(this.bot, chatId, await this.getCardGif('morning'));
             const menu = new MenuController(this.bot);
             // Dados pelo id pessoal (USER_ID): em grupo, chatId é o id do grupo e leria 0/12.
-            await menu.sendGoodMorningMenu(chatId, this.getUserId() ?? chatId);
-            await this.sendNotice(chatId, await memeService.getMorningReminder(dayName));
+            await menu.sendGoodMorningMenu(chatId, this.getUserId() ?? chatId, extra);
         });
     }
 
@@ -205,14 +210,9 @@ export class SchedulerService {
             if (!chatId) return;
 
             const dayName = getBrasiliaDayName();
-            const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
 
             logger.info(`⏰ Enviando lembrete matinal de ${dayName}...`);
-             let msg = `🍴 <b>Cardápio de hoje</b>\n` +
-                    `Esse é o plano do prato pra hoje, Mestre 👇\n\n` +
-                    `🍳 <b>Café</b> — ${escapeHtml(diet.cafe)}\n` +
-                    `🍽️ <b>Almoço</b> — ${escapeHtml(diet.almoco)}\n` +
-                    `🌙 <b>Jantar</b> — ${escapeHtml(diet.jantar)}`;
+             const msg = this.buildDietBlock(dayName);
 
              const userId = this.getUserId() ?? chatId;
              const { train, cardio } = await this.getActionButtons(userId);
@@ -266,6 +266,12 @@ export class SchedulerService {
             const chatId = this.getChatId();
             if (!chatId) return;
 
+            const water = await metricsService.getTodaySum(this.getUserId() ?? chatId, 'water').catch(() => 0);
+            if (!isBehindWaterPace(water, getBrasiliaHour(), WATER_GOAL_ML)) {
+                logger.info(`💧 Água em dia (${water}ml). Lembrete pulado.`);
+                return;
+            }
+
             logger.info('💧 Enviando lembrete de água...');
             const options: SendMessageOptions = {
                 reply_markup: { inline_keyboard: [WATER_ROW, [{ text: '🍼 +1L', callback_data: 'add_water_1000' }]] }
@@ -279,6 +285,12 @@ export class SchedulerService {
         await this.withLock(`lock:food_reminder_${meal}`, async () => {
             const chatId = this.getChatId();
             if (!chatId) return;
+
+            const status = await habitsService.getStatus(this.getUserId() ?? chatId).catch(() => ({} as Record<string, boolean>));
+            if (status[meal]) {
+                logger.info(`🍽️ ${meal} já marcado hoje. Lembrete pulado.`);
+                return;
+            }
 
             const habit = HABIT_MAP.get(meal);
             const mealNames: Record<typeof meal, string> = {
@@ -397,13 +409,19 @@ export class SchedulerService {
             if (streak > 0) msg += `🔥 <b>Sequência:</b> ${streak} dia${streak > 1 ? 's' : ''} sem parar!\n`;
             msg += `\n${notaEmoji} <b>Nota do dia:</b> ${nota}/10`;
 
-            // Texto primeiro: o GIF é decorativo e não pode atrasar o relatório se o Giphy travar.
-            await this.bot.sendMessage(chatId, msg, { parse_mode: 'HTML' });
+            // Botões só do que ficou pendente: dá pra marcar direto do fechamento.
+            const pending = [
+                ...(treinoDone ? [] : [buildTrainButton(false)]),
+                ...(cardioDone ? [] : [buildCardioButton(false)]),
+            ];
+            await this.bot.sendMessage(chatId, msg, {
+                parse_mode: 'HTML',
+                ...(pending.length ? { reply_markup: { inline_keyboard: [pending] } } : {}),
+            });
             await sendDailyDashboard(this.bot, chatId, userId, {
                 dayName, habitsCompleted: completed, habitsTotal: total, water, waterGoal: WATER_GOAL_ML,
                 trained: treinoDone, cardio: cardioDone, streak, nota,
             });
-            await sendGifMessage(this.bot, chatId, await this.getCardGif(treinoDone && nota >= 7 ? 'trophy' : nota <= 4 ? 'fail' : 'happy'));
 
             const response = await mikaService.response(
                 `Relatorio do dia do Mestre: ${completed} de ${total} habitos, treino ${treinoDone ? 'feito' : 'nao feito'}, ` +
@@ -411,6 +429,30 @@ export class SchedulerService {
                 `Comente curto e sarcastico sobre a nota, no tom da Mika.`
             );
             await this.sendMikaVoice(chatId, response);
+        });
+    }
+
+    private buildDietBlock(dayName: string): string {
+        const diet = DIET_PLAN[dayName] || DIET_PLAN['segunda-feira'];
+        return `🍴 <b>Cardápio de hoje</b>
+` +
+            `🍳 <b>Café</b> — ${escapeHtml(diet.cafe)}
+` +
+            `🍽️ <b>Almoço</b> — ${escapeHtml(diet.almoco)}
+` +
+            `🌙 <b>Jantar</b> — ${escapeHtml(diet.jantar)}`;
+    }
+
+    /**
+     * Fecha o dia em silêncio: grava "não treinou" sem mensagem. A cobrança já saiu no
+     * fechamento das 21:30, que substituiu a verificação das 22:30 e a auditoria das 22:00.
+     */
+    public async closeDay() {
+        await this.withLock('lock:close_day', async () => {
+            const userId = this.getUserId();
+            if (!userId) return;
+            const { trained } = await workoutService.checkDailyMessages(this.bot, userId);
+            if (!trained) await workoutService.logWorkout(userId, false);
         });
     }
 

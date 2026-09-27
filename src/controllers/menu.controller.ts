@@ -64,12 +64,14 @@ export class MenuController {
     });
   }
 
-  public async sendGoodMorningMenu(chatId: number, userId: number) {
+  /** `extraHtml` (já escapado) entra entre a saudação e o menu, num card só. */
+  public async sendGoodMorningMenu(chatId: number, userId: number, extraHtml?: string) {
     const dayName = getBrasiliaDayName();
     const greeting = `☀️ <b>Bom dia, Mestre!</b>\n` +
       `Hoje é <b>${dayName}</b> — dia novo, buchinho a menos. Bora pra cima! 🔥`;
     const { text, keyboard } = await this.buildMenuContent(userId);
-    await this.bot.sendMessage(chatId, `${greeting}\n\n${text}`, {
+    const body = extraHtml ? `${greeting}\n\n${extraHtml}\n\n${text}` : `${greeting}\n\n${text}`;
+    await this.bot.sendMessage(chatId, body, {
       parse_mode: 'HTML',
       reply_markup: { inline_keyboard: keyboard }
     });
@@ -142,6 +144,7 @@ export class MenuController {
       { text: '🏋️ Ficha', callback_data: 'show_gym' }
     ]);
     rows.push([
+      { text: '⚖️ Peso', callback_data: 'weight_pick' },
       { text: '🚀 Motivar', callback_data: 'get_motivation' }
     ]);
 
@@ -162,11 +165,18 @@ export class MenuController {
 
 <b>💧 Métricas:</b>
 /agua - Registrar água (com botões)
-/peso <valor> - Registrar peso (kg)
+/peso [valor] - Registrar peso (kg, ex.: 82,5)
 /altura <valor> - Registrar altura (cm)
 /gordura <valor> - % de gordura corporal
 /musculo <valor> - % de massa muscular
 /passos <valor> - Registrar passos do dia
+
+<b>⏸️ Pausa:</b>
+/pausar [dias] - Sem lembretes nem cobranças (sequência congelada)
+/voltar - Retomar lembretes
+
+<b>✍️ Registro rápido (no privado):</b>
+"bebi 500ml", "pesei 82,5", "treinei", "fiz cardio"
 
 <b>💪 Treino:</b>
 Treino e cardio: registre pelos botoes do /menu

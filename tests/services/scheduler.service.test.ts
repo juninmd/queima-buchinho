@@ -10,6 +10,7 @@ import { redisService } from '../../src/services/redis.service';
 import { ttsService } from '../../src/services/tts.service';
 import { HABITS } from '../../src/config/habits';
 import { MenuController } from '../../src/controllers/menu.controller';
+import { sendDailyDashboard } from '../../src/features/daily-dashboard/dashboard.publisher';
 
 jest.mock('../../src/services/workout.service');
 jest.mock('../../src/services/meme.service');
@@ -24,6 +25,7 @@ jest.mock('../../src/utils/telegram');
 jest.mock('../../src/services/redis.service');
 jest.mock('../../src/services/tts.service');
 jest.mock('../../src/services/media.service');
+jest.mock('../../src/features/daily-dashboard/dashboard.publisher');
 
 describe('SchedulerService', () => {
     let scheduler: SchedulerService;
@@ -191,6 +193,20 @@ describe('SchedulerService', () => {
             expect(report).toContain('✅ 💪 Treino');
             expect(report).toContain(`📊 <b>Hábitos:</b> 1/${HABITS.length}`);
             expect(report).toContain('💪 <b>Treino:</b> Feito ✅');
+        });
+
+        it('sends the image dashboard with the same reconciled numbers as the text', async () => {
+            (habitsService.getStatus as jest.Mock).mockResolvedValue({ treino: false, cardio: true });
+            (metricsService.getTodaySum as jest.Mock).mockResolvedValue(1500);
+            (workoutService.getStreak as jest.Mock).mockResolvedValue(3);
+            (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: true });
+
+            await scheduler.sendDailyReport();
+
+            // Treino vem de workout_logs mesmo com daily_habits.treino=false: imagem não pode divergir do texto.
+            expect(sendDailyDashboard).toHaveBeenCalledWith(mockBot, chatId, chatId, expect.objectContaining({
+                trained: true, cardio: true, habitsCompleted: 2, habitsTotal: HABITS.length, water: 1500, streak: 3,
+            }));
         });
     });
 

@@ -1,7 +1,7 @@
 # Stage 1: Build skipping (pre-built locally)
 FROM node:26-alpine
 WORKDIR /app
-RUN npm install -g pnpm
+RUN npm install -g pnpm && apk add --no-cache font-dejavu
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --prod --frozen-lockfile
 COPY dist ./dist

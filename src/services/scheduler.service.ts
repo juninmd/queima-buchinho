@@ -20,6 +20,7 @@ import { logger } from '../utils/logger';
 import { MenuController } from '../controllers/menu.controller';
 import { escapeHtml } from '../utils/html';
 import { sendGifMessage } from '../utils/telegram';
+import { sendDailyDashboard } from '../features/daily-dashboard/dashboard.publisher';
 
 const buildTrainButton = (trained: boolean): InlineKeyboardButton =>
     ({ text: trained ? '🏋️‍♂️ Treino feito! ✅' : '🏋️‍♂️ Já treinei?', callback_data: 'mark_trained' });
@@ -398,6 +399,10 @@ export class SchedulerService {
 
             // Texto primeiro: o GIF é decorativo e não pode atrasar o relatório se o Giphy travar.
             await this.bot.sendMessage(chatId, msg, { parse_mode: 'HTML' });
+            await sendDailyDashboard(this.bot, chatId, userId, {
+                dayName, habitsCompleted: completed, habitsTotal: total, water, waterGoal: WATER_GOAL_ML,
+                trained: treinoDone, cardio: cardioDone, streak, nota,
+            });
             await sendGifMessage(this.bot, chatId, await this.getCardGif(treinoDone && nota >= 7 ? 'trophy' : nota <= 4 ? 'fail' : 'happy'));
 
             const response = await mikaService.response(

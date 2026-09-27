@@ -24,6 +24,7 @@ Construído com foco em altíssima performance, baixo consumo de memória e inic
 - 🤖 **Interação Inteligente (Mika)**: Respostas dinâmicas geradas por IA (Ollama ou OpenRouter) com a persona ácida de Mika.
 - 🗣️ **Respostas de Voz (TTS)**: Conversão de texto para fala em tempo real integrada utilizando a API Edge-TTS.
 - 📊 **Relatórios Consolidados**: Resumos diários e relatórios semanais com gráficos de barra gerados diretamente no chat.
+- 🔕 **Lembretes que respeitam o que já foi feito**: água só quando está abaixo do ritmo do dia, refeição só se ainda não marcada. Manhã em um card só (bom dia + cardápio + menu, 06:00) e noite concentrada no fechamento das 21:30. Os comandos aparecem no menu "/" do Telegram.
 - 🖥️ **Dashboard Web**: App React (`dashboard/`) com progresso diário/semanal/mensal, evolução de peso, água e hábitos — ver seção abaixo.
 - ⚡ **Execução Resiliente**: Auto-reconnect em caso de falhas de polling e smart liveness check para monitorar a saúde da aplicação.
 
@@ -93,11 +94,19 @@ GitHub); todas as URLs do catálogo foram verificadas em 200 na geração.
 - `/reset` — Reseta os registros do dia atual.
 
 ### 📊 Registro de Métricas
-- `/peso <valor>` — Registra seu peso atual em kg (ex: `/peso 78.5`).
+- `/peso [valor]` — Registra seu peso em kg; aceita vírgula ou ponto (ex: `/peso 78,5`). Sem valor, abre botões com opções perto do último peso.
 - `/altura <valor>` — Registra sua altura em cm (ex: `/altura 175`).
-- `/passos <valor>` — Registra os passos acumulados no dia (ex: `/passos 10000`).
+- `/passos <valor>` — Registra os passos acumulados no dia (ex: `/passos 10000` ou `/passos 10.000`).
 - `/gordura <valor>` — Registra o percentual de gordura corporal (ex: `/gordura 14.5`).
 - `/musculo <valor>` — Registra o percentual de massa muscular (ex: `/musculo 42.1`).
+- Valor ambíguo (`82,5kg`, `1.234,5`) é recusado com um exemplo — nada é gravado pela metade.
+
+### ✍️ Registro rápido (chat privado)
+Frases curtas viram registro sem comando: `bebi 500ml`, `tomei 1,5l`, `pesei 82,5`. A resposta traz um botão **↩️ Desfazer**. `treinei` / `fiz cardio` pedem confirmação por botão. Negação ou pergunta (`não treinei`, `bebi 500ml?`) segue para a conversa com a Mika.
+
+### ⏸️ Pausa
+- `/pausar [dias]` — De 1 a 30 dias (padrão 1): sem lembretes nem cobranças, e a sequência de treinos fica congelada.
+- `/voltar` — Retoma os lembretes antes do fim da pausa.
 
 ### 🎭 Diversão & Mídias
 - `/motivar` — Solicita uma frase motivacional (ou um deboche) de voz da Mika.

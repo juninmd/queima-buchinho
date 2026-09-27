@@ -21,17 +21,33 @@ export interface WeeklySummary {
 }
 
 export class MetricsService {
-    public async logMetric(userId: number, type: MetricType, value: number, unit?: string): Promise<void> {
+    /** Retorna o id da linha gravada (usado pelo "Desfazer"), ou null se falhou. */
+    public async logMetric(userId: number, type: MetricType, value: number, unit?: string): Promise<number | null> {
         try {
             const today = getBrasiliaDateString();
-            await query(
+            const { rows } = await query<{ id: number }>(
                 `INSERT INTO user_metrics (user_id, type, value, unit, brasilia_date)
-                 VALUES ($1, $2, $3, $4, $5)`,
+                 VALUES ($1, $2, $3, $4, $5) RETURNING id`,
                 [userId, type, value, unit ?? null, today]
             );
             logger.info(`📊 Métrica registrada: user=${userId} tipo=${type} valor=${value}${unit ?? ''}`);
+            return rows[0]?.id ?? null;
         } catch (e) {
             logger.error('Erro ao salvar métrica:', new DatabaseError(toError(e).message));
+            return null;
+        }
+    }
+
+    /** Apaga um registro só se pertencer ao usuário: callback_data pode ser forjado. */
+    public async deleteMetric(userId: number, metricId: number): Promise<boolean> {
+        try {
+            const { rowCount } = await query(
+                'DELETE FROM user_metrics WHERE id = $1 AND user_id = $2', [metricId, userId]
+            );
+            return (rowCount ?? 0) > 0;
+        } catch (e) {
+            logger.error('Erro ao apagar métrica:', new DatabaseError(toError(e).message));
+            return false;
         }
     }
 

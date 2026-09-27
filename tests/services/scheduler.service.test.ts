@@ -10,6 +10,7 @@ import { redisService } from '../../src/services/redis.service';
 import { ttsService } from '../../src/services/tts.service';
 import { HABITS } from '../../src/config/habits';
 import { MenuController } from '../../src/controllers/menu.controller';
+import { sendGifMessage } from '../../src/utils/telegram';
 import { sendDailyDashboard } from '../../src/features/daily-dashboard/dashboard.publisher';
 
 jest.mock('../../src/services/workout.service');
@@ -124,7 +125,19 @@ describe('SchedulerService', () => {
     });
 
     describe('sendWaterReminder', () => {
+        // 14h BRT: meta proporcional = 58% de 2000ml (1167ml). Só o relógio é falso.
+        beforeEach(() => jest.useFakeTimers({ now: new Date('2026-09-26T17:00:00Z'), doNotFake: ['setTimeout', 'clearTimeout', 'setImmediate', 'nextTick'] }));
+        afterEach(() => jest.useRealTimers());
+
+        it('skips the reminder when water intake is on pace', async () => {
+            (metricsService.getTodaySum as jest.Mock).mockResolvedValue(1200);
+            await scheduler.sendWaterReminder();
+            expect(mockBot.sendMessage).not.toHaveBeenCalled();
+            expect(memeService.getWaterReminder).not.toHaveBeenCalled();
+        });
+
         it('should send water reminder', async () => {
+            (metricsService.getTodaySum as jest.Mock).mockResolvedValue(500);
             (memeService.getWaterReminder as jest.Mock).mockResolvedValue({ message: 'Drink water!' });   
             await scheduler.sendWaterReminder();
             expect(mockBot.sendMessage).toHaveBeenCalledWith(
@@ -136,7 +149,15 @@ describe('SchedulerService', () => {
     });
 
     describe('sendFoodReminder', () => {
+        it('skips the reminder when the meal is already marked', async () => {
+            (habitsService.getStatus as jest.Mock).mockResolvedValue({ almoco: true });
+            await scheduler.sendFoodReminder('almoco');
+            expect(mockBot.sendMessage).not.toHaveBeenCalled();
+            expect(memeService.getFoodReminder).not.toHaveBeenCalled();
+        });
+
         it('should send food reminder', async () => {
+            (habitsService.getStatus as jest.Mock).mockResolvedValue({ almoco: false });
             (memeService.getFoodReminder as jest.Mock).mockResolvedValue({ message: 'Eat healthy!' });    
             await scheduler.sendFoodReminder('almoco');
             expect(mockBot.sendMessage).toHaveBeenCalledWith(
@@ -195,6 +216,19 @@ describe('SchedulerService', () => {
             expect(report).toContain('💪 <b>Treino:</b> Feito ✅');
         });
 
+        it('offers buttons only for what is still pending, and sends no GIF', async () => {
+            (habitsService.getStatus as jest.Mock).mockResolvedValue({ cardio: true });
+            (metricsService.getTodaySum as jest.Mock).mockResolvedValue(0);
+            (workoutService.getStreak as jest.Mock).mockResolvedValue(0);
+            (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: false });
+
+            await scheduler.sendDailyReport();
+
+            const opts = (mockBot.sendMessage as jest.Mock).mock.calls[0][2];
+            expect(opts.reply_markup.inline_keyboard).toEqual([[expect.objectContaining({ callback_data: 'mark_trained' })]]);
+            expect(sendGifMessage).not.toHaveBeenCalled();
+        });
+
         it('sends the image dashboard with the same reconciled numbers as the text', async () => {
             (habitsService.getStatus as jest.Mock).mockResolvedValue({ treino: false, cardio: true });
             (metricsService.getTodaySum as jest.Mock).mockResolvedValue(1500);
@@ -210,8 +244,36 @@ describe('SchedulerService', () => {
         });
     });
 
+    describe('closeDay', () => {
+        it('records a missed workout silently', async () => {
+            (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: false });
+            await scheduler.closeDay();
+            expect(workoutService.logWorkout).toHaveBeenCalledWith(chatId, false);
+            expect(mockBot.sendMessage).not.toHaveBeenCalled();
+        });
+
+        it('does not touch a day that was trained', async () => {
+            (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: true });
+            await scheduler.closeDay();
+            expect(workoutService.logWorkout).not.toHaveBeenCalled();
+        });
+    });
+
     describe('sendGoodMorning', () => {
         afterEach(() => { delete process.env.USER_ID; });
+
+        it('sends one consolidated card: diet and escaped Mika line inside the menu message', async () => {
+            const menuSpy = jest.spyOn(MenuController.prototype, 'sendGoodMorningMenu').mockResolvedValue();
+            (memeService.getMorningReminder as jest.Mock).mockResolvedValue({ message: 'Bora <já>' });
+
+            await scheduler.sendGoodMorning();
+
+            const extra = menuSpy.mock.calls[0][2] as string;
+            expect(extra).toContain('Cardápio de hoje');
+            expect(extra).toContain('Bora &lt;já&gt;');
+            expect(mockBot.sendMessage).not.toHaveBeenCalled();
+            menuSpy.mockRestore();
+        });
 
         it('should build the menu with USER_ID (data owner), delivering to CHAT_ID', async () => {
             process.env.USER_ID = '777';
@@ -220,7 +282,7 @@ describe('SchedulerService', () => {
 
             await scheduler.sendGoodMorning();
 
-            expect(menuSpy).toHaveBeenCalledWith(chatId, 777);
+            expect(menuSpy).toHaveBeenCalledWith(chatId, 777, expect.stringContaining('Cardápio de hoje'));
             menuSpy.mockRestore();
         });
 
@@ -230,7 +292,7 @@ describe('SchedulerService', () => {
 
             await scheduler.sendGoodMorning();
 
-            expect(menuSpy).toHaveBeenCalledWith(chatId, chatId);
+            expect(menuSpy).toHaveBeenCalledWith(chatId, chatId, expect.any(String));
             menuSpy.mockRestore();
         });
     });

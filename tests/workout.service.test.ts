@@ -1,11 +1,15 @@
 import { workoutService } from '../src/services/workout.service';
 import { query } from '../src/config/database';
 import { getBrasiliaDateString } from '../src/utils/time';
+import { pauseService } from '../src/features/pause/pause.service';
 import TelegramBot from 'node-telegram-bot-api';
 
 jest.mock('../src/config/database', () => ({
     query: jest.fn(),
     pool: { end: jest.fn() },
+}));
+jest.mock('../src/features/pause/pause.service', () => ({
+    pauseService: { pausedDates: jest.fn() },
 }));
 
 describe('WorkoutService', () => {
@@ -13,6 +17,7 @@ describe('WorkoutService', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        (pauseService.pausedDates as jest.Mock).mockResolvedValue(new Set());
     });
 
     describe('checkDailyMessages', () => {
@@ -195,6 +200,34 @@ describe('WorkoutService', () => {
         it('should return 0 when there are no rows', async () => {
             mockQuery.mockResolvedValueOnce({ rows: [] });
             expect(await workoutService.getStreak(123)).toBe(0);
+        });
+
+        describe('with /pausar', () => {
+            const paused = (dates: string[]) => (pauseService.pausedDates as jest.Mock).mockResolvedValueOnce(new Set(dates));
+
+            it('carries the streak across paused days without counting them', async () => {
+                mockQuery.mockResolvedValueOnce(rowsFor([today, daysAgo(3), daysAgo(4)]));
+                paused([daysAgo(1), daysAgo(2)]);
+                expect(await workoutService.getStreak(123)).toBe(3);
+            });
+
+            it('keeps the streak while paused today and yesterday', async () => {
+                mockQuery.mockResolvedValueOnce(rowsFor([daysAgo(2), daysAgo(3)]));
+                paused([today, daysAgo(1)]);
+                expect(await workoutService.getStreak(123)).toBe(2);
+            });
+
+            it('still breaks on an unpaused missed day', async () => {
+                mockQuery.mockResolvedValueOnce(rowsFor([today, daysAgo(3)]));
+                paused([daysAgo(1)]);
+                expect(await workoutService.getStreak(123)).toBe(1);
+            });
+
+            it('falls back to the plain streak if the pause lookup fails', async () => {
+                mockQuery.mockResolvedValueOnce(rowsFor([today, daysAgo(1)]));
+                (pauseService.pausedDates as jest.Mock).mockRejectedValueOnce(new Error('db'));
+                expect(await workoutService.getStreak(123)).toBe(2);
+            });
         });
     });
 });

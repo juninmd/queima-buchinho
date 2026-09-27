@@ -3,6 +3,8 @@ import type { Message } from 'node-telegram-bot-api';
 import { mikaService } from '../services/mika.service';
 import { replyMika } from '../utils/telegram';
 import { logger } from '../utils/logger';
+import { handleQuickLog } from '../features/quick-log/quick-log.handler';
+import { handlePausar, handleVoltar } from '../features/pause/pause.handler';
 
 // Command Handlers
 import { handleMetric } from './handlers/metric.handler';
@@ -38,6 +40,11 @@ export class BotController {
             if (msg.date < this.startTime) return;
 
             const isPrivate = msg.chat?.type === 'private';
+            // Registro rápido só no privado: em grupo, frases soltas não são dirigidas ao bot.
+            if (isPrivate && msg.chat?.id && await handleQuickLog(this.bot, msg.chat.id, userId, text).catch(e => {
+                logger.error('Erro no registro rápido:', e);
+                return false;
+            })) return;
             const mentionsMika = text.toLowerCase().includes('mika');
             if (msg.chat?.id && (isPrivate || mentionsMika)) {
                 try {
@@ -67,13 +74,15 @@ export class BotController {
             { regex: /^\/hora(@\w+)?$/, handler: (msg: Message) => handleHora(this.bot, msg) },
             { regex: /^\/motivar(@\w+)?$/, handler: (msg: Message) => handleMotivar(this.bot, msg) },
             { regex: /^\/streak(@\w+)?$/, handler: (msg: Message) => handleStreak(this.bot, msg) },
-            { regex: /^\/passos(@\w+)? (\d+)/, handler: (msg: Message, match: RegExpExecArray) => handleMetric(this.bot, msg, match, 'steps', 'passos') },
+            { regex: /^\/passos(@\w+)?(?:\s+(.+))?$/, handler: (msg: Message, match: RegExpExecArray) => handleMetric(this.bot, msg, match, 'steps', 'passos') },
             { regex: /^\/instante(@\w+)? (.+)/, handler: (msg: Message, match: RegExpExecArray) => handleInstante(this.bot, msg, match) },
             { regex: /^\/reset(@\w+)?$/, handler: (msg: Message) => handleReset(this.bot, msg) },
-            { regex: /^\/peso(@\w+)? (\d+(\.\d+)?)/, handler: (msg: Message, match: RegExpExecArray) => handleMetric(this.bot, msg, match, 'weight', 'kg') },
-            { regex: /^\/altura(@\w+)? (\d+(\.\d+)?)/, handler: (msg: Message, match: RegExpExecArray) => handleMetric(this.bot, msg, match, 'height', 'cm') },
-            { regex: /^\/gordura(@\w+)? (\d+(\.\d+)?)/, handler: (msg: Message, match: RegExpExecArray) => handleMetric(this.bot, msg, match, 'body_fat', '%') },
-            { regex: /^\/musculo(@\w+)? (\d+(\.\d+)?)/, handler: (msg: Message, match: RegExpExecArray) => handleMetric(this.bot, msg, match, 'muscle_mass', '%') },
+            { regex: /^\/pausar(@\w+)?(?:\s+(.+))?$/, handler: (msg: Message, match: RegExpExecArray) => handlePausar(this.bot, msg, match) },
+            { regex: /^\/voltar(@\w+)?$/, handler: (msg: Message) => handleVoltar(this.bot, msg) },
+            { regex: /^\/peso(@\w+)?(?:\s+(.+))?$/, handler: (msg: Message, match: RegExpExecArray) => handleMetric(this.bot, msg, match, 'weight', 'kg') },
+            { regex: /^\/altura(@\w+)?(?:\s+(.+))?$/, handler: (msg: Message, match: RegExpExecArray) => handleMetric(this.bot, msg, match, 'height', 'cm') },
+            { regex: /^\/gordura(@\w+)?(?:\s+(.+))?$/, handler: (msg: Message, match: RegExpExecArray) => handleMetric(this.bot, msg, match, 'body_fat', '%') },
+            { regex: /^\/musculo(@\w+)?(?:\s+(.+))?$/, handler: (msg: Message, match: RegExpExecArray) => handleMetric(this.bot, msg, match, 'muscle_mass', '%') },
             { regex: /^\/meme(@\w+)?$/, handler: (msg: Message) => handleMeme(this.bot, msg, null) },
             { regex: /^\/meme(@\w+)? (.+)/, handler: (msg: Message, match: RegExpExecArray) => handleMeme(this.bot, msg, match) },
             { regex: /^\/sticker(@\w+)?$/, handler: (msg: Message) => handleSticker(this.bot, msg, null) },

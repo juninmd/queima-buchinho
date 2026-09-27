@@ -12,6 +12,8 @@ import { DashboardApiServer } from './api/dashboard.server';
 import { pool } from './config/database';
 import { notifyStartup, notifyShutdown, notifyCrash } from './utils/notifications';
 import { sendDailyFicha } from './features/ficha/ficha.publisher';
+import { unlessPaused, isOwnerPaused } from './features/pause/pause.guard';
+import { registerBotCommands } from './config/commands';
 
 dotenv.config();
 const token = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN;
@@ -84,6 +86,7 @@ if (mode === 'listener') {
     }
 
     attachControllers();
+    await registerBotCommands(bot);
     setupCronJobs();
     await notifyStartup(bot).catch(() => {});
   };
@@ -98,7 +101,8 @@ if (mode === 'listener') {
   const scheduler = new SchedulerService(bot);
   (async () => {
     try {
-      if (mode === 'checker') await scheduler.runDailyCheck();
+      if (mode !== 'reminder_birthday' && await isOwnerPaused()) logger.info(`⏸️ Pausa ativa — ${mode} ignorado.`);
+      else if (mode === 'checker') await scheduler.runDailyCheck();
       else if (mode.startsWith('reminder_')) await runReminder(scheduler, mode);
       process.exit(0);
     } catch (error) {
@@ -158,22 +162,25 @@ function setupCronJobs() {
   cronJobsInitialized = true;
   
   const scheduler = new SchedulerService(bot);
-  cron.schedule('30 22 * * *', () => scheduler.runDailyCheck(), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('0 6 * * *', () => scheduler.sendGoodMorning(), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('30 6 * * *', () => scheduler.sendMorningReminder(), { timezone: 'America/Sao_Paulo' });
-  // Ficha de treino: 06:00, segunda a sábado. Substitui o lembrete estático das 06:10.
-  cron.schedule('0 6 * * 1-6', () => sendDailyFicha(bot), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('30 21 * * *', () => scheduler.sendDailyReport(), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('30 15 * * *', () => scheduler.sendFoodReminder('cafe_tarde'), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('0 12,18 * * *', () => scheduler.sendConditionalReminder(), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('0 9,11,14,17 * * *', () => scheduler.sendWaterReminder(), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('0 8 * * *', () => scheduler.sendFoodReminder('cafe'), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('0 12 * * *', () => scheduler.sendFoodReminder('almoco'), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('0 19 * * *', () => scheduler.sendFoodReminder('jantar'), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('0 20 * * *', () => scheduler.sendHabitsCheckReminder(), { timezone: 'America/Sao_Paulo' });
-  cron.schedule('0 22 * * *', () => scheduler.runDailyMikaAudit(), { timezone: 'America/Sao_Paulo' });
+  // Todo job respeita /pausar, exceto aniversário.
+  const at = (expr: string, name: string, job: () => Promise<unknown>) =>
+    cron.schedule(expr, unlessPaused(name, job), { timezone: 'America/Sao_Paulo' });
+  // Manhã: um card só (bom dia + cardápio + menu) às 06:00; ficha segue separada (seg–sáb).
+  at('0 6 * * *', 'good_morning', () => scheduler.sendGoodMorning());
+  at('0 6 * * 1-6', 'ficha', () => sendDailyFicha(bot));
+  // Lembretes pulam sozinhos quando a tarefa já foi feita (água no ritmo, refeição marcada).
+  at('0 8 * * *', 'food_cafe', () => scheduler.sendFoodReminder('cafe'));
+  at('0 9,11,14,17 * * *', 'water', () => scheduler.sendWaterReminder());
+  at('0 12 * * *', 'food_almoco', () => scheduler.sendFoodReminder('almoco'));
+  at('0 12,18 * * *', 'conditional', () => scheduler.sendConditionalReminder());
+  at('30 15 * * *', 'food_cafe_tarde', () => scheduler.sendFoodReminder('cafe_tarde'));
+  at('0 19 * * *', 'food_jantar', () => scheduler.sendFoodReminder('jantar'));
+  at('0 20 * * *', 'habits_check', () => scheduler.sendHabitsCheckReminder());
+  // Noite: o fechamento das 21:30 concentra tudo; auditoria (22:00) e checker (22:30) saíram da agenda.
+  at('30 21 * * *', 'daily_report', () => scheduler.sendDailyReport());
+  at('50 23 * * *', 'close_day', () => scheduler.closeDay());
   cron.schedule('0 9 * * *', () => scheduler.sendBirthdayIfToday(), { timezone: 'America/Sao_Paulo' });
-  
+
   logger.info('⏰ CronJobs internos inicializados!');
 }
 
@@ -194,6 +201,7 @@ async function runReminder(scheduler: SchedulerService, mode: string) {
   else if (m === 'daily_audit') await scheduler.runDailyMikaAudit();
   else if (m === 'daily_report') await scheduler.sendDailyReport();
   else if (m === 'birthday') await scheduler.sendBirthdayIfToday();
+  else if (m === 'close_day') await scheduler.closeDay();
   else if (m === 'gym' || m === 'ficha') await sendDailyFicha(bot);
   else if (m.startsWith('food_')) await scheduler.sendFoodReminder(m.replace('food_', '') as any);
 }

@@ -10,7 +10,7 @@ FROM oven/bun:1-alpine
 WORKDIR /app
 
 # Instalar Python e edge-tts para o TTS da Mika
-RUN apk add --no-cache python3 py3-pip curl && \
+RUN apk add --no-cache python3 py3-pip curl font-dejavu && \
     pip install edge-tts --break-system-packages
 
 COPY --from=builder /app/node_modules ./node_modules

@@ -4,6 +4,7 @@ import { getBrasiliaDateString } from '../utils/time';
 import { query } from '../config/database';
 import { logger } from '../utils/logger';
 import { DatabaseError, toError } from '../utils/errors';
+import { pauseService } from '../features/pause/pause.service';
 
 export class WorkoutService {
     public async checkDailyMessages(_bot: TelegramBot, targetChatId?: number): Promise<{ trained: boolean; message?: Message }> {
@@ -93,14 +94,18 @@ export class WorkoutService {
 
             let streak = 0;
             const today = getBrasiliaDateString();
+            const trainedDays = new Set(rows.map(r => toDateStr(r.brasilia_date)));
+            // Dia pausado (/pausar) não conta nem quebra: a sequência atravessa a pausa.
+            const paused = await pauseService.pausedDates(userId).catch(() => new Set<string>());
             // Sem treino registrado hoje, a sequência de ontem continua viva (só quebra ao
             // virar o dia sem treinar). Antes, o /menu das 6h mostrava streak 0 mesmo após
             // 10 dias seguidos, porque exigia o treino de HOJE como primeiro elo.
-            let expected = toDateStr(rows[0].brasilia_date) === today ? today : prevDay(today);
+            let expected = trainedDays.has(today) ? today : prevDay(today);
 
-            for (const row of rows) {
-                if (toDateStr(row.brasilia_date) !== expected) break;
-                streak++;
+            // Cada passo consome um dia treinado ou pausado: limite = total de ambos.
+            for (let steps = trainedDays.size + paused.size; steps >= 0; steps--) {
+                if (trainedDays.has(expected)) streak++;
+                else if (!paused.has(expected)) break;
                 expected = prevDay(expected);
             }
             return streak;

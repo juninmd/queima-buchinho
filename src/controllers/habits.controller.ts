@@ -8,6 +8,7 @@ import { mediaService } from '../services/media.service';
 import { HABIT_MAP } from '../config/habits';
 import { MenuController } from './menu.controller';
 import { FichaController } from '../features/ficha/ficha.controller';
+import { handlesQuickLogCallback, handleQuickLogCallback } from '../features/quick-log/quick-log.handler';
 import { sendMika, sendGifMessage } from '../utils/telegram';
 import { logger } from '../utils/logger';
 import { getMikaContext, getMealTimeComment } from '../utils/time';
@@ -46,6 +47,10 @@ export class HabitsController {
       // dono de `callback_query` — dois listeners disputariam o mesmo answerCallbackQuery.
       if (FichaController.handles(data)) {
         await this.ficha.handle(query);
+        return;
+      }
+      if (handlesQuickLogCallback(data)) {
+        await handleQuickLogCallback(this.bot, query);
         return;
       }
 

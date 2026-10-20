@@ -22,6 +22,7 @@ import { escapeHtml } from '../utils/html';
 import { sendGifMessage } from '../utils/telegram';
 import { sendDailyDashboard } from '../features/daily-dashboard/dashboard.publisher';
 import { getBrasiliaHour, isBehindWaterPace } from '../features/reminders/water-pace';
+import { pushClosing, pushMeal, pushWater } from '../features/push/push.hooks';
 
 const buildTrainButton = (trained: boolean): InlineKeyboardButton =>
     ({ text: trained ? '🏋️‍♂️ Treino feito! ✅' : '🏋️‍♂️ Já treinei?', callback_data: 'mark_trained' });
@@ -273,6 +274,7 @@ export class SchedulerService {
             }
 
             logger.info('💧 Enviando lembrete de água...');
+            void pushWater(this.getUserId() ?? chatId, water, WATER_GOAL_ML);
             const options: SendMessageOptions = {
                 reply_markup: { inline_keyboard: [WATER_ROW, [{ text: '🍼 +1L', callback_data: 'add_water_1000' }]] }
             };
@@ -292,6 +294,7 @@ export class SchedulerService {
                 return;
             }
 
+            void pushMeal(this.getUserId() ?? chatId, meal);
             const habit = HABIT_MAP.get(meal);
             const mealNames: Record<typeof meal, string> = {
                 cafe: 'café da manhã', almoco: 'almoço', cafe_tarde: 'café da tarde', jantar: 'jantar'
@@ -393,6 +396,7 @@ export class SchedulerService {
                 (completed / total) * 6 + (treinoDone ? 2 : 0) + waterRatio * 2
             )));
             const notaEmoji = nota >= 8 ? '🏆' : nota >= 5 ? '👍' : '😬';
+            void pushClosing(userId, completed, total, nota);
 
             const dayName = getBrasiliaDayName();
             let msg = `🌙 <b>Fechamento do dia — ${dayName}</b>\n`;

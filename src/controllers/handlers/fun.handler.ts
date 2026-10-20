@@ -2,7 +2,7 @@ import TelegramBot from 'node-telegram-bot-api';
 import type { Message } from 'node-telegram-bot-api';
 import { replyMika } from '../../utils/telegram';
 
-const CANTADAS = [
+export const CANTADAS = [
   "Mestre, você não é agachamento, mas deixa minhas pernas bambas kkk. 🏋️‍♂️",
   "Você não é pré-treino, mas acelera meu coração! 😉⚡",
   "Me chama de cardio e diz que eu te deixo sem fôlego... ou na esteira kkk. 🏃‍♂️💨",

@@ -7,13 +7,12 @@
 # Dependências/builds do host (Windows) sobrescreveriam o node_modules do builder
 node_modules
 **/node_modules
-dist
+**/dist
 coverage
 
-# Não usados pelo bot em runtime
+# Não usados pelo bot em runtime (dashboard/ entra: o estágio `pwa` do Dockerfile builda o app)
 .git
 .github
-dashboard
 docs
 scratch
 tests

@@ -1,0 +1,33 @@
+name: PWA
+
+on:
+  pull_request:
+    paths:
+      - 'dashboard/**'
+      - 'docs/pwa/**'
+      - '.github/workflows/pwa.yml'
+  push:
+    branches: [main, master]
+    paths:
+      - 'dashboard/**'
+
+concurrency:
+  group: pwa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run test
+      - run: bun run build
+      - name: Manifest e service worker presentes no build
+        run: test -f dist/manifest.webmanifest && test -f dist/sw.js && test -f dist/icons/icon-512.png

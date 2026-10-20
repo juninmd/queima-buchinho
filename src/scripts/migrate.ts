@@ -78,6 +78,20 @@ const migrationQuery = `
   );
 
   ALTER TABLE ficha_sessions ADD COLUMN IF NOT EXISTS cardio_done BOOLEAN NOT NULL DEFAULT FALSE;
+
+  -- App (PWA): inscrições Web Push. Rollback: DROP TABLE push_subscriptions.
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    prefs JSONB NOT NULL DEFAULT '{"ficha":true,"agua":true,"refeicao":true,"fechamento":true}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user
+    ON push_subscriptions (user_id);
 `;
 
 async function migrate() {

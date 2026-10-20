@@ -1,0 +1,26 @@
+{
+  "packageId": "br.com.queimabuchinho.app",
+  "host": "SEU-DOMINIO.exemplo.com",
+  "name": "Queima Buchinho",
+  "launcherName": "Buchinho",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0b1120",
+  "backgroundColor": "#0b1120",
+  "navigationColor": "#0b1120",
+  "startUrl": "/?source=twa",
+  "iconUrl": "https://SEU-DOMINIO.exemplo.com/icons/icon-512.png",
+  "maskableIconUrl": "https://SEU-DOMINIO.exemplo.com/icons/icon-maskable-512.png",
+  "webManifestUrl": "https://SEU-DOMINIO.exemplo.com/manifest.webmanifest",
+  "fullScopeUrl": "https://SEU-DOMINIO.exemplo.com/",
+  "enableNotifications": true,
+  "appVersionName": "1.0.0",
+  "appVersion": "1",
+  "signingKey": { "path": "./android.keystore", "alias": "queima-buchinho" },
+  "minSdkVersion": 23,
+  "fallbackType": "customtabs",
+  "shortcuts": [
+    { "name": "Treino de hoje", "shortName": "Treino", "url": "/#treino", "icon": "https://SEU-DOMINIO.exemplo.com/icons/icon-192.png" },
+    { "name": "Falar com a Mika", "shortName": "Mika", "url": "/#mika", "icon": "https://SEU-DOMINIO.exemplo.com/icons/icon-192.png" }
+  ]
+}

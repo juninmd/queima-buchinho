@@ -67,6 +67,22 @@ export class MetricsService {
         }
     }
 
+    /** Último valor gravado hoje (ex.: passos acumulados, onde somar registros duplicaria). */
+    public async getTodayLatest(userId: number, type: MetricType): Promise<number> {
+        try {
+            const { rows } = await query(
+                `SELECT value FROM user_metrics
+                 WHERE user_id = $1 AND type = $2 AND brasilia_date = $3
+                 ORDER BY created_at DESC LIMIT 1`,
+                [userId, type, getBrasiliaDateString()]
+            );
+            return rows[0] ? parseFloat(rows[0].value) : 0;
+        } catch (e) {
+            logger.error(`Erro ao buscar último valor de hoje de ${type}:`, new DatabaseError(toError(e).message));
+            return 0;
+        }
+    }
+
     public async getLatestValue(userId: number, type: MetricType): Promise<number | null> {
         try {
             const { rows } = await query(

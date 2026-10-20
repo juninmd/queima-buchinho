@@ -1,0 +1,42 @@
+.top { display: flex; justify-content: space-between; align-items: center; padding-top: 4px; }
+.top h1 { font-size: 1.5rem; letter-spacing: -0.02em; margin: 0; }
+.eyebrow { margin: 0; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.icon-btn { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); display: grid; place-items: center; cursor: pointer; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.card h2 { margin: 0; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.card h2 small { font: 500 0.72rem var(--font-body); color: var(--muted); }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.mika { display: flex; gap: 10px; align-items: flex-start; background: var(--surface-2); border-radius: 16px; padding: 12px; }
+.mika p { margin: 0; font-size: 0.86rem; }
+.avatar { flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 700; display: grid; place-items: center; }
+.btn { min-height: 44px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: 600 0.84rem var(--font-body); padding: 0 14px; cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.on { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); border-color: var(--accent); color: var(--accent); }
+.btn.sm { min-height: 36px; padding: 0 10px; font-size: 0.78rem; }
+.btn.danger { color: var(--bad); }
+.btns { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.bar { position: relative; height: 10px; border-radius: 99px; background: var(--surface-2); overflow: visible; }
+.bar > i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: var(--water); }
+.bar.good > i { background: var(--accent); }
+.bar > u { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--warn); }
+.row.static { cursor: default; }
+.group { display: grid; gap: 8px; }
+.chips-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.row { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 6px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); width: 100%; color: var(--text); font: 500 0.9rem var(--font-body); text-align: left; cursor: pointer; }
+.row .em { font-size: 1.2rem; width: 28px; text-align: center; }
+.row .grow { flex: 1; min-width: 0; }
+.row.done { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+.tick { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); display: grid; place-items: center; color: transparent; flex: none; }
+.done .tick, .tick.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tick .ico { width: 14px; height: 14px; stroke-width: 3; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg button { min-height: 36px; border: 0; border-radius: 9px; background: none; color: var(--muted); font: 600 0.8rem var(--font-body); cursor: pointer; }
+.seg button.on { background: var(--surface-2); color: var(--text); }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 99px; background: var(--surface-2); font-size: 0.74rem; color: var(--muted); }
+.chip.good { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.chip.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, var(--surface)); }
+.field { display: grid; gap: 4px; font-size: 0.72rem; color: var(--muted); }
+.field input, .ql input { height: 44px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); padding: 0 12px; font: 500 0.9rem var(--font-body); min-width: 0; width: 100%; }
+.ql input { flex: 1; width: auto; }
+.ql { display: flex; gap: 8px; }
+.sub { margin: 0; color: var(--muted); font-size: 0.78rem; }

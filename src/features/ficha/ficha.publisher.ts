@@ -5,6 +5,7 @@ import { workoutService } from '../../services/workout.service';
 import { redisService } from '../../services/redis.service';
 import { getMikaContext } from '../../utils/time';
 import { logger } from '../../utils/logger';
+import { pushFicha } from '../push/push.hooks';
 import { fichaService } from './ficha.service';
 import { mainKeyboard, renderAlbum, renderFicha } from './render';
 import type { Ficha } from './types';
@@ -52,6 +53,7 @@ export async function publishFicha(bot: TelegramBot, chatId: number, userId: num
   }
 
   await fichaService.saveSession(userId, ficha);
+  void pushFicha(userId, ficha.titulo);
   const [frase, trained, status] = await Promise.all([
     provocacao(ficha),
     workoutService.hasLoggedToday(userId).catch(() => false),

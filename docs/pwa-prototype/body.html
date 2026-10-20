@@ -1,0 +1,13 @@
+<main class="page">
+  <header class="intro">
+    <h1>Queima Buchinho no celular</h1>
+    <p>Protótipo do PWA que consome a API do bot e mantém tudo o que o Telegram faz hoje. Cada tela é navegável: marque hábitos, registre água, ajuste cargas e converse com a Mika. Os dados são de exemplo.</p>
+  </header>
+  <div class="stage" id="stage"></div>
+  <section><h2>O que cada comando do Telegram vira</h2><div class="map" id="map"></div></section>
+  <section><h2>Do protótipo ao Android</h2><div class="steps">
+    <div><b>PWA</b><p>React + Vite (o <code>dashboard/</code> atual) com manifest, service worker, fila offline e Web Push.</p></div>
+    <div><b>API de escrita</b><p>Hoje a API só lê. Faltam POST de hábito, água, métricas, ficha, pausa e inscrição push, reaproveitando os services do bot.</p></div>
+    <div><b>App Android</b><p>Bubblewrap (TWA) gera o APK/AAB a partir do mesmo PWA, sem reescrever nada.</p></div>
+  </div></section>
+</main>

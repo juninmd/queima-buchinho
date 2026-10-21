@@ -12,6 +12,7 @@ import { HABITS } from '../../src/config/habits';
 import { MenuController } from '../../src/controllers/menu.controller';
 import { sendGifMessage } from '../../src/utils/telegram';
 import { sendDailyDashboard } from '../../src/features/daily-dashboard/dashboard.publisher';
+import { isMikaVideoEnabled, sendMikaVideo } from '../../src/features/mika-video/mika-video.publisher';
 
 jest.mock('../../src/services/workout.service');
 jest.mock('../../src/services/meme.service');
@@ -27,6 +28,7 @@ jest.mock('../../src/services/redis.service');
 jest.mock('../../src/services/tts.service');
 jest.mock('../../src/services/media.service');
 jest.mock('../../src/features/daily-dashboard/dashboard.publisher');
+jest.mock('../../src/features/mika-video/mika-video.publisher');
 
 describe('SchedulerService', () => {
     let scheduler: SchedulerService;
@@ -227,6 +229,46 @@ describe('SchedulerService', () => {
             const opts = (mockBot.sendMessage as jest.Mock).mock.calls[0][2];
             expect(opts.reply_markup.inline_keyboard).toEqual([[expect.objectContaining({ callback_data: 'mark_trained' })]]);
             expect(sendGifMessage).not.toHaveBeenCalled();
+        });
+
+        describe('Mika em vídeo', () => {
+            const flush = () => new Promise(resolve => setImmediate(resolve));
+            beforeEach(() => {
+                (habitsService.getStatus as jest.Mock).mockResolvedValue({});
+                (metricsService.getTodaySum as jest.Mock).mockResolvedValue(0);
+                (workoutService.getStreak as jest.Mock).mockResolvedValue(0);
+                (workoutService.checkDailyMessages as jest.Mock).mockResolvedValue({ trained: false });
+            });
+
+            it('envia o vídeo no lugar da voz quando o render funciona', async () => {
+                (isMikaVideoEnabled as jest.Mock).mockReturnValue(true);
+                (sendMikaVideo as jest.Mock).mockResolvedValue(true);
+
+                await scheduler.sendDailyReport();
+                await flush();
+
+                expect(sendMikaVideo).toHaveBeenCalledWith(mockBot, chatId, 'mock/audio/path.mp3');
+                expect(mockBot.sendVoice).not.toHaveBeenCalled();
+            });
+
+            it('cai na voz quando o vídeo falha', async () => {
+                (isMikaVideoEnabled as jest.Mock).mockReturnValue(true);
+                (sendMikaVideo as jest.Mock).mockResolvedValue(false);
+
+                await scheduler.sendDailyReport();
+                await flush();
+
+                expect(mockBot.sendVoice).toHaveBeenCalledWith(chatId, 'mock/audio/path.mp3');
+            });
+
+            it('não renderiza nada com o vídeo desligado e mantém a voz', async () => {
+                (isMikaVideoEnabled as jest.Mock).mockReturnValue(false);
+
+                await scheduler.sendDailyReport();
+
+                expect(sendMikaVideo).not.toHaveBeenCalled();
+                expect(mockBot.sendVoice).toHaveBeenCalledWith(chatId, 'mock/audio/path.mp3');
+            });
         });
 
         it('sends the image dashboard with the same reconciled numbers as the text', async () => {

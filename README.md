@@ -23,6 +23,7 @@ Construído com foco em altíssima performance, baixo consumo de memória e inic
 - 📈 **Registro de Métricas Corporais**: Acompanhe seu peso, altura, passos diários, gordura corporal e massa muscular com comandos simples.
 - 🤖 **Interação Inteligente (Mika)**: Respostas dinâmicas geradas por IA (Ollama ou OpenRouter) com a persona ácida de Mika.
 - 🗣️ **Respostas de Voz (TTS)**: Conversão de texto para fala em tempo real integrada utilizando a API Edge-TTS.
+- 🎬 **Mika em vídeo**: o fechamento das 21:30 chega como vídeo redondo da Mika (modelo VRM em close, fundo anime, boca sincronizada com a fala). Render em segundo plano; se falhar, vai a voz de sempre. Detalhes em `src/features/mika-video/README.md`.
 - 📊 **Relatórios Consolidados**: Resumos diários e relatórios semanais com gráficos de barra gerados diretamente no chat.
 - 🔕 **Lembretes que respeitam o que já foi feito**: água só quando está abaixo do ritmo do dia, refeição só se ainda não marcada. Manhã em um card só (bom dia + cardápio + menu, 06:00) e noite concentrada no fechamento das 21:30. Os comandos aparecem no menu "/" do Telegram.
 - 📱 **App PWA / Android**: app instalável (`dashboard/`) com todas as funções do Telegram, modo offline e notificações push — ver seção abaixo.

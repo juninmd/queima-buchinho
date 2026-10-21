@@ -1,13 +1,22 @@
 export type PushKind = 'ficha' | 'agua' | 'refeicao' | 'fechamento';
 export type PushPrefs = Record<PushKind, boolean>;
 
-/** Corpo entregue ao service worker do app. */
+/** Botão da notificação nativa; `id` chega em /api/push/action. */
+export interface PushAction { id: string; title: string }
+
+/** Corpo entregue ao service worker (web) e ao FCM/APNs (app nativo). */
 export interface PushPayload {
   title: string;
   body: string;
   tag: string;
   url: string;
+  /** Imagem grande (só nativo). */
+  image?: string;
+  /** Botões rápidos (iOS via categoria; Android abre o app). */
+  actions?: PushAction[];
 }
+
+export type DevicePlatform = 'android' | 'ios';
 
 export interface PushSubscriptionInput {
   endpoint: string;

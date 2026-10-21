@@ -1,6 +1,6 @@
 import type { DailyProgress, RangeProgress, DashboardAnalysis, DashboardRange } from '../types';
 import type {
-  AppToday, Diet, FichaState, MediaItem, MetricResult, MetricType, PushConfig, PushPrefs, QuickLogResult,
+  AppToday, Diet, FichaState, MediaItem, MetricResult, MetricType, PushConfig, PushPrefs, PushActionResult, QuickLogResult,
 } from './contract';
 import { isRetryable, request } from './http';
 import { enqueue, flush, newId, type QueuedCall } from '../lib/queue';
@@ -53,5 +53,9 @@ export const api = {
   pushConfig: () => get<PushConfig>('/api/push/config'),
   pushSubscribe: (subscription: PushSubscriptionJSON, prefs?: PushPrefs) => post<{ ok: true }>('/api/push/subscribe', { subscription, prefs }),
   pushPrefs: (endpoint: string, prefs: PushPrefs) => request<{ ok: true }>('PUT', '/api/push/prefs', { endpoint, prefs }),
+  pushDevice: (token: string, platform: 'android' | 'ios', prefs?: PushPrefs) => post<{ ok: true }>('/api/push/device', { token, platform, prefs }),
+  pushDevicePrefs: (token: string, prefs: PushPrefs) => request<{ ok: true }>('PUT', '/api/push/device/prefs', { token, prefs }),
+  pushDeviceRemove: (token: string) => request<{ ok: true }>('DELETE', '/api/push/device', { token }),
+  pushAction: (action: string) => post<PushActionResult>('/api/push/action', { action }),
   pushUnsubscribe: (endpoint: string) => request<{ ok: true }>('DELETE', '/api/push/subscribe', { endpoint }),
 };

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Chama branca sobre transparente: o Android pinta o ícone da barra de status só com o alfa. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M262 74c14 62-18 88-46 122-26 31-48 64-48 108 0 62 42 106 96 106s98-42 98-106c0-34-14-58-30-80-6 22-18 38-34 44 10-52-6-132-36-194z" />
+</vector>

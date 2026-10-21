@@ -38,4 +38,5 @@ export type QuickLogResult =
 
 export interface MediaItem { url: string; preview: string; title: string }
 export interface PushPrefs { ficha: boolean; agua: boolean; refeicao: boolean; fechamento: boolean }
-export interface PushConfig { enabled: boolean; publicKey: string | null }
+export interface PushConfig { enabled: boolean; publicKey: string | null; native: boolean }
+export interface PushActionResult { ok: boolean; message: string }

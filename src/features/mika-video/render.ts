@@ -16,21 +16,30 @@ export interface RenderOptions {
     fps?: number;
     /** Silêncio no fim, para a Mika fechar a boca e respirar antes do corte. */
     tailSeconds?: number;
+    /** Cancela o render no próximo quadro (fecha o Chromium e o ffmpeg). */
+    signal?: AbortSignal;
     /** Depuração: renderiza só este quadro e grava o JPEG em `outPath`. */
     stillFrame?: number;
 }
 
 const HTML = '<!doctype html><meta charset="utf-8"><body style="margin:0;background:#000"><canvas id="out"></canvas><script src="/stage.js"></script>';
-export const DEFAULT_VRM = path.resolve(__dirname, '../../../../mika/apps/desktop/src/renderer/public/vrm/mika/mika.vrm');
+export const DEFAULT_VRM = path.resolve(__dirname, '../../../assets/mika/mika.vrm');
 
-function chromiumPath(): string | undefined {
+export function chromiumPath(): string | undefined {
     if (process.env.CHROMIUM_PATH) return process.env.CHROMIUM_PATH;
     const root = process.env.PLAYWRIGHT_BROWSERS_PATH ?? '/opt/pw-browsers';
     const dir = fs.existsSync(root) ? fs.readdirSync(root).find(d => d.startsWith('chromium-')) : undefined;
     return dir ? path.join(root, dir, 'chrome-linux', 'chrome') : undefined;
 }
 
-async function bundleStage(): Promise<string> {
+let bundled: Promise<string> | undefined;
+
+function bundleStage(): Promise<string> {
+    bundled ??= bundle();
+    return bundled;
+}
+
+async function bundle(): Promise<string> {
     const res = await build({ entryPoints: [path.join(__dirname, 'stage/stage.ts')], bundle: true, format: 'iife', platform: 'browser', minify: true, write: false });
     return res.outputFiles[0].text;
 }
@@ -51,12 +60,13 @@ function encoder(audioPath: string, outPath: string, fps: number) {
     ff.stderr.on('data', d => { err += d; });
     ff.stdin.on('error', () => {});
     const done = new Promise<void>((resolve, reject) => ff.on('close', code => code === 0 ? resolve() : reject(new Error(`ffmpeg: ${err.slice(-300)}`))));
+    done.catch(() => {}); // evita rejeição solta se o ffmpeg for morto no cancelamento
     return { ff, done };
 }
 
 /** Renderiza a Mika falando `audioPath` em close, quadro a quadro, e grava o mp4 (h264 + aac) em `outPath`. */
 export async function renderMikaVideo(opts: RenderOptions): Promise<{ path: string; seconds: number }> {
-    const { audioPath, outPath, size = 640, fps = 30, tailSeconds = 0.5, stillFrame } = opts;
+    const { audioPath, outPath, size = 640, fps = 24, tailSeconds = 0.5, stillFrame } = opts;
     const vrmPath = process.env.MIKA_VRM_PATH ?? DEFAULT_VRM;
     if (!fs.existsSync(vrmPath)) throw new Error(`Modelo VRM não encontrado: ${vrmPath} (defina MIKA_VRM_PATH)`);
     const pcm = await decodePcm(audioPath);
@@ -75,6 +85,7 @@ export async function renderMikaVideo(opts: RenderOptions): Promise<{ path: stri
         await page.evaluate(`mikaStage.init(${JSON.stringify({ vrmUrl: '/model.vrm', size, fps, track })})`);
         if (process.env.MIKA_VIDEO_DEBUG) console.log(new Date().toISOString(), 'init ok, frames', frames);
         for (let i = stillFrame === undefined ? 0 : stillFrame; i < frames; i++) {
+            if (opts.signal?.aborted) throw new Error('render cancelado');
             const jpeg = Buffer.from(await page.evaluate<string>(`mikaStage.frame(${i})`), 'base64');
             if (!ff) { fs.writeFileSync(outPath, jpeg); break; }
             if (process.env.MIKA_VIDEO_DEBUG && i % 5 === 0) console.log(new Date().toISOString(), 'frame', i);
@@ -84,6 +95,7 @@ export async function renderMikaVideo(opts: RenderOptions): Promise<{ path: stri
         ff?.stdin.end();
         await done;
     } finally {
+        ff?.kill();
         await browser.close();
         server.close();
     }

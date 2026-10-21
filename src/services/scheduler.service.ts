@@ -21,6 +21,7 @@ import { MenuController } from '../controllers/menu.controller';
 import { escapeHtml } from '../utils/html';
 import { sendGifMessage } from '../utils/telegram';
 import { sendDailyDashboard } from '../features/daily-dashboard/dashboard.publisher';
+import { isMikaVideoEnabled, sendMikaVideo } from '../features/mika-video/mika-video.publisher';
 import { getBrasiliaHour, isBehindWaterPace } from '../features/reminders/water-pace';
 import { pushClosing, pushMeal, pushWater } from '../features/push/push.hooks';
 
@@ -138,27 +139,35 @@ export class SchedulerService {
      * Envia apenas o áudio da fala da Mika (voz TTS + efeito MyInstants), sem
      * repetir o texto. Usado quando o texto já vai embutido numa mensagem
      * formatada (ficha/descanso) mas precisa SEMPRE vir acompanhado de áudio.
+     * Com `video`, a fala vai como vídeo da Mika (se disponível); qualquer falha cai na voz.
      */
-    private async sendMikaVoice(chatId: number, response: { message: string; audioSearchTerm?: string }) {
-        try {
-            const audioPath = await ttsService.generateMikaAudio(response.message);
-            if (audioPath) {
-                await this.bot.sendVoice(chatId, audioPath).catch(() => {});
-                await ttsService.cleanup(audioPath);
-            }
-        } catch (e) {
-            logger.error('[Scheduler] Erro ao enviar voz da Mika:', e);
-        }
-        if (response.audioSearchTerm) {
+    private async sendMikaVoice(chatId: number, response: { message: string; audioSearchTerm?: string }, video = false) {
+        const asVideo = video && isMikaVideoEnabled();
+        const deliver = async () => {
             try {
-                const instant = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
-                if (instant?.audioUrl) {
-                    await this.bot.sendAudio(chatId, instant.audioUrl, { caption: `🎶 ${instant.title}` });
+                const audioPath = await ttsService.generateMikaAudio(response.message);
+                if (audioPath) {
+                    const sentVideo = asVideo && await sendMikaVideo(this.bot, chatId, audioPath);
+                    if (!sentVideo) await this.bot.sendVoice(chatId, audioPath).catch(() => {});
+                    await ttsService.cleanup(audioPath);
                 }
-            } catch (err) {
-                logger.error('[Scheduler] Erro ao enviar áudio do MyInstants:', err);
+            } catch (e) {
+                logger.error('[Scheduler] Erro ao enviar voz da Mika:', e);
             }
-        }
+            if (response.audioSearchTerm) {
+                try {
+                    const instant = await myInstantsService.getBestMatchAudio(response.audioSearchTerm);
+                    if (instant?.audioUrl) {
+                        await this.bot.sendAudio(chatId, instant.audioUrl, { caption: `🎶 ${instant.title}` });
+                    }
+                } catch (err) {
+                    logger.error('[Scheduler] Erro ao enviar áudio do MyInstants:', err);
+                }
+            }
+        };
+        // O render leva minutos: roda solto para não segurar o lock do job (TTL de 10 min).
+        if (asVideo) void deliver();
+        else await deliver();
     }
 
     public async runDailyCheck() {
@@ -432,7 +441,7 @@ export class SchedulerService {
                 `cardio ${cardioDone ? 'feito' : 'nao feito'}, agua ${water}ml, nota ${nota} de 10. ` +
                 `Comente curto e sarcastico sobre a nota, no tom da Mika.`
             );
-            await this.sendMikaVoice(chatId, response);
+            await this.sendMikaVoice(chatId, response, true);
         });
     }
 

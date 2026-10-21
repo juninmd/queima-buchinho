@@ -18,13 +18,16 @@ FROM oven/bun:1-alpine
 WORKDIR /app
 
 # Instalar Python e edge-tts para o TTS da Mika
-RUN apk add --no-cache python3 py3-pip curl font-dejavu && \
+# Vídeo da Mika (src/features/mika-video): Chromium headless renderiza o VRM em WebGL por software e o ffmpeg monta o mp4.
+RUN apk add --no-cache python3 py3-pip curl font-dejavu chromium ffmpeg && \
     pip install edge-tts --break-system-packages
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY package.json bun.lock* ./
 COPY . .
 COPY --from=pwa /app/dashboard/dist ./dashboard/dist
+
+ENV CHROMIUM_PATH=/usr/bin/chromium
 
 RUN mkdir -p assets data && echo "[]" > data/workout-history.json
 

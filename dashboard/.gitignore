@@ -1,0 +1,6 @@
+# Segredos do Firebase e assinatura: nunca no repositório (veja docs/pwa/NATIVE.md).
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist
+*.keystore
+*.jks
+android/keystore.properties

@@ -16,3 +16,8 @@ coverage
 docs
 scratch
 tests
+
+# Projetos nativos (Capacitor): só o build web do dashboard entra na imagem
+dashboard/android
+dashboard/ios
+dashboard/native

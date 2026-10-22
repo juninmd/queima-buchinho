@@ -53,10 +53,18 @@ Os arquivos estáticos do PWA (`dashboard/dist`, ou `PWA_DIST_DIR`) são servido
 
 ## Notificações push (Web Push, VAPID)
 Env: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (mailto:). Sem elas, `enabled: false` e `subscribe`/`prefs` respondem 503 `push_disabled`. Endpoint precisa ser `https://`.
-- `GET /api/push/config` → `{ enabled: boolean; publicKey: string | null }`.
+- `GET /api/push/config` → `{ enabled: boolean; publicKey: string | null; native: boolean }` (`native` = `FCM_SERVICE_ACCOUNT` configurada).
 - `POST /api/push/subscribe` `{ subscription: PushSubscriptionJSON; prefs?: PushPrefs }` → `{ ok: true }`.
 - `PUT /api/push/prefs` `{ endpoint: string; prefs: PushPrefs }` → `{ ok: true }` (404 se a inscrição não existe).
 - `DELETE /api/push/subscribe` `{ endpoint: string }` → `{ ok: true }`.
+
+### App nativo (token FCM) — ver [NATIVE.md](./NATIVE.md)
+Env: `FCM_SERVICE_ACCOUNT`. Sem ela, `POST /api/push/device` responde 503 `push_disabled`.
+- `POST /api/push/device` `{ token: string; platform: 'android' | 'ios'; prefs?: PushPrefs }` → `{ ok: true }`.
+- `PUT /api/push/device/prefs` `{ token: string; prefs: PushPrefs }` → `{ ok: true }` (404 se o token não existe).
+- `DELETE /api/push/device` `{ token: string }` → `{ ok: true }`.
+- `POST /api/push/action` `{ action: 'water_200' | 'water_300' | 'water_500' | 'meal_<cafe|almoco|cafe_tarde|jantar>' }`
+  → `{ ok: true; message: string }` (400 `invalid_action`). Botões da notificação; grava no mesmo banco do Telegram.
 - `PushPrefs = { ficha: boolean; agua: boolean; refeicao: boolean; fechamento: boolean }` (padrão tudo `true`).
 - Payload enviado ao service worker: `{ title: string; body: string; tag: string; url: string }`. Disparos (respeitam a pausa e as prefs):
   ficha às 06:00, junto com a publicação no Telegram (`ficha`), lembrete de água só quando abaixo do ritmo (`agua`), refeição só se não marcada (`refeicao`), relatório das 21:30 (`fechamento`).

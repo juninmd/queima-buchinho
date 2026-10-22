@@ -10,8 +10,8 @@ const ROWS: { key: keyof PushPrefs; label: string; hint: string }[] = [
 
 const NOTE: Record<string, string> = {
   unsupported: 'Este navegador não suporta notificações. Instale o app para ativar.',
-  unavailable: 'O servidor ainda não tem as chaves de notificação (VAPID).',
-  denied: 'Notificações bloqueadas. Libere nas configurações do navegador.',
+  unavailable: 'O servidor ainda não tem as chaves de notificação (VAPID no navegador, FCM no app).',
+  denied: 'Notificações bloqueadas. Libere nas configurações do aparelho.',
 };
 
 export function PushCard() {

@@ -53,7 +53,7 @@ export async function publishFicha(bot: TelegramBot, chatId: number, userId: num
   }
 
   await fichaService.saveSession(userId, ficha);
-  void pushFicha(userId, ficha.titulo);
+  void pushFicha(userId, ficha.titulo, ficha.exercicios[0]?.img);
   const [frase, trained, status] = await Promise.all([
     provocacao(ficha),
     workoutService.hasLoggedToday(userId).catch(() => false),

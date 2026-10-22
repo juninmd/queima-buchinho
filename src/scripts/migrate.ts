@@ -92,6 +92,19 @@ const migrationQuery = `
 
   CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user
     ON push_subscriptions (user_id);
+
+  -- App nativo (Android/iOS): tokens FCM. Rollback: DROP TABLE device_tokens.
+  CREATE TABLE IF NOT EXISTS device_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    platform TEXT NOT NULL,
+    prefs JSONB NOT NULL DEFAULT '{"ficha":true,"agua":true,"refeicao":true,"fechamento":true}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_device_tokens_user
+    ON device_tokens (user_id);
 `;
 
 async function migrate() {

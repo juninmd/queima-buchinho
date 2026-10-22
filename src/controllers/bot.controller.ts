@@ -5,6 +5,7 @@ import { replyMika } from '../utils/telegram';
 import { logger } from '../utils/logger';
 import { handleQuickLog } from '../features/quick-log/quick-log.handler';
 import { handlePausar, handleVoltar } from '../features/pause/pause.handler';
+import { handleApp } from '../features/push/push.handler';
 
 // Command Handlers
 import { handleMetric } from './handlers/metric.handler';
@@ -78,6 +79,7 @@ export class BotController {
             { regex: /^\/instante(@\w+)? (.+)/, handler: (msg: Message, match: RegExpExecArray) => handleInstante(this.bot, msg, match) },
             { regex: /^\/reset(@\w+)?$/, handler: (msg: Message) => handleReset(this.bot, msg) },
             { regex: /^\/pausar(@\w+)?(?:\s+(.+))?$/, handler: (msg: Message, match: RegExpExecArray) => handlePausar(this.bot, msg, match) },
+            { regex: /^\/app(@\w+)?$/, handler: (msg: Message) => handleApp(this.bot, msg) },
             { regex: /^\/voltar(@\w+)?$/, handler: (msg: Message) => handleVoltar(this.bot, msg) },
             { regex: /^\/peso(@\w+)?(?:\s+(.+))?$/, handler: (msg: Message, match: RegExpExecArray) => handleMetric(this.bot, msg, match, 'weight', 'kg') },
             { regex: /^\/altura(@\w+)?(?:\s+(.+))?$/, handler: (msg: Message, match: RegExpExecArray) => handleMetric(this.bot, msg, match, 'height', 'cm') },

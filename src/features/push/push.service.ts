@@ -1,6 +1,8 @@
 import webpush from 'web-push';
 import { query } from '../../config/database';
 import { logger } from '../../utils/logger';
+import { deviceRepo } from './device.repo';
+import { fcmClient } from './fcm.client';
 import { normalizePrefs } from './push.types';
 import type { PushKind, PushPayload, PushPrefs, PushSubscriptionInput } from './push.types';
 
@@ -11,8 +13,14 @@ const GONE = [404, 410];
 export class PushService {
   private configured = false;
 
+  /** Web Push (PWA) ligado: precisa das duas chaves VAPID. */
   public isEnabled(): boolean {
     return !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
+  }
+
+  /** Push nativo (app Android/iOS) ligado: precisa da conta de serviço do Firebase. */
+  public isNativeEnabled(): boolean {
+    return fcmClient.isEnabled();
   }
 
   public publicKey(): string | null {
@@ -52,8 +60,15 @@ export class PushService {
     await query('DELETE FROM push_subscriptions WHERE user_id = $1 AND endpoint = $2', [userId, endpoint]);
   }
 
-  /** Envia para as inscrições do usuário com `kind` ligado. Nunca lança: push é bônus do job. */
+  /** Envia para web + aparelhos nativos do usuário com `kind` ligado. Nunca lança: push é bônus do job. */
   public async notify(userId: number, kind: PushKind, payload: PushPayload): Promise<void> {
+    await Promise.all([
+      this.notifyWeb(userId, kind, payload),
+      this.notifyNative(userId, kind, payload),
+    ]);
+  }
+
+  private async notifyWeb(userId: number, kind: PushKind, payload: PushPayload): Promise<void> {
     if (!this.isEnabled()) return;
     try {
       this.setup();
@@ -65,6 +80,21 @@ export class PushService {
       await Promise.all(targets.map(r => this.deliver(r, payload)));
     } catch (e) {
       logger.error(`[Push] Falha ao notificar (${kind}):`, e);
+    }
+  }
+
+  private async notifyNative(userId: number, kind: PushKind, payload: PushPayload): Promise<void> {
+    if (!this.isNativeEnabled()) return;
+    try {
+      const devices = (await deviceRepo.list(userId)).filter(d => normalizePrefs(d.prefs)[kind]);
+      await Promise.all(devices.map(async d => {
+        if ((await fcmClient.send(d.token, kind, payload)) === 'gone') {
+          await deviceRepo.purge(d.token).catch(() => undefined);
+          logger.info('[Push] Token nativo expirado removido.');
+        }
+      }));
+    } catch (e) {
+      logger.error(`[Push] Falha no push nativo (${kind}):`, e);
     }
   }
 

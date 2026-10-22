@@ -1,11 +1,15 @@
+import { isNativeApp } from './native';
+
 const KEY = 'qb.config';
 
 export interface AppConfig { baseUrl: string; token: string }
 
 const read = (): Storage | null => { try { return window.localStorage; } catch { return null; } };
 
-/** Servido pelo próprio bot a origem já é a API; em dev, VITE_API_URL aponta para ela. */
-export const defaultBaseUrl = (): string => import.meta.env.VITE_API_URL || window.location.origin;
+/** Servido pelo próprio bot a origem já é a API; em dev, VITE_API_URL aponta para ela.
+ *  No app nativo a origem é a do WebView (https://localhost): a URL do bot é digitada. */
+export const defaultBaseUrl = (): string =>
+  import.meta.env.VITE_API_URL || (isNativeApp() ? '' : window.location.origin);
 
 export function loadConfig(): AppConfig | null {
   try {

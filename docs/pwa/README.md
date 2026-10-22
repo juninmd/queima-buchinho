@@ -50,6 +50,11 @@ bun run migrate    # cria push_subscriptions
 Depois, em **Ajustes › Lembretes**, toque em "Ativar lembretes" em cada aparelho.
 No iPhone, o push só funciona com o app instalado na tela inicial (iOS 16.4+).
 
+## App nativo Android/iOS (Capacitor)
+
+Casca nativa com **push rico** (imagem, canais, botões rápidos) via Firebase, integrada ao Telegram e ao Postgres:
+veja [NATIVE.md](./NATIVE.md). Telegram: `/app` mostra o link e testa a notificação.
+
 ## App Android (TWA)
 
 O APK/AAB é um invólucro (Trusted Web Activity) do mesmo PWA: nenhuma tela é reescrita.

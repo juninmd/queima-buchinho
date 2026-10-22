@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { AppProvider, useApp } from './app/AppProvider';
-import { ToastProvider } from './app/Toast';
+import { ToastProvider, useToast } from './app/Toast';
+import { useNativeBridge } from './app/useNativeBridge';
 import { tabFromHash, type Tab } from './app/tabs';
 import { NavBar } from './components/ui/NavBar';
 import { Ajustes } from './screens/Ajustes';
@@ -15,7 +16,8 @@ import { loadConfig } from './lib/config';
 const Progresso = lazy(() => import('./screens/Progresso').then(m => ({ default: m.Progresso })));
 
 function Screen({ onSignOut }: { onSignOut: () => void }) {
-  const { tab, go, online, pending } = useApp();
+  const { tab, go, online, pending, refresh } = useApp();
+  useNativeBridge(go, useToast(), refresh);
   return (
     <div className="shell">
       {(!online || pending > 0) && (

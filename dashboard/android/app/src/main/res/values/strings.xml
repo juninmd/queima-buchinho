@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Queima Buchinho</string>
+    <string name="title_activity_main">Queima Buchinho</string>
+    <string name="package_name">br.com.queimabuchinho.app</string>
+    <string name="custom_url_scheme">br.com.queimabuchinho.app</string>
+</resources>

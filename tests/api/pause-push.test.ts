@@ -11,6 +11,7 @@ jest.mock('../../src/features/pause/pause.service', () => ({
 jest.mock('../../src/features/push/push.service', () => ({
   pushService: {
     isEnabled: jest.fn(() => true),
+    isNativeEnabled: jest.fn(() => true),
     publicKey: jest.fn(() => 'PUB'),
     subscribe: jest.fn().mockResolvedValue(undefined),
     updatePrefs: jest.fn().mockResolvedValue(true),
@@ -43,7 +44,7 @@ describe('pausa e push', () => {
   });
 
   it('push/config expõe a chave pública', async () => {
-    expect((await api.call('GET', '/api/push/config')).json).toEqual({ enabled: true, publicKey: 'PUB' });
+    expect((await api.call('GET', '/api/push/config')).json).toEqual({ enabled: true, publicKey: 'PUB', native: true });
   });
 
   it('inscreve com prefs e valida a inscrição', async () => {

@@ -12,6 +12,7 @@ export const BOT_COMMANDS: BotCommand[] = [
   { command: 'relatorio', description: 'Relatório do dia com a Mika' },
   { command: 'semana', description: 'Resumo da semana' },
   { command: 'streak', description: 'Sequência de treinos' },
+  { command: 'app', description: 'Link do app e teste de notificação' },
   { command: 'pausar', description: 'Pausar lembretes (ex.: /pausar 3)' },
   { command: 'voltar', description: 'Retomar lembretes' },
   { command: 'passos', description: 'Registrar passos (ex.: /passos 8000)' },

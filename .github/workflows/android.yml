@@ -13,6 +13,9 @@ on:
       - 'dashboard/android/**'
       - 'dashboard/capacitor.config.ts'
 
+permissions:
+  contents: read
+
 concurrency:
   group: android-${{ github.ref }}
   cancel-in-progress: true
@@ -45,3 +48,4 @@ jobs:
         with:
           name: queima-buchinho-debug-apk
           path: dashboard/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 3

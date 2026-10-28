@@ -11,6 +11,9 @@ on:
     paths:
       - 'dashboard/**'
 
+permissions:
+  contents: read
+
 concurrency:
   group: pwa-${{ github.ref }}
   cancel-in-progress: true

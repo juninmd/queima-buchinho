@@ -28,8 +28,15 @@ export const DEFAULT_VRM = path.resolve(__dirname, '../../../assets/mika/mika.vr
 export function chromiumPath(): string | undefined {
     if (process.env.CHROMIUM_PATH) return process.env.CHROMIUM_PATH;
     const root = process.env.PLAYWRIGHT_BROWSERS_PATH ?? '/opt/pw-browsers';
-    const dir = fs.existsSync(root) ? fs.readdirSync(root).find(d => d.startsWith('chromium-')) : undefined;
-    return dir ? path.join(root, dir, 'chrome-linux', 'chrome') : undefined;
+    if (!fs.existsSync(root)) return undefined;
+    for (const dir of fs.readdirSync(root).filter(d => d.startsWith('chromium-')).sort().reverse()) {
+        // o Playwright já usou `chrome-linux` e hoje usa `chrome-linux64`
+        for (const sub of ['chrome-linux64', 'chrome-linux']) {
+            const exe = path.join(root, dir, sub, 'chrome');
+            if (fs.existsSync(exe)) return exe;
+        }
+    }
+    return undefined;
 }
 
 let bundled: Promise<string> | undefined;

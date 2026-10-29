@@ -1,8 +1,0 @@
-# Supressoes por fingerprint - triagem manual registrada no PR de seguranca.
-
-# Token de bot do Telegram usado como fallback em script de teste ja
-# removido do HEAD. O valor segue no historico publico e DEVE SER
-# ROTACIONADO no @BotFather (/revoke). Apos rotacionar, remover estas linhas.
-
-23f9c3a36c846e84d92644da107a39ecdd57d969:docker-compose.yml:juninmd-db-uri-credentials:41
-e53d5760e2790c45b9fcb9940358e4bbcd3abb6b:src/scripts/test-mika-voice.ts:telegram-bot-api-token:10

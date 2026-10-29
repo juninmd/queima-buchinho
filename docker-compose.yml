@@ -38,7 +38,8 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgres://user:password@postgres:5432/queima_buchinho
+      # Credenciais vem do .env (nunca hardcode senha no compose).
+      - DATABASE_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/queima_buchinho
       - REDIS_URL=redis://redis:6379
       - BOT_MODE=listener
       - WEBHOOK_URL= # Deixa vazio localmente pra usar Polling

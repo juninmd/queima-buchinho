@@ -1,14 +1,15 @@
 import { query } from '../../config/database';
+import { LOAD_MAX_KG, LOAD_MIN_KG } from '../../config/constants';
 import { getBrasiliaDateString, getBrasiliaDayName } from '../../utils/time';
 import { habitsService } from '../../services/habits.service';
 import { workoutService } from '../../services/workout.service';
 import { logger } from '../../utils/logger';
 import { DatabaseError, toError } from '../../utils/errors';
-import { buildFicha, getPlanForDay } from './generator';
+import { applyDeload, buildFicha, getPlanForDay, markProgression } from './generator';
+import { progressionService } from './progression.service';
+import { readyToProgress, shouldDeload } from './progression';
 import type { Ficha } from './types';
 
-export const LOAD_MIN_KG = 0;
-export const LOAD_MAX_KG = 300;
 
 export class FichaService {
   /** Cargas salvas do usuário, por chave de exercício. Falha de banco degrada para o padrão do catálogo. */
@@ -53,11 +54,26 @@ export class FichaService {
     }
   }
 
-  /** Ficha de hoje já resolvida com as cargas do usuário. `null` em dia sem treino previsto. */
+  /**
+   * Ficha de hoje já resolvida com as cargas do usuário, a progressão sugerida e a semana
+   * leve, se estiver valendo. `null` em dia sem treino previsto.
+   */
   public async buildToday(userId: number): Promise<Ficha | null> {
     const plan = getPlanForDay(getBrasiliaDayName());
     if (!plan) return null;
-    return buildFicha(plan, await this.getLoads(userId), getBrasiliaDateString());
+
+    const hoje = getBrasiliaDateString();
+    const [loads, history, emDeload] = await Promise.all([
+      this.getLoads(userId),
+      progressionService.getHistory(userId),
+      progressionService.isDeloadActive(userId, hoje),
+    ]);
+
+    const ficha = markProgression(buildFicha(plan, loads, hoje), readyToProgress(history));
+    if (emDeload) return applyDeload(ficha);
+
+    const { deload, motivo } = shouldDeload(history, hoje);
+    return deload ? { ...ficha, sugereDeload: motivo } : ficha;
   }
 
   /** Guarda a ficha entregue no dia para o histórico e para o relatório saber o que foi prescrito. */

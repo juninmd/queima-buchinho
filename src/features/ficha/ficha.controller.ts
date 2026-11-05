@@ -1,10 +1,11 @@
 import TelegramBot from 'node-telegram-bot-api';
-import type { CallbackQuery, InlineKeyboardButton } from 'node-telegram-bot-api';
-import { habitsService } from '../../services/habits.service';
-import { workoutService } from '../../services/workout.service';
+import type { CallbackQuery } from 'node-telegram-bot-api';
 import { logger } from '../../utils/logger';
 import { fichaService } from './ficha.service';
-import { loadPickerKeyboard, mainKeyboard, renderFicha, stepperKeyboard } from './render';
+import { refreshCard, setKeyboard } from './card';
+import { loadPickerKeyboard, prontosParaSubir, renderFicha, stepperKeyboard } from './render';
+import { progressionService } from './progression.service';
+import { getBrasiliaDateString } from '../../utils/time';
 import type { Ficha } from './types';
 
 export const FICHA_CALLBACK_PREFIX = 'fx:';
@@ -30,6 +31,8 @@ export class FichaController {
 
     const [, action, rawIndex, rawDelta] = data.split(':');
     if (action === 'done') return this.markDone(query, userId, chatId, messageId);
+    if (action === 'prog') return this.applyProgression(query, userId, chatId, messageId, ficha);
+    if (action === 'deload') return this.startDeload(query, userId, chatId, messageId);
     if (action === 'cardio') return this.markCardio(query, userId, chatId, messageId);
     if (action === 'loads') return this.showPicker(query, chatId, messageId, ficha);
     if (action === 'back') return this.showMain(query, userId, chatId, messageId);
@@ -42,43 +45,53 @@ export class FichaController {
     await this.bot.answerCallbackQuery(query.id, text ? { text } : undefined).catch(() => {});
   }
 
-  private async setKeyboard(chatId: number, messageId: number, keyboard: InlineKeyboardButton[][]): Promise<void> {
-    await this.bot
-      .editMessageReplyMarkup({ inline_keyboard: keyboard }, { chat_id: chatId, message_id: messageId })
-      .catch(() => {});
+  /**
+   * Sobe de uma vez todos os exercícios que repetiram carga. A semente é `cargaBaseKg`
+   * quando existe: no deload a ficha mostra carga reduzida, e persistir esse valor
+   * transformaria a semana leve em regressão permanente.
+   */
+  private async applyProgression(
+    query: CallbackQuery, userId: number, chatId: number, messageId: number, ficha: Ficha
+  ): Promise<void> {
+    const itens = prontosParaSubir(ficha).map(ex => ({
+      key: ex.key,
+      cargaKg: (ex.cargaBaseKg ?? ex.cargaKg) as number,
+    }));
+    const subidos = await progressionService.bumpLoads(userId, itens);
+    if (subidos.length === 0) return this.answer(query, 'Nada para subir ainda.');
+    await this.answer(query, `⬆️ ${subidos.length} exercícios mais pesados. Sem choro.`);
+    await refreshCard(this.bot, userId, chatId, messageId);
   }
 
-  private async currentStatus(userId: number): Promise<{ trained: boolean; cardioDone: boolean }> {
-    const [trained, status] = await Promise.all([
-      workoutService.hasLoggedToday(userId).catch(() => false),
-      habitsService.getStatus(userId).catch(() => ({} as Record<string, boolean>)),
-    ]);
-    return { trained, cardioDone: !!status['cardio'] };
+  private async startDeload(
+    query: CallbackQuery, userId: number, chatId: number, messageId: number
+  ): Promise<void> {
+    const ate = await progressionService.startDeload(userId, getBrasiliaDateString());
+    if (!ate) return this.answer(query, 'Não consegui ativar a semana leve.');
+    await this.answer(query, `😮‍💨 Semana leve até ${ate}. Descanso é treino também.`);
+    await refreshCard(this.bot, userId, chatId, messageId);
   }
 
   private async markDone(query: CallbackQuery, userId: number, chatId: number, messageId: number): Promise<void> {
     await fichaService.completeToday(userId);
     await this.answer(query, '🏋️‍♂️ Treino registrado!');
-    const { cardioDone } = await this.currentStatus(userId);
-    await this.setKeyboard(chatId, messageId, mainKeyboard(true, cardioDone));
+    await refreshCard(this.bot, userId, chatId, messageId);
   }
 
   private async markCardio(query: CallbackQuery, userId: number, chatId: number, messageId: number): Promise<void> {
     await fichaService.completeCardio(userId);
     await this.answer(query, '🏃 Cárdio registrado!');
-    const { trained } = await this.currentStatus(userId);
-    await this.setKeyboard(chatId, messageId, mainKeyboard(trained, true));
+    await refreshCard(this.bot, userId, chatId, messageId);
   }
 
   private async showMain(query: CallbackQuery, userId: number, chatId: number, messageId: number): Promise<void> {
     await this.answer(query);
-    const { trained, cardioDone } = await this.currentStatus(userId);
-    await this.setKeyboard(chatId, messageId, mainKeyboard(trained, cardioDone));
+    await refreshCard(this.bot, userId, chatId, messageId);
   }
 
   private async showPicker(query: CallbackQuery, chatId: number, messageId: number, ficha: Ficha): Promise<void> {
     await this.answer(query, '⚖️ Escolha o exercício');
-    await this.setKeyboard(chatId, messageId, loadPickerKeyboard(ficha));
+    await setKeyboard(this.bot, chatId, messageId, loadPickerKeyboard(ficha));
   }
 
   private async showStepper(
@@ -87,7 +100,7 @@ export class FichaController {
     const ex = ficha.exercicios[index];
     if (!ex || ex.cargaKg === null) return this.answer(query, 'Esse exercício não tem carga.');
     await this.answer(query, ex.nome);
-    await this.setKeyboard(chatId, messageId, stepperKeyboard(index, ex));
+    await setKeyboard(this.bot, chatId, messageId, stepperKeyboard(index, ex));
   }
 
   private async adjust(

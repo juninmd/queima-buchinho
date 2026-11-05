@@ -66,6 +66,12 @@ const migrationQuery = `
   );
 
   ALTER TABLE ficha_sessions ADD COLUMN IF NOT EXISTS cardio_done BOOLEAN NOT NULL DEFAULT FALSE;
+
+  CREATE TABLE IF NOT EXISTS training_state (
+    user_id BIGINT PRIMARY KEY,
+    deload_until DATE,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+  );
 `;
 
 async function migrate() {

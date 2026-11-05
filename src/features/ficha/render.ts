@@ -10,7 +10,11 @@ export const formatKg = (kg: number): string =>
   `${kg.toFixed(1).replace('.0', '').replace('.', ',')} kg`;
 
 const linhaCarga = (ex: FichaExercise): string =>
-  ex.cargaKg === null ? '' : ` · ⚖️ ${formatKg(ex.cargaKg)}`;
+  ex.cargaKg === null ? '' : ` · ⚖️ ${formatKg(ex.cargaKg)}${ex.podeSubir ? ' ⬆️' : ''}`;
+
+/** Exercícios que o histórico liberou para subir de carga. */
+export const prontosParaSubir = (ficha: Ficha): FichaExercise[] =>
+  ficha.exercicios.filter(ex => ex.podeSubir && ex.cargaKg !== null);
 
 function linhaExercicio(ex: FichaExercise, i: number, isCardio: boolean): string {
   const cabeca = `${i + 1}. <b>${escapeHtml(ex.nome)}</b>\n    🏗 ${escapeHtml(ex.aparelho)}`;
@@ -25,7 +29,7 @@ export function renderFicha(ficha: Ficha, provocacao?: string): string {
     .map((ex, i) => (i === iCardio ? `\n🏃 <b>Cárdio (depois da musculação)</b>\n` : '') + linhaExercicio(ex, i, i === iCardio))
     .join('\n');
   const rodape = provocacao ? `\n\n<i>${escapeHtml(provocacao)}</i>` : '';
-  return `${ficha.emoji} <b>${escapeHtml(ficha.titulo)}</b>\n<i>${escapeHtml(ficha.foco)}</i>\n🧩 ${escapeHtml(ficha.metodo)}\n\n${corpo}${rodape}`;
+  return `${ficha.emoji} <b>${escapeHtml(ficha.titulo)}</b>\n<i>${escapeHtml(ficha.foco)}</i>\n🧩 ${escapeHtml(ficha.metodo)}${avisoCarga(ficha)}\n\n${corpo}${rodape}`;
 }
 
 /** Álbum de fotos: uma imagem por exercício, com o nome do aparelho na legenda. */
@@ -39,14 +43,30 @@ export function renderAlbum(ficha: Ficha): InputMedia[] {
   })) as InputMedia[];
 }
 
-export function mainKeyboard(trained: boolean, cardioDone: boolean): InlineKeyboardButton[][] {
-  return [
+/** Avisos de estado acima da lista: semana leve valendo, ou semana leve sugerida. */
+function avisoCarga(ficha: Ficha): string {
+  if (ficha.deload) return '\n😮‍💨 <b>Semana leve</b> — carga e série reduzidas de propósito.';
+  if (ficha.sugereDeload) return `\n⚠️ <i>Hora de uma semana leve: ${escapeHtml(ficha.sugereDeload)}.</i>`;
+  return '';
+}
+
+export function mainKeyboard(ficha: Ficha, trained: boolean, cardioDone: boolean): InlineKeyboardButton[][] {
+  const rows: InlineKeyboardButton[][] = [
     [
       { text: trained ? '🏋️‍♂️ Treino feito! ✅' : '🏋️‍♂️ Treinei', callback_data: 'fx:done' },
       { text: cardioDone ? '🏃 Cárdio feito! ✅' : '🏃 Fiz o cárdio', callback_data: 'fx:cardio' },
     ],
     [{ text: '⚖️ Ajustar carga', callback_data: 'fx:loads' }],
   ];
+
+  const subir = prontosParaSubir(ficha);
+  if (subir.length > 0) {
+    rows.push([{ text: `⬆️ Subir carga (${subir.length})`, callback_data: 'fx:prog' }]);
+  }
+  if (ficha.sugereDeload && !ficha.deload) {
+    rows.push([{ text: '😮‍💨 Quero semana leve', callback_data: 'fx:deload' }]);
+  }
+  return rows;
 }
 
 /** Lista só os exercícios com carga ajustável — cárdio e peso do corpo ficam de fora. */

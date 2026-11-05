@@ -35,6 +35,10 @@ export interface FichaExercise extends PlanItem {
   img: string;
   /** `null` = sem carga ajustável (o botão de carga não aparece). */
   cargaKg: number | null;
+  /** Repetiu a mesma carga nas últimas sessões: a ficha sugere subir. */
+  podeSubir?: boolean;
+  /** Carga cheia guardada durante o deload, para nenhum ajuste persistir o valor reduzido. */
+  cargaBaseKg?: number | null;
 }
 
 /** Ficha do dia entregue no Telegram. `exercicios` termina sempre com o bloco de cárdio. */
@@ -46,4 +50,8 @@ export interface Ficha {
   metodo: string;
   data: string;
   exercicios: FichaExercise[];
+  /** Semana leve ativa: cargas e séries já vêm reduzidas. */
+  deload?: boolean;
+  /** Motivo pelo qual o histórico pede semana leve. A Mika propõe; quem aceita é o Mestre. */
+  sugereDeload?: string;
 }

@@ -8,6 +8,9 @@ export const CARDIO_KEYWORDS = [
     'corri hoje', 'fui correr', 'fiz esteira', 'fiz bicicleta', 'cardio concluído'
 ];
 
+export const LOAD_MIN_KG = 0;
+export const LOAD_MAX_KG = 300;
+
 export const WATER_GOAL_ML = 2000;
 export const WATER_CELEBRATION_ML = 3000;
 

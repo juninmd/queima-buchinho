@@ -52,10 +52,10 @@ describe('renderAlbum', () => {
 
 describe('teclados', () => {
   it('o card principal traz treino, cárdio e ajuste de carga', () => {
-    const kb = mainKeyboard(false, false);
+    const kb = mainKeyboard(ficha, false, false);
     const dados = kb.flat().map(b => b.callback_data);
     expect(dados).toEqual(['fx:done', 'fx:cardio', 'fx:loads']);
-    expect(mainKeyboard(true, true).flat()[0].text).toContain('✅');
+    expect(mainKeyboard(ficha, true, true).flat()[0].text).toContain('✅');
   });
 
   it('o seletor de carga ignora cárdio e peso do corpo', () => {

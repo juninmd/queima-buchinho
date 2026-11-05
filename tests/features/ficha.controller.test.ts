@@ -3,6 +3,8 @@ import { FichaController } from '../../src/features/ficha/ficha.controller';
 import { fichaService } from '../../src/features/ficha/ficha.service';
 import { buildFicha, getPlanForDay } from '../../src/features/ficha/generator';
 import { habitsService } from '../../src/services/habits.service';
+import { progressionService } from '../../src/features/ficha/progression.service';
+import { markProgression } from '../../src/features/ficha/generator';
 import { workoutService } from '../../src/services/workout.service';
 
 jest.mock('../../src/features/ficha/ficha.service', () => ({
@@ -12,6 +14,9 @@ jest.mock('../../src/features/ficha/ficha.service', () => ({
   },
 }));
 jest.mock('../../src/services/habits.service', () => ({ habitsService: { getStatus: jest.fn() } }));
+jest.mock('../../src/features/ficha/progression.service', () => ({
+  progressionService: { bumpLoads: jest.fn(), startDeload: jest.fn() },
+}));
 jest.mock('../../src/services/workout.service', () => ({ workoutService: { hasLoggedToday: jest.fn() } }));
 
 const ficha = () => buildFicha(getPlanForDay('segunda-feira')!, new Map([['agacho_barra', 30]]), '2026-09-07');
@@ -42,17 +47,19 @@ describe('FichaController', () => {
   });
 
   it('registra o treino nas tabelas do bot e marca o botão como feito', async () => {
+    (workoutService.hasLoggedToday as jest.Mock).mockResolvedValue(true);
     await controller.handle(q('fx:done'));
     expect(fichaService.completeToday).toHaveBeenCalledWith(7);
-    const [{ inline_keyboard }] = (bot.editMessageReplyMarkup as jest.Mock).mock.calls[0];
-    expect(inline_keyboard[0][0].text).toContain('✅');
+    const [, opts] = (bot.editMessageText as jest.Mock).mock.calls[0];
+    expect(opts.reply_markup.inline_keyboard[0][0].text).toContain('✅');
   });
 
   it('registra o cárdio da esteira/bicicleta', async () => {
+    (habitsService.getStatus as jest.Mock).mockResolvedValue({ cardio: true });
     await controller.handle(q('fx:cardio'));
     expect(fichaService.completeCardio).toHaveBeenCalledWith(7);
-    const [{ inline_keyboard }] = (bot.editMessageReplyMarkup as jest.Mock).mock.calls[0];
-    expect(inline_keyboard[0][1].text).toContain('✅');
+    const [, opts] = (bot.editMessageText as jest.Mock).mock.calls[0];
+    expect(opts.reply_markup.inline_keyboard[0][1].text).toContain('✅');
   });
 
   it('abre o seletor de carga sem reescrever o texto da ficha', async () => {
@@ -85,6 +92,55 @@ describe('FichaController', () => {
   it('recusa índice fora da ficha', async () => {
     await controller.handle(q('fx:adj:99:5'));
     expect(fichaService.adjustLoad).not.toHaveBeenCalled();
+  });
+
+  describe('progressão de carga', () => {
+    const comSugestao = () => markProgression(ficha(), ['agacho_barra']);
+
+    it('sobe todos os exercícios liberados de uma vez', async () => {
+      (fichaService.buildToday as jest.Mock).mockResolvedValue(comSugestao());
+      (progressionService.bumpLoads as jest.Mock).mockResolvedValue([{ key: 'agacho_barra', cargaKg: 32.5 }]);
+
+      await controller.handle(q('fx:prog'));
+
+      expect(progressionService.bumpLoads).toHaveBeenCalledWith(7, [{ key: 'agacho_barra', cargaKg: 30 }]);
+      expect(bot.editMessageText).toHaveBeenCalled();
+    });
+
+    it('durante o deload sobe a partir da carga cheia, não da reduzida', async () => {
+      // Semeando com a carga da semana leve, aceitar a progressão viraria uma queda permanente.
+      const leve = comSugestao();
+      leve.exercicios[0] = { ...leve.exercicios[0], cargaKg: 27, cargaBaseKg: 30 };
+      (fichaService.buildToday as jest.Mock).mockResolvedValue(leve);
+      (progressionService.bumpLoads as jest.Mock).mockResolvedValue([{ key: 'agacho_barra', cargaKg: 32.5 }]);
+
+      await controller.handle(q('fx:prog'));
+
+      expect(progressionService.bumpLoads).toHaveBeenCalledWith(7, [{ key: 'agacho_barra', cargaKg: 30 }]);
+    });
+
+    it('avisa em vez de redesenhar quando não há nada liberado', async () => {
+      (progressionService.bumpLoads as jest.Mock).mockResolvedValue([]);
+      await controller.handle(q('fx:prog'));
+      expect(bot.answerCallbackQuery).toHaveBeenCalledWith('cb1', { text: 'Nada para subir ainda.' });
+      expect(bot.editMessageText).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('semana leve', () => {
+    it('ativa o deload e redesenha o card', async () => {
+      (progressionService.startDeload as jest.Mock).mockResolvedValue('2026-09-14');
+      await controller.handle(q('fx:deload'));
+      expect(progressionService.startDeload).toHaveBeenCalledWith(7, expect.any(String));
+      expect(bot.editMessageText).toHaveBeenCalled();
+    });
+
+    it('não diz que ativou quando o banco recusou', async () => {
+      (progressionService.startDeload as jest.Mock).mockResolvedValue(null);
+      await controller.handle(q('fx:deload'));
+      expect(bot.answerCallbackQuery).toHaveBeenCalledWith('cb1', { text: 'Não consegui ativar a semana leve.' });
+      expect(bot.editMessageText).not.toHaveBeenCalled();
+    });
   });
 
   it('não quebra em dia de descanso', async () => {

@@ -1,12 +1,11 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { mikaService } from '../../services/mika.service';
-import { habitsService } from '../../services/habits.service';
-import { workoutService } from '../../services/workout.service';
 import { redisService } from '../../services/redis.service';
 import { getMikaContext } from '../../utils/time';
 import { logger } from '../../utils/logger';
 import { fichaService } from './ficha.service';
 import { mainKeyboard, renderAlbum, renderFicha } from './render';
+import { currentStatus } from './card';
 import type { Ficha } from './types';
 
 const LOCK_KEY = 'lock:ficha_diaria';
@@ -52,17 +51,16 @@ export async function publishFicha(bot: TelegramBot, chatId: number, userId: num
   }
 
   await fichaService.saveSession(userId, ficha);
-  const [frase, trained, status] = await Promise.all([
+  const [frase, { trained, cardioDone }] = await Promise.all([
     provocacao(ficha),
-    workoutService.hasLoggedToday(userId).catch(() => false),
-    habitsService.getStatus(userId).catch(() => ({} as Record<string, boolean>)),
+    currentStatus(userId),
   ]);
 
   await sendAlbum(bot, chatId, ficha);
   if (frase) await bot.sendMessage(chatId, frase);
   await bot.sendMessage(chatId, renderFicha(ficha), {
     parse_mode: 'HTML',
-    reply_markup: { inline_keyboard: mainKeyboard(trained, !!status['cardio']) },
+    reply_markup: { inline_keyboard: mainKeyboard(ficha, trained, cardioDone) },
   });
   logger.info(`🏋️ Ficha "${ficha.planKey}" publicada para chat=${chatId}`);
   return true;

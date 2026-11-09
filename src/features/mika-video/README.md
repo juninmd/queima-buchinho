@@ -42,5 +42,5 @@ Liga sozinho quando há `assets/mika/mika.vrm` e Chromium; `MIKA_VIDEO=0` deslig
 
 - Render em WebGL por software: ~10 s de render por 1 s de vídeo (24 fps, 640 px). Serve ao relatório
   agendado, não a respostas de chat.
-- A imagem Docker instala `chromium` e `ffmpeg` (alpine); o WebGL por software no Chromium do alpine
+- A imagem Docker instala `chromium` e `ffmpeg` (Debian); o WebGL por software no Chromium (Debian)
   ainda não foi validado — conferir no primeiro deploy (`MIKA_VIDEO_DEBUG=1`, log `[MikaVideo]`).

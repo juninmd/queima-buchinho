@@ -54,3 +54,16 @@ body.nobg #mika-bg { opacity:0; }
 .sw input { display:none; } .sw i { width:34px; height:20px; border-radius:20px; background:var(--card2); position:relative; transition:background .25s; } .sw i::after { content:""; position:absolute; top:3px; left:3px; width:14px; height:14px; border-radius:50%; background:#fff; transition:transform .25s; }
 .sw input:checked + i { background:var(--accent); } .sw input:checked + i::after { transform:translateX(14px); }
 @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+
+/* próximo lembrete: mesh animado + ícone por tipo */
+.next { --c1:#34d399; --c2:#0ea5e9; --c3:#a78bfa; display:flex; align-items:center; gap:16px; position:relative; overflow:hidden; border:1px solid rgba(255,255,255,.18); color:#fff; background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.02)), #0b1a2a; box-shadow:0 14px 44px -10px var(--c1); isolation:isolate; }
+.next.k-refeicao { --c1:#fbbf24; --c2:#fb7185; --c3:#f59e0b; } .next.k-agua { --c1:#38bdf8; --c2:#22d3ee; --c3:#6366f1; } .next.k-fechamento { --c1:#f472b6; --c2:#c084fc; --c3:#6366f1; } .next.k-ficha { --c1:#34d399; --c2:#a3e635; --c3:#0ea5e9; }
+.orb { position:absolute; z-index:-1; width:190px; height:190px; border-radius:50%; filter:blur(38px); opacity:.75; animation:drift 9s ease-in-out infinite alternate; }
+.o1 { background:var(--c1); top:-70px; left:-50px; } .o2 { background:var(--c3); right:-60px; bottom:-90px; animation-duration:12s; animation-direction:alternate-reverse; }
+@keyframes drift { to { transform:translate(60px,26px) scale(1.25); } }
+.next::after { background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.22) 50%,transparent 70%); }
+.ico { position:relative; flex:none; width:60px; height:60px; border-radius:20px; display:grid; place-items:center; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); backdrop-filter:blur(8px); animation:bob 3.2s ease-in-out infinite; }
+.ico svg { width:30px; height:30px; } .ring { position:absolute; inset:-2px; border-radius:22px; border:2px solid var(--c1); animation:ping 2.4s ease-out infinite; }
+@keyframes bob { 50% { transform:translateY(-4px) rotate(-4deg); } } @keyframes ping { from { opacity:.9; transform:scale(1); } to { opacity:0; transform:scale(1.5); } }
+.ntx { flex:1; min-width:0; } .next small { opacity:.8; } .next .t { font-size:40px; color:#fff; text-shadow:0 2px 18px rgba(0,0,0,.25); } .next .n { color:#fff; opacity:.95; } .next .n.big { font-size:18px; margin-top:6px; }
+.eta { align-self:flex-start; font-size:11px; font-weight:700; padding:4px 10px; border-radius:99px; background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.22); animation:blink 2.4s ease-in-out infinite; } @keyframes blink { 50% { opacity:.6; } }

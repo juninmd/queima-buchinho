@@ -11,6 +11,15 @@ function row(r: Reminder, i: number): string {
 }
 const sw = (k: string, on: boolean, label: string): string => `<label class="sw"><input type="checkbox" data-set="${k}" ${on ? 'checked' : ''}><i></i>${label}</label>`;
 
+const ICON: Record<string, string> = {
+  ficha: '<path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/>',
+  refeicao: '<path d="M7 3v8a2 2 0 0 0 4 0V3M9 11v10M17 3c-2 2-3 5-3 8h3v10"/>',
+  agua: '<path d="M12 3s6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.2 12 3 12 3z"/>',
+  fechamento: '<path d="M21 12.8A9 9 0 1 1 11.200 3a7 7 0 0 0 9.800 9.800z"/>',
+};
+const icon = (k: string): string => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k] ?? ICON.agua}</svg>`;
+const eta = (t: string, now: number): string => { const m = Number(t.slice(0, 2)) * 60 + Number(t.slice(3)) - now; return m <= 0 ? 'agora' : m < 60 ? `em ${m} min` : `em ${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`; };
+
 export interface ViewState { today: Today; error: string; mika: string; chat: { me: boolean; text: string }[]; chatOpen: boolean; now: number; set: Settings }
 
 export function view(s: ViewState): string {
@@ -24,7 +33,11 @@ export function view(s: ViewState): string {
     <header><div><h1>Lembretes</h1><div class="sub">${s.today.streak} dias seguidos</div></div>
       <span class="badge ${isMock() ? '' : 'live'}">${isMock() ? 'dados de exemplo' : 'API conectada'}</span></header>
     <div class="glass mika"><div class="av">M</div><div><b>Mika</b><p>${esc(s.mika)}</p></div></div>
-    <div class="next"><small>Próximo lembrete</small><div class="t">${nxt ? nxt.time : '✓'}</div><div class="n">${nxt ? esc(nxt.title) : 'Tudo em dia hoje'}</div></div>
+    ${nxt ? `<div class="next k-${nxt.kind}"><span class="orb o1"></span><span class="orb o2"></span>
+      <div class="ico"><span class="ring"></span>${icon(nxt.kind)}</div>
+      <div class="ntx"><small>Próximo lembrete</small><div class="t">${nxt.time}</div><div class="n">${esc(nxt.title)}</div></div>
+      <span class="eta">${eta(nxt.time, s.now)}</span></div>`
+    : `<div class="next k-done"><span class="orb o1"></span><div class="ico">${icon('ficha').replace(/<path[^>]*>/, '<path d="M5 12.5l4.5 4.500L19 7.5"/>')}</div><div class="ntx"><small>Próximo lembrete</small><div class="n big">Tudo em dia hoje</div></div></div>`}
     <div class="glass"><div class="sub">Água · ${s.today.water.ml} / ${s.today.water.goalMl} ml</div><div class="bar"><i style="width:${pct}%"></i></div></div>
     <div class="glass list">${todo.map((r, i) => row(r, i)).join('') || '<div class="sub">Nada pendente 🎉</div>'}
       ${done.length ? `<button class="fold" data-fold aria-expanded="${!s.set.hideDone}"><span>${done.length} confirmados</span><i>▾</i></button>

@@ -1,4 +1,4 @@
-import { mockToday } from './mock';
+import { mockChat, mockMika, mockToday } from './mock';
 import type { Config, Today } from './types';
 
 const KEY = 'qb.lembretes.config';
@@ -37,4 +37,19 @@ export async function markHabit(key: string, done: boolean): Promise<void> {
 export async function addWater(ml: number): Promise<void> {
   const cfg = loadConfig();
   if (cfg) await call(cfg, 'POST', '/api/metrics', { type: 'water', value: ml });
+}
+
+const PROMPTS: Record<string, string> = {
+  ficha: 'Lembre-me do treino em 1 frase curta.', refeicao: 'Lembre-me de comer e marcar a refeição em 1 frase curta.',
+  agua: 'Me mande beber água em 1 frase curta.', fechamento: 'Avise que vai conferir meu dia em 1 frase curta.',
+};
+/** Frase da Mika para um lembrete (chat da API; cai no mock se offline). */
+export async function mikaLine(kind: string): Promise<string> {
+  const cfg = loadConfig();
+  if (cfg) try { return (await call<{ message: string }>(cfg, 'POST', '/api/mika/chat', { message: PROMPTS[kind] ?? PROMPTS.agua })).message; } catch { /* mock */ }
+  return mockMika(kind);
+}
+export async function mikaChat(message: string): Promise<string> {
+  const cfg = loadConfig();
+  return cfg ? (await call<{ message: string }>(cfg, 'POST', '/api/mika/chat', { message })).message : mockChat(message);
 }

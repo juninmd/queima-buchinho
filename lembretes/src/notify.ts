@@ -1,9 +1,22 @@
-import { mikaLine } from './api';
+import { mikaVoice, mikaLine } from './api';
+import type { Settings } from './settings';
 import type { Reminder } from './types';
 
-/** Notificação nativa (Tauri) no tom da Mika, com fallback para a Notification API. */
-export async function notify(r: Reminder): Promise<void> {
-  const body = await mikaLine(r.kind);
+let onSpeak: (v: boolean) => void = () => {};
+export const bindSpeak = (f: (v: boolean) => void): void => { onSpeak = f; };
+
+export function play(src: string): void {
+  const a = new Audio(src);
+  a.onplay = () => onSpeak(true); a.onended = a.onerror = () => onSpeak(false);
+  void a.play().catch(() => onSpeak(false));
+}
+
+/** Notificação nativa (Tauri) no tom da Mika; áudio opcional. Respeita as preferências. */
+export async function notify(r: Reminder, s: Settings): Promise<void> {
+  const v = s.audio ? await mikaVoice().catch(() => null) : null;
+  const body = v?.message ?? (await mikaLine(r.kind));
+  if (v?.audio) play(v.audio);
+  if (!s.notif) return;
   const title = `${r.time} · ${r.title}`;
   try {
     const n = await import('@tauri-apps/plugin-notification');

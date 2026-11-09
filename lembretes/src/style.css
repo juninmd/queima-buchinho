@@ -1,4 +1,4 @@
-:root { color-scheme: dark; --bg:#070a14; --glass:rgba(255,255,255,.055); --line:rgba(255,255,255,.1); --text:#eef1fb; --muted:#9aa3c2; --g:#34d399; --p:#c084fc; --pk:#f472b6; --b:#38bdf8; font-family: Inter, system-ui, sans-serif; }
+:root { color-scheme: dark; --bg:#070a14; --glass:rgba(255,255,255,.055); --line:rgba(255,255,255,.1); --text:#eef1fb; --muted:#9aa3c2; --g:#34d399; --p:#c084fc; --pk:#f472b6; --b:#38bdf8; --card2:rgba(255,255,255,.12); --accent:#34d399; font-family: Inter, system-ui, sans-serif; }
 * { box-sizing: border-box; }
 body { margin:0; color:var(--text); min-height:100vh; background: radial-gradient(600px 400px at 10% -5%, rgba(192,132,252,.28), transparent), radial-gradient(500px 400px at 100% 10%, rgba(52,211,153,.18), transparent), var(--bg); background-attachment: fixed; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
 .wrap { max-width: 440px; margin: 0 auto; padding: 18px 16px 90px; display:flex; flex-direction:column; gap:14px; }
@@ -28,3 +28,27 @@ details summary { cursor:pointer; color:var(--muted); font-size:13px; }
 .chat { display:flex; flex-direction:column; gap:8px; max-height:38vh; overflow:auto; } .chat div { padding:8px 12px; border-radius:14px; font-size:13px; max-width:85%; }
 .chat .me { align-self:flex-end; background:rgba(56,189,248,.2); } .chat .ai { background:rgba(192,132,252,.2); }
 body.widget .wrap { max-width: 340px; padding: 12px 12px 80px; gap:10px; } body.widget .next .t { font-size:32px; }
+
+/* v2: animações, cards, colapso, ajustes e fundo 3D */
+#mika-bg { position:fixed; inset:0; width:100%; height:100%; z-index:-1; opacity:.42; pointer-events:none; transition:opacity .6s; mask-image:linear-gradient(to top, transparent 0, #000 35%); }
+body.nobg #mika-bg { opacity:0; }
+.glass { transition:transform .25s, border-color .25s, box-shadow .25s; }
+.glass:hover { border-color:rgba(255,255,255,.2); box-shadow:0 10px 36px rgba(0,0,0,.35); }
+.wrap > * { animation: rise .55s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--n, 0) * 70ms); }
+.wrap > :nth-child(1){--n:0}.wrap > :nth-child(2){--n:1}.wrap > :nth-child(3){--n:2}.wrap > :nth-child(4){--n:3}.wrap > :nth-child(5){--n:4}.wrap > :nth-child(6){--n:5}
+.row { animation: rise .45s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 40ms + .2s); }
+@keyframes rise { from { opacity:0; transform:translateY(14px) scale(.98); } to { opacity:1; transform:none; } }
+.mika .av { animation: pulse 3s ease-in-out infinite; } @keyframes pulse { 50% { box-shadow:0 0 34px rgba(244,114,182,.85); } }
+.next { position:relative; overflow:hidden; } .next::after { content:""; position:absolute; inset:0; background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%); transform:translateX(-120%); animation: shine 5s 1s infinite; }
+@keyframes shine { to { transform:translateX(120%); } }
+.bar i { transition:width .6s cubic-bezier(.2,.8,.2,1); }
+.row button { transition:transform .15s; } .row button:active, .fab:active { transform:scale(.92); }
+.fab { transition:transform .2s; } .fab:hover { transform:scale(1.08) rotate(-6deg); }
+.chk { color:var(--g); font-weight:700; }
+.fold { width:100%; display:flex; justify-content:space-between; margin-top:6px; background:transparent; border:0; border-top:1px solid var(--line); border-radius:0; color:var(--muted); padding:10px 2px 2px; }
+.fold i { font-style:normal; transition:transform .35s; } .fold[aria-expanded="false"] i { transform:rotate(-90deg); }
+.drawer { display:grid; grid-template-rows:0fr; transition:grid-template-rows .4s cubic-bezier(.2,.8,.2,1), opacity .3s; opacity:0; } .drawer.open { grid-template-rows:1fr; opacity:1; } .drawer > div { overflow:hidden; }
+.sws { display:flex; flex-wrap:wrap; gap:10px; margin:10px 0; } .sw { display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; }
+.sw input { display:none; } .sw i { width:34px; height:20px; border-radius:20px; background:var(--card2); position:relative; transition:background .25s; } .sw i::after { content:""; position:absolute; top:3px; left:3px; width:14px; height:14px; border-radius:50%; background:#fff; transition:transform .25s; }
+.sw input:checked + i { background:var(--accent); } .sw input:checked + i::after { transform:translateX(14px); }
+@media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }

@@ -53,3 +53,11 @@ export async function mikaChat(message: string): Promise<string> {
   const cfg = loadConfig();
   return cfg ? (await call<{ message: string }>(cfg, 'POST', '/api/mika/chat', { message })).message : mockChat(message);
 }
+
+/** Mika fala: texto + áudio (mp3 base64) de /api/mika/motivar; sem API devolve só texto de exemplo. */
+export async function mikaVoice(): Promise<{ message: string; audio: string | null }> {
+  const cfg = loadConfig();
+  if (!cfg) return { message: mockMika('ficha'), audio: null };
+  const r = await call<{ message: string; audioBase64: string | null }>(cfg, 'POST', '/api/mika/motivar');
+  return { message: r.message, audio: r.audioBase64 ? `data:audio/mpeg;base64,${r.audioBase64}` : null };
+}

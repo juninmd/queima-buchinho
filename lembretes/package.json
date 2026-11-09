@@ -7,14 +7,19 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "tauri": "tauri",
-    "test": "vitest run"
+    "test": "vitest run",
+    "predev": "node scripts/copy-vrm.mjs",
+    "prebuild": "node scripts/copy-vrm.mjs"
   },
   "dependencies": {
+    "@pixiv/three-vrm": "3.3.3",
     "@tauri-apps/api": "^2.1.0",
-    "@tauri-apps/plugin-notification": "^2.0.0"
+    "@tauri-apps/plugin-notification": "^2.0.0",
+    "three": "0.170.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.1.0",
+    "@types/three": "0.170.0",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
     "vitest": "^3.2.4"

@@ -13,7 +13,10 @@ New-Item -ItemType Directory -Path $Dir | Out-Null
 
 try {
   # 1) Chave do updater do Tauri
-  bunx tauri signer generate --ci -p $Pass -w "$Dir\updater.key"
+  bun install
+  if ($LASTEXITCODE) { throw 'bun install falhou' }
+  bun run tauri signer generate --ci -p $Pass -w "$Dir\updater.key"
+  if ($LASTEXITCODE -or -not (Test-Path "$Dir\updater.key")) { throw 'tauri signer generate falhou' }
   Get-Content "$Dir\updater.key" -Raw | gh secret set TAURI_SIGNING_PRIVATE_KEY --repo $Repo
   gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --repo $Repo --body $Pass
   Get-Content "$Dir\updater.key.pub" -Raw | gh secret set TAURI_UPDATER_PUBKEY --repo $Repo
@@ -21,6 +24,7 @@ try {
   # 2) Keystore fixa do Android
   keytool -genkeypair -keystore "$Dir\ks.jks" -alias lembretes -keyalg RSA -keysize 2048 -validity 10000 `
     -storepass $Pass -keypass $Pass -dname "CN=Queima Lembretes"
+  if ($LASTEXITCODE -or -not (Test-Path "$Dir\ks.jks")) { throw 'keytool falhou' }
   $b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("$Dir\ks.jks"))
   gh secret set ANDROID_KEYSTORE_BASE64 --repo $Repo --body $b64
   gh secret set ANDROID_KEYSTORE_PASSWORD --repo $Repo --body $Pass

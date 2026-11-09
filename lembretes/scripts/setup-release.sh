@@ -6,7 +6,7 @@ DIR="$(mktemp -d)"; trap 'rm -rf "$DIR"' EXIT
 PASS="$(openssl rand -base64 24)"
 
 # 1) Chave do updater do Tauri (assinatura dos instaladores)
-bunx tauri signer generate --ci -p "$PASS" -w "$DIR/updater.key"
+bun install && bun run tauri signer generate --ci -p "$PASS" -w "$DIR/updater.key"
 gh secret set TAURI_SIGNING_PRIVATE_KEY --repo "$REPO" < "$DIR/updater.key"
 gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --repo "$REPO" --body "$PASS"
 gh secret set TAURI_UPDATER_PUBKEY --repo "$REPO" < "$DIR/updater.key.pub"

@@ -79,3 +79,5 @@ body.nobg #mika-bg { opacity:0; }
 body.widget .bubble { right:10px; }
 
 body { position:relative; overflow-x:hidden; }
+
+.upd { display:flex; justify-content:space-between; align-items:center; gap:10px; border-color:var(--g); box-shadow:0 0 28px rgba(52,211,153,.25); } .upd a { text-decoration:none; color:#04231a; background:linear-gradient(135deg,var(--g),#10b981); padding:8px 14px; border-radius:12px; font-weight:700; font-size:13px; }

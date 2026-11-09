@@ -20,7 +20,7 @@ const ICON: Record<string, string> = {
 const icon = (k: string): string => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k] ?? ICON.agua}</svg>`;
 const eta = (t: string, now: number): string => { const m = Number(t.slice(0, 2)) * 60 + Number(t.slice(3)) - now; return m <= 0 ? 'agora' : m < 60 ? `em ${m} min` : `em ${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`; };
 
-export interface ViewState { today: Today; error: string; mika: string; chat: { me: boolean; text: string }[]; chatOpen: boolean; now: number; set: Settings }
+export interface ViewState { today: Today; error: string; mika: string; chat: { me: boolean; text: string }[]; chatOpen: boolean; now: number; set: Settings; update: import('./update').UpdateInfo | null; updating: boolean }
 
 export function view(s: ViewState): string {
   const list = buildReminders(s.today);
@@ -32,6 +32,7 @@ export function view(s: ViewState): string {
   return `<div class="wrap">
     <header><div><h1>Lembretes</h1><div class="sub">${s.today.streak} dias seguidos</div></div>
       <span class="badge ${isMock() ? '' : 'live'}">${isMock() ? 'dados de exemplo' : 'API conectada'}</span></header>
+    ${s.update ? `<div class="glass upd"><span>Nova versão <b>${esc(s.update.version)}</b></span>${s.update.kind === 'apk' ? `<a class="ok" href="${esc(s.update.url ?? '#')}" target="_blank" rel="noopener">Baixar APK</a>` : `<button class="ok" id="upd" ${s.updating ? 'disabled' : ''}>${s.updating ? 'Instalando…' : 'Atualizar e reiniciar'}</button>`}</div>` : ''}
     <div class="glass mika"><div class="av">M</div><div><b>Mika</b><p>${esc(s.mika)}</p></div></div>
     ${nxt ? `<div class="next k-${nxt.kind}"><span class="orb o1"></span><span class="orb o2"></span>
       <div class="ico"><span class="ring"></span>${icon(nxt.kind)}</div>

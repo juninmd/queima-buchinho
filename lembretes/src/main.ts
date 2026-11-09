@@ -5,13 +5,14 @@ import { MikaBg } from './mika3d';
 import { bindSpeak, notify } from './notify';
 import { loadSettings, saveSettings } from './settings';
 import { buildReminders, due, nextPending } from './reminders';
+import { checkUpdate } from './update';
 import { view, type ViewState } from './view';
 
 const app = document.getElementById('app')!;
 const q = new URLSearchParams(location.search);
 if (q.has('widget')) document.body.classList.add('widget');
 const clock = (): number => (q.get('now') ? Number(q.get('now')) : new Date().getHours() * 60 + new Date().getMinutes());
-const st: ViewState = { today: mockToday(), error: '', mika: 'Carregando minha paciência…', chat: [], chatOpen: q.has('chat'), now: clock(), set: loadSettings() };
+const st: ViewState = { today: mockToday(), error: '', mika: 'Carregando minha paciência…', chat: [], chatOpen: q.has('chat'), now: clock(), set: loadSettings(), update: null, updating: false };
 const val = (id: string): string => (document.getElementById(id) as HTMLInputElement).value;
 
 const canvas = document.createElement('canvas'); canvas.id = 'mika-bg'; document.body.prepend(canvas);
@@ -35,6 +36,7 @@ app.addEventListener('click', async (e) => {
   else if (el.id === 'save') { saveConfig({ baseUrl: val('url'), token: val('tok') }); await refresh(); }
   else if (el.id === 'reset') { clearConfig(); await refresh(); }
   else if (el.id === 'notif') { const r = nextPending(buildReminders(st.today), 0); if (r) await notify(r, st.set); }
+  else if (el.id === 'upd' && st.update?.apply) { st.updating = true; render(); await st.update.apply().catch(() => { st.updating = false; render(); }); }
   else if (el.id === 'fab') { st.chatOpen = !st.chatOpen; render(); }
   else if (el.id === 'send' && val('msg').trim()) {
     const text = val('msg').trim(); st.chat.push({ me: true, text }); render();
@@ -49,3 +51,4 @@ let last = clock();
 setInterval(() => { const now = clock(); due(buildReminders(st.today), last, now).forEach((r) => void notify(r, st.set)); last = now; render(); }, 30_000);
 setInterval(() => void refresh(), 5 * 60_000);
 render(); void refresh();
+void checkUpdate().then((u) => { st.update = u; render(); });

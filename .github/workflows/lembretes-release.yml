@@ -1,0 +1,125 @@
+name: Lembretes Release
+
+# Commits semânticos em lembretes/ no master → tag lembretes-vX.Y.Z → release com instaladores
+# (Linux/Windows/macOS assinados + latest.json do updater) e APK Android.
+on:
+  push:
+    branches: [master]
+    paths: ['lembretes/**', '.github/workflows/lembretes-release.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lembretes-release
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.p.outputs.release }}
+      version: ${{ steps.p.outputs.version }}
+      tag: ${{ steps.p.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - id: p
+        run: node lembretes/scripts/plan.mjs
+      - name: Exige chaves do updater
+        if: steps.p.outputs.release == 'true'
+        env: { K: '${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}', P: '${{ secrets.TAURI_UPDATER_PUBKEY }}' }
+        run: test -n "$K" && test -n "$P" || { echo "::error::Defina TAURI_SIGNING_PRIVATE_KEY e TAURI_UPDATER_PUBKEY (veja lembretes/README.md)"; exit 1; }
+      - name: Release em rascunho (idempotente)
+        if: steps.p.outputs.release == 'true'
+        env: { NOTES: '${{ steps.p.outputs.notes }}', TAG: '${{ steps.p.outputs.tag }}' }
+        run: gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --target "$GITHUB_SHA" --title "Queima Lembretes $TAG" --notes "$NOTES"
+
+  desktop:
+    needs: plan
+    if: needs.plan.outputs.release == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [{ os: ubuntu-latest, args: '' }, { os: windows-latest, args: '' }, { os: macos-latest, args: '--target universal-apple-darwin' }]
+    runs-on: ${{ matrix.os }}
+    defaults: { run: { working-directory: lembretes } }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: "${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}" }
+      - if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - run: node scripts/set-version.mjs ${{ needs.plan.outputs.version }}
+      - name: Config do updater (chave pública + endpoint fixo)
+        shell: bash
+        env: { PUB: '${{ secrets.TAURI_UPDATER_PUBKEY }}' }
+        run: |
+          node -e "require('fs').writeFileSync('src-tauri/tauri.release.conf.json', JSON.stringify({bundle:{createUpdaterArtifacts:true},app:{security:{capabilities:['default','updater']}},plugins:{updater:{pubkey:process.env.PUB,endpoints:['https://github.com/${{ github.repository }}/releases/download/lembretes-latest/latest.json']}}}))"
+      - run: bun install
+      - run: bun run tauri icon ../dashboard/public/icons/icon-512.png
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: lembretes
+          tagName: ${{ needs.plan.outputs.tag }}
+          releaseDraft: true
+          includeUpdaterJson: true
+          args: --features updater --config src-tauri/tauri.release.conf.json ${{ matrix.args }}
+
+  android:
+    needs: plan
+    if: needs.plan.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: lembretes } }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-java@v6
+        with: { distribution: temurin, java-version: 21 }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: 'aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android' }
+      - run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0" >/dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
+      - run: node scripts/set-version.mjs ${{ needs.plan.outputs.version }}
+      - run: bun install && bun run tauri icon ../dashboard/public/icons/icon-512.png
+      - run: bun run tauri android init && bun run tauri android build --apk
+      - name: Assina o APK (keystore fixa, senão o Android recusa a atualização)
+        env: { KS: '${{ secrets.ANDROID_KEYSTORE_BASE64 }}', KP: '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}', KA: '${{ secrets.ANDROID_KEY_ALIAS }}' }
+        run: |
+          APK=$(ls src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk | head -1)
+          OUT="Queima-Lembretes_${{ needs.plan.outputs.version }}.apk"
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > ks.jks
+            "$ANDROID_HOME/build-tools/34.0.0/zipalign" -f -p 4 "$APK" aligned.apk
+            "$ANDROID_HOME/build-tools/34.0.0/apksigner" sign --ks ks.jks --ks-pass env:KP --ks-key-alias "$KA" --out "$OUT" aligned.apk
+            rm -f ks.jks
+          else
+            echo "::warning::Sem ANDROID_KEYSTORE_BASE64: APK sem assinatura fixa não atualiza por cima do anterior"; cp "$APK" "$OUT"
+          fi
+          gh release upload "${{ needs.plan.outputs.tag }}" "$OUT" --clobber
+
+  publish:
+    needs: [plan, desktop, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verifica latest.json e publica
+        env: { TAG: '${{ needs.plan.outputs.tag }}', V: '${{ needs.plan.outputs.version }}' }
+        run: |
+          gh release download "$TAG" -p latest.json -D out
+          node -e "const m=require('./out/latest.json');if(m.version!==process.env.V)throw new Error('versão do manifesto: '+m.version);const p=Object.keys(m.platforms);if(!p.some(k=>k.startsWith('linux'))||!p.some(k=>k.startsWith('windows'))||!p.some(k=>k.startsWith('darwin')))throw new Error('plataformas faltando: '+p);for(const x of Object.values(m.platforms))if(!x.signature||!x.url)throw new Error('assinatura/URL ausente')"
+          gh release view "$TAG" --json assets -q '.assets[].name' | grep -q '\.apk$'
+          gh release edit "$TAG" --draft=false
+          # Endpoint estável do updater (release fixa, fora do "latest" do repo)
+          gh release view lembretes-latest >/dev/null 2>&1 || gh release create lembretes-latest --prerelease --title "Lembretes: manifesto do updater" --notes "Atualizado automaticamente pelo release." 
+          gh release upload lembretes-latest out/latest.json --clobber

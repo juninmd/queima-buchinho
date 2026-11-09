@@ -1,0 +1,23 @@
+:root { color-scheme: dark; --bg:#0b1120; --card:#141d30; --card2:#1a2540; --line:#263254; --text:#e7ecf6; --muted:#8b98b4; --accent:#22c55e; --warn:#eab308; font-family: Inter, system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--text); min-height:100vh; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+.wrap { max-width: 440px; margin: 0 auto; padding: 16px; display:flex; flex-direction:column; gap:12px; }
+header { display:flex; justify-content:space-between; align-items:center; }
+h1 { font-size:18px; margin:0; } .sub { color:var(--muted); font-size:12px; }
+.badge { font-size:11px; padding:3px 8px; border-radius:99px; background:var(--card2); color:var(--warn); border:1px solid var(--line); }
+.badge.live { color:var(--accent); }
+.next { background:linear-gradient(135deg,#14532d,#166534 60%,#15803d); border-radius:16px; padding:16px; }
+.next small { opacity:.8; text-transform:uppercase; letter-spacing:.06em; font-size:11px; }
+.next .t { font-size:34px; font-weight:700; line-height:1.1; } .next .n { font-size:15px; margin-top:2px; }
+.bar { height:8px; background:var(--card2); border-radius:99px; overflow:hidden; } .bar i { display:block; height:100%; background:#38bdf8; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; }
+.row { display:flex; align-items:center; gap:12px; padding:10px 2px; border-bottom:1px solid var(--line); }
+.row:last-child { border:0; } .row .time { font-family:ui-monospace,monospace; color:var(--muted); width:48px; font-size:13px; }
+.row .main { flex:1; } .row .main b { font-size:14px; } .row .main div { font-size:12px; color:var(--muted); }
+.row.done { opacity:.45; } .row.done b { text-decoration:line-through; }
+button { background:var(--card2); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:7px 12px; font:inherit; font-size:13px; cursor:pointer; }
+button.ok { background:var(--accent); color:#04210f; border:0; font-weight:600; }
+.actions { display:flex; gap:8px; } .actions button { flex:1; }
+input { width:100%; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:9px; margin:4px 0 8px; font:inherit; }
+details summary { cursor:pointer; color:var(--muted); font-size:13px; }
+body.widget .wrap { max-width: 340px; padding: 10px; gap:8px; } body.widget .next .t { font-size:26px; }

@@ -34,3 +34,4 @@ Secrets do repositório: `TAURI_SIGNING_PRIVATE_KEY` (conteúdo da chave privada
 `TAURI_UPDATER_PUBKEY` (conteúdo do `.key.pub`) e, para o APK atualizar por cima, `ANDROID_KEYSTORE_BASE64`,
 `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`. Nunca commite a chave privada.
 - `scripts/setup-release.sh`: gera as chaves e grava todos os secrets de uma vez (precisa de `gh` logado com permissão de admin).
+- `scripts/setup-release.ps1`: o mesmo, para Windows/PowerShell.

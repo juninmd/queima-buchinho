@@ -39,8 +39,12 @@ export function view(s: ViewState): string {
       <span class="eta">${eta(nxt.time, s.now)}</span></div>`
     : `<div class="next k-done"><span class="orb o1"></span><div class="ico">${icon('ficha').replace(/<path[^>]*>/, '<path d="M5 12.5l4.5 4.500L19 7.5"/>')}</div><div class="ntx"><small>Próximo lembrete</small><div class="n big">Tudo em dia hoje</div></div></div>`}
     <div class="glass"><div class="sub">Água · ${s.today.water.ml} / ${s.today.water.goalMl} ml</div><div class="bar"><i style="width:${pct}%"></i></div></div>
-    <div class="glass list">${todo.map((r, i) => row(r, i)).join('') || '<div class="sub">Nada pendente 🎉</div>'}
-      ${done.length ? `<button class="fold" data-fold aria-expanded="${!s.set.hideDone}"><span>${done.length} confirmados</span><i>▾</i></button>
+    <div class="glass list">
+      <div class="sum"><div><b>${list.length}</b> atividades<div class="sub">${done.length} feitas · ${todo.length} pendentes</div></div>
+        <div class="ring2" style="--p:${Math.round((done.length / list.length) * 100)}"><span>${Math.round((done.length / list.length) * 100)}%</span></div></div>
+      <button class="fold top" data-fold="hidePending" aria-expanded="${!s.set.hidePending}"><span>${todo.length} pendentes</span><i>▾</i></button>
+      <div class="drawer ${s.set.hidePending ? '' : 'open'}"><div>${todo.map((r, i) => row(r, i)).join('') || '<div class="sub pad">Nada pendente 🎉</div>'}</div></div>
+      ${done.length ? `<button class="fold" data-fold="hideDone" aria-expanded="${!s.set.hideDone}"><span>${done.length} confirmados</span><i>▾</i></button>
       <div class="drawer ${s.set.hideDone ? '' : 'open'}"><div>${done.map((r, i) => row(r, i)).join('')}</div></div>` : ''}</div>
     ${s.chatOpen ? `<div class="glass"><div class="chat">${msgs}</div><input id="msg" placeholder="Fale com a Mika…" /><div class="actions"><button class="ok" id="send">Enviar</button></div></div>` : ''}
     <details class="glass"><summary>Ajustes</summary>
@@ -49,5 +53,5 @@ export function view(s: ViewState): string {
       <input id="tok" type="password" placeholder="Token (DASHBOARD_TOKEN)" value="${esc(cfg?.token ?? '')}" />
       ${s.error ? `<div class="sub">⚠️ ${esc(s.error)}</div>` : ''}
       <div class="actions"><button id="save" class="ok">Salvar</button><button id="reset">Usar exemplo</button><button id="notif">Testar 🔔</button></div></details>
-    <button class="fab" id="fab" aria-label="Falar com a Mika">💬</button></div>`;
+    <button class="bubble" id="fab" aria-label="Falar com a Mika">💬 Fale comigo</button></div>`;
 }

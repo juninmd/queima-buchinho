@@ -28,7 +28,8 @@ async function refresh(): Promise<void> {
 
 app.addEventListener('click', async (e) => {
   const el = e.target as HTMLElement;
-  if (el.closest('[data-fold]')) { st.set.hideDone = !st.set.hideDone; saveSettings(st.set); const b = el.closest('[data-fold]')!; b.setAttribute('aria-expanded', String(!st.set.hideDone)); b.nextElementSibling?.classList.toggle('open', !st.set.hideDone); }
+  const fold = el.closest<HTMLElement>('[data-fold]');
+  if (fold) { const k = fold.dataset.fold as 'hideDone' | 'hidePending'; st.set[k] = !st.set[k]; saveSettings(st.set); fold.setAttribute('aria-expanded', String(!st.set[k])); fold.nextElementSibling?.classList.toggle('open', !st.set[k]); }
   else if (el.dataset.habit) { await markHabit(el.dataset.habit, true); if (isMock()) st.today.habits[el.dataset.habit] = true; await refresh(); }
   else if (el.dataset.water) { await addWater(250); if (isMock()) st.today.water.ml += 250; await refresh(); }
   else if (el.id === 'save') { saveConfig({ baseUrl: val('url'), token: val('tok') }); await refresh(); }

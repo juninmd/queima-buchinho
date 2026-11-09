@@ -67,3 +67,13 @@ body.nobg #mika-bg { opacity:0; }
 @keyframes bob { 50% { transform:translateY(-4px) rotate(-4deg); } } @keyframes ping { from { opacity:.9; transform:scale(1); } to { opacity:0; transform:scale(1.5); } }
 .ntx { flex:1; min-width:0; } .next small { opacity:.8; } .next .t { font-size:40px; color:#fff; text-shadow:0 2px 18px rgba(0,0,0,.25); } .next .n { color:#fff; opacity:.95; } .next .n.big { font-size:18px; margin-top:6px; }
 .eta { align-self:flex-start; font-size:11px; font-weight:700; padding:4px 10px; border-radius:99px; background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.22); animation:blink 2.4s ease-in-out infinite; } @keyframes blink { 50% { opacity:.6; } }
+
+/* resumo do dia + balão da Mika */
+.sum { display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; } .sum b { font-size:26px; font-family:inherit; } .sum .sub { margin-top:2px; }
+.ring2 { --p:0; width:52px; height:52px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(var(--g) calc(var(--p) * 1%), rgba(255,255,255,.1) 0); transition:--p .6s; } .ring2 span { width:40px; height:40px; border-radius:50%; background:#0d1220; display:grid; place-items:center; font-size:12px; font-weight:700; }
+.fold.top { margin-top:0; border-top:1px solid var(--line); } .pad { padding:10px 2px; }
+.fab { display:none; }
+.bubble { position:fixed; top:70px; right:14px; z-index:5; display:flex; gap:6px; align-items:center; padding:9px 14px; border-radius:18px 18px 4px 18px; border:0; color:#2a0a3a; font-weight:700; font-size:13px; background:linear-gradient(135deg,#f5d0fe,#fbcfe8); box-shadow:0 8px 26px rgba(244,114,182,.45); animation:float 3.4s ease-in-out infinite; }
+.bubble::after { content:""; position:absolute; left:-7px; bottom:6px; border:7px solid transparent; border-right-color:#f5d0fe; border-left:0; }
+@keyframes float { 50% { transform:translateY(-5px); } } .bubble:active { transform:scale(.94); }
+body.widget .bubble { right:10px; }

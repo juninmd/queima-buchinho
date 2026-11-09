@@ -14,13 +14,16 @@ COPY dashboard/ ./
 RUN bun run build
 
 # Stage 3: Production
-FROM oven/bun:1-alpine
+FROM oven/bun:1-debian
 WORKDIR /app
 
 # Instalar Python e edge-tts para o TTS da Mika
 # Vídeo da Mika (src/features/mika-video): Chromium headless renderiza o VRM em WebGL por software e o ffmpeg monta o mp4.
-RUN apk add --no-cache python3 py3-pip curl font-dejavu chromium ffmpeg && \
-    pip install edge-tts --break-system-packages
+# Debian (glibc): o Chromium do alpine não traz o SwiftShader, então o WebGL por software falhava
+# e o vídeo da Mika nunca era gerado (caía sempre na voz).
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip curl fonts-dejavu-core chromium ffmpeg && \
+    pip install edge-tts --break-system-packages && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY package.json bun.lock* ./

@@ -1,0 +1,43 @@
+name: Lembretes (Tauri)
+
+on:
+  pull_request:
+    paths: ['lembretes/**', '.github/workflows/lembretes.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: lembretes } }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - run: bun install && bun run test
+      - run: bun run tauri icon ../dashboard/public/icons/icon-512.png
+      - run: bun run tauri build --bundles deb
+      - uses: actions/upload-artifact@v4
+        with: { name: lembretes-desktop, path: lembretes/src-tauri/target/release/bundle/deb/*.deb }
+  android:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: lembretes } }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-java@v6
+        with: { distribution: temurin, java-version: 21 }
+      - name: NDK (SDK já vem no runner)
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0" >/dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: 'aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android' }
+      - run: bun install
+      - run: bun run tauri icon ../dashboard/public/icons/icon-512.png
+      - run: bun run tauri android init
+      - run: bun run tauri android build --apk --debug
+      - uses: actions/upload-artifact@v4
+        with: { name: lembretes-apk, path: lembretes/src-tauri/gen/android/app/build/outputs/apk/**/*.apk }

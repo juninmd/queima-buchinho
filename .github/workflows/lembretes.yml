@@ -29,7 +29,10 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: 21 }
-      - uses: android-actions/setup-android@v3
+      - name: NDK (SDK já vem no runner)
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.0.12077973" "platforms;android-34" "build-tools;34.0.0" >/dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: 'aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android' }
       - run: bun install

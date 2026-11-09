@@ -39,14 +39,17 @@ export class MikaBg {
       const t = clock.elapsedTime, dt = clock.getDelta();
       const head = vrm.humanoid.getNormalizedBoneNode('head');
       const hy = head ? head.getWorldPosition(new THREE.Vector3()).y : 1.4;
-      cam.position.set(0, hy - 0.2, 2.7); cam.lookAt(0, hy - 0.4, 0);
+      cam.position.set(0, hy + 0.04, 1.15); cam.lookAt(0, hy + 0.03, 0);
       this.look.position.set(this.mouse.x * 1.2, hy - this.mouse.y, 1.5);
       const spine = vrm.humanoid.getNormalizedBoneNode('chest'); if (spine) spine.rotation.x = Math.sin(t * 1.6) * 0.015;
       const em = vrm.expressionManager;
       if (em) {
         em.setValue('blink', Math.sin(t * 0.9) > 0.985 ? 1 : 0);
         em.setValue('happy', 0.25 + 0.1 * Math.sin(t * 0.5));
-        em.setValue('aa', this.speaking ? 0.25 + 0.35 * Math.abs(Math.sin(t * 11)) : 0);
+        const k = this.speaking ? 1 : 0;
+        em.setValue('aa', k * 0.55 * Math.max(0, Math.sin(t * 12)));
+        em.setValue('ih', k * 0.3 * Math.max(0, Math.sin(t * 7.3 + 1)));
+        em.setValue('ou', k * 0.3 * Math.max(0, Math.sin(t * 5.1 + 2)));
       }
       vrm.update(Math.min(dt, 1 / 30)); r.render(scene, cam);
     };

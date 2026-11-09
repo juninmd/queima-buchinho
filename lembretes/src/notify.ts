@@ -16,6 +16,10 @@ export async function notify(r: Reminder, s: Settings): Promise<void> {
   const v = s.audio ? await mikaVoice().catch(() => null) : null;
   const body = v?.message ?? (await mikaLine(r.kind));
   if (v?.audio) play(v.audio);
+  else if (s.audio && 'speechSynthesis' in window) {
+    const u = new SpeechSynthesisUtterance(body); u.lang = 'pt-BR'; u.pitch = 1.4;
+    u.onstart = () => onSpeak(true); u.onend = u.onerror = () => onSpeak(false); speechSynthesis.speak(u);
+  }
   if (!s.notif) return;
   const title = `${r.time} · ${r.title}`;
   try {

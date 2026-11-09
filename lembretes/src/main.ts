@@ -16,7 +16,7 @@ const val = (id: string): string => (document.getElementById(id) as HTMLInputEle
 
 const canvas = document.createElement('canvas'); canvas.id = 'mika-bg'; document.body.prepend(canvas);
 const bg = new MikaBg(canvas); bindSpeak((v) => bg.setSpeaking(v));
-const applyBg = (): void => { document.body.classList.toggle("nobg", !st.set.bg); };
+const applyBg = (): void => { document.body.classList.toggle("nobg", !st.set.bg); document.body.classList.toggle("hasbg", st.set.bg); };
 const render = (): void => { st.now = clock(); app.innerHTML = view(st); applyBg(); };
 
 async function refresh(): Promise<void> {

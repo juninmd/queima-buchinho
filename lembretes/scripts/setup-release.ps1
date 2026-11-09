@@ -4,7 +4,10 @@ param([string]$Repo = 'juninmd/queima-buchinho')
 $ErrorActionPreference = 'Stop'
 
 $chars = [char[]]([char]'a'..[char]'z' + [char]'A'..[char]'Z' + [char]'0'..[char]'9')
-$Pass = -join (1..32 | ForEach-Object { $chars[[System.Security.Cryptography.RandomNumberGenerator]::GetInt32($chars.Length)] })
+$bytes = New-Object byte[] 32
+$rng = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
+$rng.GetBytes($bytes)
+$Pass = -join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] })
 $Dir = Join-Path $env:TEMP ("lembretes-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $Dir | Out-Null
 

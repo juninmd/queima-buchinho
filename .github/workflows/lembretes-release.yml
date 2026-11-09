@@ -45,11 +45,11 @@ jobs:
         if: steps.p.outputs.release == 'true'
         env: { NOTES: '${{ steps.p.outputs.notes }}', TAG: '${{ steps.p.outputs.tag }}' }
         run: |
-          find_id() { gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --paginate -q ".[] | select(.tag_name==\"$TAG\") | .id" | head -1; }
-          ID=$(find_id)
+          # rascunhos aparecem com tag_name "untagged-..."; por isso a busca é pelo título
+          T="Queima Lembretes $TAG"
+          ID=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --paginate -q ".[] | select(.name==\"$T\") | .id" | head -1)
           if [ -z "$ID" ]; then
-            gh release create "$TAG" --draft --target "$GITHUB_SHA" --title "Queima Lembretes $TAG" --notes "$NOTES"
-            ID=$(find_id)
+            ID=$(gh api "repos/$GITHUB_REPOSITORY/releases" -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" -f name="$T" -f body="$NOTES" -F draft=true -q .id)
           fi
           test -n "$ID"
           echo "release_id=$ID" >> "$GITHUB_OUTPUT"
@@ -118,7 +118,7 @@ jobs:
             "$ANDROID_HOME/build-tools/34.0.0/apksigner" sign --ks ks.jks --ks-pass env:KP --ks-key-alias "$KA" --out "$OUT" aligned.apk
             rm -f ks.jks
           fi
-          gh release upload "${{ needs.plan.outputs.tag }}" "$OUT" --clobber
+          gh api --method POST "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/${{ needs.plan.outputs.release_id }}/assets?name=$OUT" -H "Content-Type: application/vnd.android.package-archive" --input "$OUT" >/dev/null
 
   publish:
     needs: [plan, desktop, android]
@@ -127,12 +127,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Verifica latest.json e publica
-        env: { TAG: '${{ needs.plan.outputs.tag }}', V: '${{ needs.plan.outputs.version }}' }
+        env: { TAG: '${{ needs.plan.outputs.tag }}', V: '${{ needs.plan.outputs.version }}', RID: '${{ needs.plan.outputs.release_id }}' }
         run: |
-          gh release download "$TAG" -p latest.json -D out
+          # rascunho não é achado por tag: tudo via id da release
+          mkdir -p out
+          AID=$(gh api "repos/$GITHUB_REPOSITORY/releases/$RID" -q '.assets[] | select(.name=="latest.json") | .id')
+          test -n "$AID"
+          gh api "repos/$GITHUB_REPOSITORY/releases/assets/$AID" -H "Accept: application/octet-stream" > out/latest.json
           node -e "const m=require('./out/latest.json');if(m.version!==process.env.V)throw new Error('versão do manifesto: '+m.version);const p=Object.keys(m.platforms);if(!p.some(k=>k.startsWith('linux'))||!p.some(k=>k.startsWith('windows'))||!p.some(k=>k.startsWith('darwin')))throw new Error('plataformas faltando: '+p);for(const x of Object.values(m.platforms))if(!x.signature||!x.url)throw new Error('assinatura/URL ausente')"
-          if [ "${{ needs.android.result }}" = success ]; then gh release view "$TAG" --json assets -q '.assets[].name' | grep -q '\.apk$'; fi
-          gh release edit "$TAG" --draft=false
+          if [ "${{ needs.android.result }}" = success ]; then gh api "repos/$GITHUB_REPOSITORY/releases/$RID" -q '.assets[].name' | grep -q '\.apk$'; fi
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RID" -F draft=false >/dev/null
           # Endpoint estável do updater (release fixa, fora do "latest" do repo)
           gh release view lembretes-latest >/dev/null 2>&1 || gh release create lembretes-latest --prerelease --title "Lembretes: manifesto do updater" --notes "Atualizado automaticamente pelo release." 
           gh release upload lembretes-latest out/latest.json --clobber

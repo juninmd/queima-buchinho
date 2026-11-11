@@ -1,9 +1,6 @@
 name: Deploy
 
-# Em PR so builda (sem push): o branch protection do master exige o check
-# "Build and Push Docker Image", que antes nunca rodava em PR e travava o merge.
 on:
-  pull_request:
   push:
     branches:
       - main
@@ -29,4 +26,4 @@ jobs:
         with:
           image-name: ${{ github.repository }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          push: ${{ github.event_name == 'push' }}
+          push: true

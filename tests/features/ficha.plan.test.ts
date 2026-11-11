@@ -42,7 +42,9 @@ describe('Planos de queima de gordura', () => {
   });
 
   it('não deixa exercício órfão no catálogo', () => {
-    const usados = new Set(FAT_BURN_PLANS.flatMap(p => [...p.itens, p.cardio].map(i => i.key)));
+    const usados = new Set(
+      FAT_BURN_PLANS.flatMap(p => [...p.itens, p.cardio].flatMap(i => (i.alt ? [i.key, i.alt] : [i.key])))
+    );
     expect(CATALOG.filter(e => !usados.has(e.key)).map(e => e.key)).toEqual([]);
   });
 

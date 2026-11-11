@@ -19,9 +19,13 @@ export interface AppToday {
 export interface FichaExercise {
   key: string; nome: string; aparelho: string; img: string; series: number; reps: string;
   descansoS: number; cargaKg: number | null;
+  /** Passo da progressão dupla (kg). Opcional: payload antigo em cache não traz. */
+  incrementoKg?: number;
 }
+export interface FichaFase { semana: number; bloco: 'A' | 'B'; nome: string; dica: string; deload: boolean }
 export interface Ficha {
   planKey: string; emoji: string; titulo: string; foco: string; metodo: string; data: string;
+  fase?: FichaFase;
   exercicios: FichaExercise[];
 }
 export interface FichaState { ficha: Ficha | null; trained: boolean; cardioDone: boolean }

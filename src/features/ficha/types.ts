@@ -1,3 +1,8 @@
+/** Grupo muscular principal — usado para auditar o volume semanal de cada músculo. */
+export type Grupo =
+  | 'quadriceps' | 'posterior' | 'panturrilha' | 'peito' | 'costas' | 'ombro'
+  | 'biceps' | 'triceps' | 'core' | 'full' | 'cardio';
+
 /** Exercício do catálogo curado: nome do aparelho + imagem + carga inicial sugerida. */
 export interface CatalogEntry {
   key: string;
@@ -6,6 +11,7 @@ export interface CatalogEntry {
   img: string;
   /** `null` = exercício sem carga externa (peso do corpo ou cárdio). */
   cargaPadraoKg: number | null;
+  grupo: Grupo;
 }
 
 /** Prescrição de um exercício dentro de um dia do plano. */

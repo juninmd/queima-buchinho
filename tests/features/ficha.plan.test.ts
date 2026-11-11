@@ -30,7 +30,7 @@ describe('Planos de queima de gordura', () => {
   it('cobre segunda a sábado e deixa domingo de fora', () => {
     expect(Object.keys(WEEKDAY_PLAN)).toHaveLength(6);
     expect(getPlanForDay('domingo')).toBeNull();
-    expect(getPlanForDay('segunda-feira')?.key).toBe('full_a');
+    expect(getPlanForDay('segunda-feira')?.key).toBe('lower_a');
   });
 
   it('todo exercício prescrito existe no catálogo', () => {
@@ -77,7 +77,8 @@ describe('buildFicha', () => {
   });
 
   it('mantém sem carga o exercício de peso do corpo, mesmo com valor salvo', () => {
-    const ficha = buildFicha(plan, new Map([['prancha', 20]]), '2026-09-07');
+    const sabado = getPlanForDay('sábado')!;
+    const ficha = buildFicha(sabado, new Map([['prancha', 20]]), '2026-09-12');
     expect(ficha.exercicios.find(e => e.key === 'prancha')?.cargaKg).toBeNull();
   });
 

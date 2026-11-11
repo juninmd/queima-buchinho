@@ -21,9 +21,10 @@ export function Treino() {
     <>
       <Header eyebrow={`${today?.weekday ?? ''} · ficha das 06:00`} title={plan.titulo} right={<span className="chip num">{made}/{total}</span>} />
       <p className="sub">{plan.foco}</p>
-      <div className="chips-row"><span className="chip">{plan.metodo}</span><span className="chip">cárdio depois</span></div>
+      <div className="chips-row"><span className="chip">{plan.metodo}</span><span className="chip">cárdio depois</span>{plan.fase && <span className="chip">Semana {plan.fase.semana}/4 · {plan.fase.nome} · bloco {plan.fase.bloco}</span>}</div>
+      {plan.fase && <p className="sub">{plan.fase.dica}</p>}
       {lifts.map(e => (
-        <ExerciseCard key={e.key} ex={e} done={sets[e.key] ?? 0} onSet={i => toggleSet(e.key, i)} onLoad={d => void adjustLoad(e.key, d)} />
+        <ExerciseCard key={e.key} ex={e} done={sets[e.key] ?? 0} onSet={i => toggleSet(e.key, i)} onLoad={d => void adjustLoad(e.key, d)} progredir={!plan.fase?.deload} />
       ))}
       {cardio && (
         <article className="card">

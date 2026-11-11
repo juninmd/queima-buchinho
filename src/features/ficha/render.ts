@@ -18,6 +18,13 @@ function linhaExercicio(ex: FichaExercise, i: number, isCardio: boolean): string
   return `${cabeca}\n    🔁 ${ex.series}x${escapeHtml(ex.reps)}${linhaCarga(ex)} · 😮‍💨 ${ex.descansoS} s`;
 }
 
+/** Semana do mesociclo + regra da progressão dupla (omitida no deload, que não sobe carga). */
+function linhaFase({ fase }: Ficha): string {
+  const cab = `📅 Semana ${fase.semana}/4 · <b>${escapeHtml(fase.nome)}</b> · bloco ${fase.bloco}\n💡 ${escapeHtml(fase.dica)}`;
+  if (fase.deload) return cab;
+  return `${cab}\n📈 Fez o topo da faixa em todas as séries? ⚖️ Ajustar carga → 📈 Progredir.`;
+}
+
 /** Texto completo da ficha. `provocacao` é a única parte escrita pelo LLM. */
 export function renderFicha(ficha: Ficha, provocacao?: string): string {
   const iCardio = cardioIndex(ficha);
@@ -25,7 +32,7 @@ export function renderFicha(ficha: Ficha, provocacao?: string): string {
     .map((ex, i) => (i === iCardio ? `\n🏃 <b>Cárdio (depois da musculação)</b>\n` : '') + linhaExercicio(ex, i, i === iCardio))
     .join('\n');
   const rodape = provocacao ? `\n\n<i>${escapeHtml(provocacao)}</i>` : '';
-  return `${ficha.emoji} <b>${escapeHtml(ficha.titulo)}</b>\n<i>${escapeHtml(ficha.foco)}</i>\n🧩 ${escapeHtml(ficha.metodo)}\n\n${corpo}${rodape}`;
+  return `${ficha.emoji} <b>${escapeHtml(ficha.titulo)}</b>\n<i>${escapeHtml(ficha.foco)}</i>\n🧩 ${escapeHtml(ficha.metodo)}\n${linhaFase(ficha)}\n\n${corpo}${rodape}`;
 }
 
 /** Álbum de fotos: uma imagem por exercício, com o nome do aparelho na legenda. */
@@ -70,6 +77,7 @@ export function stepperKeyboard(index: number, ex: FichaExercise): InlineKeyboar
       { text: '+2,5', callback_data: `fx:adj:${index}:2.5` },
       { text: '+5', callback_data: `fx:adj:${index}:5` },
     ],
+    [{ text: `📈 Progredir (+${formatKg(ex.incrementoKg)})`, callback_data: `fx:adj:${index}:${ex.incrementoKg}` }],
     [{ text: '⬅️ Voltar', callback_data: 'fx:loads' }],
   ];
 }

@@ -1,5 +1,6 @@
 import { CATALOG_MAP } from './catalog';
 import { PLAN_MAP, WEEKDAY_PLAN } from './plans';
+import { aplicarFase, faseDoDia, incrementoKg } from './periodization';
 import type { DayPlan, Ficha, FichaExercise, PlanItem } from './types';
 
 /** Dia sem treino previsto (domingo) devolve `null` — quem chama decide o que dizer. */
@@ -14,7 +15,7 @@ function resolve(item: PlanItem, loads: Map<string, number>): FichaExercise {
   // Carga salva vence a sugestão do catálogo; `null` no catálogo significa que o
   // exercício não tem carga externa, então nem a carga salva o torna ajustável.
   const cargaKg = entry.cargaPadraoKg === null ? null : loads.get(item.key) ?? entry.cargaPadraoKg;
-  return { ...item, nome: entry.nome, aparelho: entry.aparelho, img: entry.img, cargaKg };
+  return { ...item, nome: entry.nome, aparelho: entry.aparelho, img: entry.img, cargaKg, incrementoKg: incrementoKg(entry.grupo) };
 }
 
 /**
@@ -22,6 +23,7 @@ function resolve(item: PlanItem, loads: Map<string, number>): FichaExercise {
  * para escrever a provocação da Mika, nunca para escolher exercício ou carga.
  */
 export function buildFicha(plan: DayPlan, loads: Map<string, number>, data: string): Ficha {
+  const fase = faseDoDia(data);
   return {
     planKey: plan.key,
     emoji: plan.emoji,
@@ -29,7 +31,8 @@ export function buildFicha(plan: DayPlan, loads: Map<string, number>, data: stri
     foco: plan.foco,
     metodo: plan.metodo,
     data,
-    exercicios: [...plan.itens, plan.cardio].map(item => resolve(item, loads)),
+    fase,
+    exercicios: [...aplicarFase(plan.itens, fase), plan.cardio].map(item => resolve(item, loads)),
   };
 }
 

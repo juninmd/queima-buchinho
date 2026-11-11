@@ -50,7 +50,7 @@ export function view(s: ViewState): string {
     ${s.chatOpen ? `<div class="glass"><div class="chat">${msgs}</div><input id="msg" placeholder="Fale com a Mika…" /><div class="actions"><button class="ok" id="send">Enviar</button></div></div>` : ''}
     <details class="glass"><summary>Ajustes</summary>
       <div class="sws">${sw('notif', s.set.notif, 'Notificações')}${sw('audio', s.set.audio, 'Áudio da Mika')}${sw('bg', s.set.bg, 'Mika ao fundo')}</div>
-      <input id="url" placeholder="https://bot.seucluster.dev" value="${esc(cfg?.baseUrl ?? '')}" />
+      <input id="url" placeholder="https://queima-api.antonio-code.duckdns.org" value="${esc(cfg?.baseUrl ?? 'https://queima-api.antonio-code.duckdns.org')}" />
       <input id="tok" type="password" placeholder="Token (DASHBOARD_TOKEN)" value="${esc(cfg?.token ?? '')}" />
       ${s.error ? `<div class="sub">⚠️ ${esc(s.error)}</div>` : ''}
       <div class="actions"><button id="save" class="ok">Salvar</button><button id="reset">Usar exemplo</button><button id="notif">Testar 🔔</button></div></details>

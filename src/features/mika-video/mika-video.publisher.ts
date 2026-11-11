@@ -12,8 +12,15 @@ const CHAT_ACTION_MS = 4500;
 
 /** Liga por padrão quando há modelo e Chromium; `MIKA_VIDEO=0` desliga. */
 export function isMikaVideoEnabled(): boolean {
-    if (['0', 'off', 'false'].includes((process.env.MIKA_VIDEO ?? '').toLowerCase())) return false;
-    return fs.existsSync(process.env.MIKA_VRM_PATH ?? DEFAULT_VRM) && !!chromiumPath();
+    if (['0', 'off', 'false'].includes((process.env.MIKA_VIDEO ?? '').toLowerCase())) {
+        logger.warn('[MikaVideo] desligado por MIKA_VIDEO');
+        return false;
+    }
+    const vrm = process.env.MIKA_VRM_PATH ?? DEFAULT_VRM;
+    const chrome = chromiumPath();
+    if (!fs.existsSync(vrm)) logger.warn(`[MikaVideo] desligado: modelo VRM não encontrado em ${vrm}`);
+    else if (!chrome) logger.warn('[MikaVideo] desligado: Chromium não encontrado (defina CHROMIUM_PATH)');
+    return fs.existsSync(vrm) && !!chrome;
 }
 
 // Um render por vez: cada um já usa todos os núcleos em WebGL por software.

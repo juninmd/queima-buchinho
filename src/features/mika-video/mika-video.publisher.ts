@@ -47,8 +47,11 @@ async function run(bot: TelegramBot, chatId: number, audioPath: string): Promise
         logger.info(`🎬 [MikaVideo] ${seconds.toFixed(1)}s de vídeo renderizados em ${((Date.now() - started) / 1000).toFixed(0)}s`);
         clearInterval(action);
         await bot.sendChatAction(chatId, 'upload_video_note').catch(() => {});
-        if (seconds <= VIDEO_NOTE_MAX_SECONDS) await bot.sendVideoNote(chatId, outPath, { length: 640 });
-        else await bot.sendVideo(chatId, outPath, { width: 640, height: 640, supports_streaming: true });
+        const sent = seconds <= VIDEO_NOTE_MAX_SECONDS
+            ? await bot.sendVideoNote(chatId, outPath, { length: 640 })
+            : await bot.sendVideo(chatId, outPath, { width: 640, height: 640, supports_streaming: true });
+        // Prova de entrega no log: o fechamento das 21:30 fica auditável.
+        logger.info(`🎬 [MikaVideo] entregue em chat=${chatId} message_id=${sent.message_id} (${seconds.toFixed(1)}s)`);
         return true;
     } catch (e) {
         logger.error('❌ [MikaVideo] Falha ao gerar/enviar o vídeo da Mika, usando só a voz:', e);

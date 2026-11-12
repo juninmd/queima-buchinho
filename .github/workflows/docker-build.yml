@@ -1,0 +1,27 @@
+name: Docker Build (PR)
+
+# Valida o Dockerfile em PR sem publicar imagem; o deploy publica em push.
+on:
+  pull_request:
+
+concurrency:
+  group: docker-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker:
+    name: Docker build (sem push)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build (sem push)
+        uses: juninmd/base-actions/docker-build-push@main
+        with:
+          image-name: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          push: false

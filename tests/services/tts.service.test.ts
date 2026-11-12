@@ -1,8 +1,11 @@
 import { ttsService } from '../../src/services/tts.service';
 import { EdgeTTS } from 'edge-tts-universal';
+import { spawn } from 'child_process';
+import { EventEmitter } from 'events';
 import fs from 'fs';
 
 jest.mock('edge-tts-universal');
+jest.mock('child_process', () => ({ spawn: jest.fn() }));
 jest.mock('fs', () => ({
     ...jest.requireActual('fs'),
     mkdirSync: jest.fn(),
@@ -46,6 +49,27 @@ describe('TtsService', () => {
 
             await expect(ttsService.generateMikaAudio('test'))
                 .rejects.toThrow('Erro ao gerar áudio da Mika: Synthesis failed');
+        });
+
+        it('cai para o CLI edge-tts quando a lib falha', async () => {
+            (EdgeTTS as jest.Mock).mockImplementation(() => ({
+                synthesize: jest.fn().mockRejectedValue(new Error('lib travou'))
+            }));
+            const child: any = new EventEmitter();
+            child.stderr = new EventEmitter();
+            child.kill = jest.fn();
+            (spawn as jest.Mock).mockReturnValue(child);
+            (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+            const pending = ttsService.generateMikaAudio('teste do fallback');
+            setTimeout(() => child.emit('close', 0), 0);
+
+            await expect(pending).resolves.toContain('.mp3');
+            expect(spawn).toHaveBeenCalledWith(
+                'edge-tts',
+                expect.arrayContaining(['--write-media']),
+                expect.anything()
+            );
         });
     });
 

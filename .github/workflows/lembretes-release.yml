@@ -78,7 +78,7 @@ jobs:
           node -e "require('fs').writeFileSync('src-tauri/tauri.release.conf.json', JSON.stringify({bundle:{createUpdaterArtifacts:true},app:{security:{capabilities:['default','updater']}},plugins:{updater:{pubkey:process.env.PUB,endpoints:['https://github.com/${{ github.repository }}/releases/download/lembretes-latest/latest.json']}}}))"
       - run: bun install
       - run: bun run tauri icon ../dashboard/public/icons/icon-512.png
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}

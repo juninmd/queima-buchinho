@@ -19,7 +19,7 @@ jobs:
       - run: bun install && bun run test
       - run: bun run tauri icon ../dashboard/public/icons/icon-512.png
       - run: bun run tauri build --bundles deb
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: lembretes-desktop, path: lembretes/src-tauri/target/release/bundle/deb/*.deb }
   android:
     runs-on: ubuntu-latest
@@ -39,5 +39,5 @@ jobs:
       - run: bun run tauri icon ../dashboard/public/icons/icon-512.png
       - run: bun run tauri android init
       - run: bun run tauri android build --apk --debug
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: lembretes-apk, path: lembretes/src-tauri/gen/android/app/build/outputs/apk/**/*.apk }

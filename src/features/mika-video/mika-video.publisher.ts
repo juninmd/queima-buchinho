@@ -12,8 +12,15 @@ const CHAT_ACTION_MS = 4500;
 
 /** Liga por padrão quando há modelo e Chromium; `MIKA_VIDEO=0` desliga. */
 export function isMikaVideoEnabled(): boolean {
-    if (['0', 'off', 'false'].includes((process.env.MIKA_VIDEO ?? '').toLowerCase())) return false;
-    return fs.existsSync(process.env.MIKA_VRM_PATH ?? DEFAULT_VRM) && !!chromiumPath();
+    if (['0', 'off', 'false'].includes((process.env.MIKA_VIDEO ?? '').toLowerCase())) {
+        logger.warn('[MikaVideo] desligado por MIKA_VIDEO');
+        return false;
+    }
+    const vrm = process.env.MIKA_VRM_PATH ?? DEFAULT_VRM;
+    const chrome = chromiumPath();
+    if (!fs.existsSync(vrm)) logger.warn(`[MikaVideo] desligado: modelo VRM não encontrado em ${vrm}`);
+    else if (!chrome) logger.warn('[MikaVideo] desligado: Chromium não encontrado (defina CHROMIUM_PATH)');
+    return fs.existsSync(vrm) && !!chrome;
 }
 
 // Um render por vez: cada um já usa todos os núcleos em WebGL por software.
@@ -40,8 +47,11 @@ async function run(bot: TelegramBot, chatId: number, audioPath: string): Promise
         logger.info(`🎬 [MikaVideo] ${seconds.toFixed(1)}s de vídeo renderizados em ${((Date.now() - started) / 1000).toFixed(0)}s`);
         clearInterval(action);
         await bot.sendChatAction(chatId, 'upload_video_note').catch(() => {});
-        if (seconds <= VIDEO_NOTE_MAX_SECONDS) await bot.sendVideoNote(chatId, outPath, { length: 640 });
-        else await bot.sendVideo(chatId, outPath, { width: 640, height: 640, supports_streaming: true });
+        const sent = seconds <= VIDEO_NOTE_MAX_SECONDS
+            ? await bot.sendVideoNote(chatId, outPath, { length: 640 })
+            : await bot.sendVideo(chatId, outPath, { width: 640, height: 640, supports_streaming: true });
+        // Prova de entrega no log: o fechamento das 21:30 fica auditável.
+        logger.info(`🎬 [MikaVideo] entregue em chat=${chatId} message_id=${sent.message_id} (${seconds.toFixed(1)}s)`);
         return true;
     } catch (e) {
         logger.error('❌ [MikaVideo] Falha ao gerar/enviar o vídeo da Mika, usando só a voz:', e);

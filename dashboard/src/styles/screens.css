@@ -20,6 +20,7 @@
 .dots button.on { background: var(--accent); border-color: var(--accent); }
 .dots .ico { width: 14px; height: 14px; stroke-width: 3; }
 .stepper { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr; gap: 6px; align-items: center; }
+.ex .progress { grid-column: 1 / -1; }
 .stepper b { text-align: center; font: 700 0.95rem var(--font-mono); }
 .chart { width: 100%; height: auto; display: block; }
 .chart text { fill: var(--muted); font: 500 9px var(--font-mono); }

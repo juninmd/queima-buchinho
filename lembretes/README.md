@@ -35,3 +35,10 @@ Secrets do repositório: `TAURI_SIGNING_PRIVATE_KEY` (conteúdo da chave privada
 `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`. Nunca commite a chave privada.
 - `scripts/setup-release.sh`: gera as chaves e grava todos os secrets de uma vez (precisa de `gh` logado com permissão de admin).
 - `scripts/setup-release.ps1`: o mesmo, para Windows/PowerShell.
+
+## Recursos de uso
+
+- **Notificações agendadas (mobile):** o app reagenda localmente os lembretes de hoje (pendentes) e de amanhã a cada sincronização, então avisam com o app fechado. No desktop continuam saindo enquanto o app está aberto.
+- **Soneca:** botão ⏰ em cada lembrete pendente adia 10 min.
+- **Fila offline:** água/hábitos marcados sem rede ficam guardados e são reenviados na próxima sincronização.
+- **Histórico:** gráfico dos últimos 7 dias (água e atividades) guardado localmente; meta de água editável em Ajustes.

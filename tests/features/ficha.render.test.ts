@@ -3,7 +3,7 @@ import {
   formatKg, loadPickerKeyboard, mainKeyboard, renderAlbum, renderFicha, stepperKeyboard,
 } from '../../src/features/ficha/render';
 
-const ficha = buildFicha(getPlanForDay('segunda-feira')!, new Map([['agacho_barra', 47.5]]), '2026-09-07');
+const ficha = buildFicha(getPlanForDay('segunda-feira')!, new Map([['agacho_barra', 47.5]]), '2026-08-17'); // semana 1, bloco A
 
 describe('formatKg', () => {
   it('usa vírgula decimal e some com o zero à direita', () => {
@@ -18,14 +18,14 @@ describe('renderFicha', () => {
   it('mostra nome do exercício, aparelho, séries/repetições e carga', () => {
     expect(texto).toContain('<b>Agachamento livre com barra</b>');
     expect(texto).toContain('Rack de agachamento + barra');
-    expect(texto).toContain('3x12-15');
+    expect(texto).toContain('4x10-12');
     expect(texto).toContain('47,5 kg');
   });
 
   it('separa o bloco de cárdio e mostra a duração, sem carga', () => {
     expect(texto).toContain('🏃 <b>Cárdio (depois da musculação)</b>');
-    expect(texto).toContain('Esteira — HIIT 1:2 (15 min)');
-    expect(texto).toContain('Esteira ergométrica');
+    expect(texto).toContain('Bicicleta — Z2 constante (25 min)');
+    expect(texto).toContain('Bicicleta ergométrica vertical');
   });
 
   it('escapa a fala da Mika para não quebrar o parse_mode HTML', () => {

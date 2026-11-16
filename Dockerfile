@@ -31,6 +31,10 @@ COPY . .
 COPY --from=pwa /app/dashboard/dist ./dashboard/dist
 
 ENV CHROMIUM_PATH=/usr/bin/chromium
+# Cópia do modelo FORA de /app/assets: o docker-compose monta ./assets do host por cima de /app/assets
+# e, sem mika.vrm lá, o vídeo ficava desligado em silêncio (caía sempre na voz).
+COPY assets/mika/mika.vrm /opt/mika/mika.vrm
+ENV MIKA_VRM_PATH=/opt/mika/mika.vrm
 
 RUN mkdir -p assets data && echo "[]" > data/workout-history.json
 

@@ -32,8 +32,12 @@ export class MikaBg {
     if (vrm.lookAt) vrm.lookAt.target = this.look;
     addEventListener('pointermove', (e) => this.mouse.set(e.clientX / innerWidth - 0.5, e.clientY / innerHeight - 0.5));
     const clock = new THREE.Clock();
-    const loop = (): void => {
+    const minDt = /android|mobile/i.test(navigator.userAgent) ? 1000 / 30 : 0; // 30fps no celular poupa bateria
+    let lastFrame = 0;
+    const loop = (ts = 0): void => {
       this.raf = requestAnimationFrame(loop);
+      if (minDt && ts - lastFrame < minDt) return;
+      lastFrame = ts;
       const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
       if (this.canvas.width !== w * r.getPixelRatio()) { r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
       const t = clock.elapsedTime, dt = clock.getDelta();
@@ -54,6 +58,11 @@ export class MikaBg {
       vrm.update(Math.min(dt, 1 / 30)); r.render(scene, cam);
     };
     loop();
+    // Sem render em segundo plano / janela oculta.
+    document.addEventListener('visibilitychange', () => {
+      cancelAnimationFrame(this.raf);
+      if (!document.hidden) { clock.getDelta(); loop(); }
+    });
   }
   setSpeaking(v: boolean): void { this.speaking = v; }
   stop(): void { cancelAnimationFrame(this.raf); this.renderer?.dispose(); }

@@ -3,7 +3,7 @@ import {
   formatKg, loadPickerKeyboard, mainKeyboard, renderAlbum, renderFicha, stepperKeyboard,
 } from '../../src/features/ficha/render';
 
-const ficha = buildFicha(getPlanForDay('segunda-feira')!, new Map([['agacho_barra', 47.5]]), '2026-09-07');
+const ficha = buildFicha(getPlanForDay('segunda-feira')!, new Map([['agacho_barra', 47.5]]), '2026-08-17'); // semana 1, bloco A
 
 describe('formatKg', () => {
   it('usa vírgula decimal e some com o zero à direita', () => {

@@ -26,3 +26,4 @@ jobs:
         with:
           image-name: ${{ github.repository }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          push: true

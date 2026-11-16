@@ -10,9 +10,11 @@ interface Props {
   done: number;
   onSet: (index: number) => void;
   onLoad: (delta: number) => void;
+  /** Falso no deload: semana de recuperação não sobe carga. */
+  progredir?: boolean;
 }
 
-export function ExerciseCard({ ex, done, onSet, onLoad }: Props) {
+export function ExerciseCard({ ex, done, onSet, onLoad, progredir = true }: Props) {
   const [imgFailed, setImgFailed] = useState(false);
   return (
     <article className="card ex">
@@ -34,6 +36,11 @@ export function ExerciseCard({ ex, done, onSet, onLoad }: Props) {
           <b>{fmtKg(ex.cargaKg)} kg</b>
           {DELTAS.slice(2).map(d => <button key={d} className="btn sm" onClick={() => onLoad(d)}>+{fmtKg(d)}</button>)}
         </div>
+      )}
+      {progredir && ex.cargaKg !== null && ex.incrementoKg && (
+        <button className="btn sm progress" onClick={() => onLoad(ex.incrementoKg!)}>
+          Bati o topo da faixa · progredir +{fmtKg(ex.incrementoKg)} kg
+        </button>
       )}
     </article>
   );

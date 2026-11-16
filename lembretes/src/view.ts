@@ -1,4 +1,5 @@
 import { isMock, loadConfig } from './api';
+import type { Day } from './history';
 import { buildReminders, nextPending } from './reminders';
 import type { Settings } from './settings';
 import type { Reminder, Today } from './types';
@@ -6,8 +7,19 @@ import type { Reminder, Today } from './types';
 export const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 function row(r: Reminder, i: number): string {
+  const snz = r.done || r.kind === 'fechamento' ? '' : `<button class="snz" data-snooze="${esc(r.id)}" aria-label="Adiar 10 minutos" title="Adiar 10 min">⏰</button>`;
   const act = r.done ? '<span class="chk">✓</span>' : r.kind === 'agua' ? `<button data-water="250">+250</button>` : r.kind === 'refeicao' ? `<button class="ok" data-habit="${r.id}">Feito</button>` : '';
-  return `<div class="row ${r.done ? 'done' : ''}" style="--i:${i}"><i class="dot ${r.kind}"></i><span class="time">${r.time}</span><span class="main"><b>${esc(r.title)}</b><div>${esc(r.detail)}</div></span>${act}</div>`;
+  return `<div class="row ${r.done ? 'done' : ''}" style="--i:${i}"><i class="dot ${r.kind}"></i><span class="time">${r.time}</span><span class="main"><b>${esc(r.title)}</b><div>${esc(r.detail)}</div></span>${snz}${act}</div>`;
+}
+const WD = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+/** Gráfico dos últimos 7 dias: barra = % da meta de água; ponto = atividades concluídas. */
+export function chart(days: Day[]): string {
+  return `<div class="hist">${days.map((d) => {
+    const p = d.goal ? Math.min(100, Math.round((d.ml / d.goal) * 100)) : 0;
+    const a = d.total ? Math.round((d.done / d.total) * 100) : 0;
+    const wd = WD[new Date(`${d.date}T12:00:00`).getDay()];
+    return `<div class="hd" title="${d.date}: ${d.ml}/${d.goal} ml · ${d.done}/${d.total} atividades"><div class="hb"><i style="height:${p}%"></i></div><small>${wd}</small><small class="ha">${a}%</small></div>`;
+  }).join('')}</div>`;
 }
 const sw = (k: string, on: boolean, label: string): string => `<label class="sw"><input type="checkbox" data-set="${k}" ${on ? 'checked' : ''}><i></i>${label}</label>`;
 
@@ -20,18 +32,20 @@ const ICON: Record<string, string> = {
 const icon = (k: string): string => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k] ?? ICON.agua}</svg>`;
 const eta = (t: string, now: number): string => { const m = Number(t.slice(0, 2)) * 60 + Number(t.slice(3)) - now; return m <= 0 ? 'agora' : m < 60 ? `em ${m} min` : `em ${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`; };
 
-export interface ViewState { today: Today; error: string; mika: string; chat: { me: boolean; text: string }[]; chatOpen: boolean; now: number; set: Settings; update: import('./update').UpdateInfo | null; updating: boolean }
+export interface ViewState { today: Today; error: string; mika: string; chat: { me: boolean; text: string }[]; chatOpen: boolean; now: number; set: Settings; update: import('./update').UpdateInfo | null; updating: boolean; queued: number; hist: Day[] }
 
 export function view(s: ViewState): string {
   const list = buildReminders(s.today);
   const nxt = nextPending(list, s.now);
   const done = list.filter((r) => r.done), todo = list.filter((r) => !r.done);
-  const pct = Math.min(100, Math.round((s.today.water.ml / s.today.water.goalMl) * 100));
+  const goal = s.set.goalMl || s.today.water.goalMl;
+  const pct = Math.min(100, Math.round((s.today.water.ml / goal) * 100));
   const cfg = loadConfig();
   const msgs = s.chat.map((m) => `<div class="${m.me ? 'me' : 'ai'}">${esc(m.text)}</div>`).join('');
   return `<div class="wrap">
     <header><div><h1>Lembretes</h1><div class="sub">${s.today.streak} dias seguidos</div></div>
       <span class="badge ${isMock() ? '' : 'live'}">${isMock() ? 'dados de exemplo' : 'API conectada'}</span></header>
+    ${s.error && !isMock() ? `<div class="glass warn" role="alert">⚠️ Sem conexão com a API (${esc(s.error)}). Mostrando o último estado.${s.queued ? ` ${s.queued} ação(ões) aguardando envio.` : ''}</div>` : s.queued ? `<div class="glass warn">${s.queued} ação(ões) aguardando envio.</div>` : ''}
     ${s.update ? `<div class="glass upd"><span>Nova versão <b>${esc(s.update.version)}</b></span>${s.update.kind === 'apk' ? `<a class="ok" href="${esc(s.update.url ?? '#')}" target="_blank" rel="noopener">Baixar APK</a>` : `<button class="ok" id="upd" ${s.updating ? 'disabled' : ''}>${s.updating ? 'Instalando…' : 'Atualizar e reiniciar'}</button>`}</div>` : ''}
     <div class="glass mika"><div class="av">M</div><div><b>Mika</b><p>${esc(s.mika)}</p></div></div>
     ${nxt ? `<div class="next k-${nxt.kind}"><span class="orb o1"></span><span class="orb o2"></span>
@@ -39,7 +53,7 @@ export function view(s: ViewState): string {
       <div class="ntx"><small>Próximo lembrete</small><div class="t">${nxt.time}</div><div class="n">${esc(nxt.title)}</div></div>
       <span class="eta">${eta(nxt.time, s.now)}</span></div>`
     : `<div class="next k-done"><span class="orb o1"></span><div class="ico">${icon('ficha').replace(/<path[^>]*>/, '<path d="M5 12.5l4.5 4.500L19 7.5"/>')}</div><div class="ntx"><small>Próximo lembrete</small><div class="n big">Tudo em dia hoje</div></div></div>`}
-    <div class="glass"><div class="sub">Água · ${s.today.water.ml} / ${s.today.water.goalMl} ml</div><div class="bar"><i style="width:${pct}%"></i></div></div>
+    <div class="glass"><div class="sub">Água · ${s.today.water.ml} / ${goal} ml</div><div class="bar"><i style="width:${pct}%"></i></div></div>
     <div class="glass list">
       <div class="sum"><div><b>${list.length}</b> atividades<div class="sub">${done.length} feitas · ${todo.length} pendentes</div></div>
         <div class="ring2" style="--p:${Math.round((done.length / list.length) * 100)}"><span>${Math.round((done.length / list.length) * 100)}%</span></div></div>
@@ -47,9 +61,11 @@ export function view(s: ViewState): string {
       <div class="drawer ${s.set.hidePending ? '' : 'open'}"><div>${todo.map((r, i) => row(r, i)).join('') || '<div class="sub pad">Nada pendente 🎉</div>'}</div></div>
       ${done.length ? `<button class="fold" data-fold="hideDone" aria-expanded="${!s.set.hideDone}"><span>${done.length} confirmados</span><i>▾</i></button>
       <div class="drawer ${s.set.hideDone ? '' : 'open'}"><div>${done.map((r, i) => row(r, i)).join('')}</div></div>` : ''}</div>
+    <div class="glass"><div class="sub">Últimos 7 dias · água (barra) e atividades (%)</div>${chart(s.hist)}</div>
     ${s.chatOpen ? `<div class="glass"><div class="chat">${msgs}</div><input id="msg" placeholder="Fale com a Mika…" /><div class="actions"><button class="ok" id="send">Enviar</button></div></div>` : ''}
     <details class="glass"><summary>Ajustes</summary>
       <div class="sws">${sw('notif', s.set.notif, 'Notificações')}${sw('audio', s.set.audio, 'Áudio da Mika')}${sw('bg', s.set.bg, 'Mika ao fundo')}</div>
+      <label class="sub">Meta de água (ml, 0 = da API)<input id="goal" type="number" min="0" step="250" value="${s.set.goalMl}" /></label>
       <input id="url" placeholder="https://queima-api.antonio-code.duckdns.org" value="${esc(cfg?.baseUrl ?? 'https://queima-api.antonio-code.duckdns.org')}" />
       <input id="tok" type="password" placeholder="Token (DASHBOARD_TOKEN)" value="${esc(cfg?.token ?? '')}" />
       ${s.error ? `<div class="sub">⚠️ ${esc(s.error)}</div>` : ''}

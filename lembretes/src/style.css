@@ -81,3 +81,11 @@ body.widget .bubble { right:10px; }
 body { position:relative; overflow-x:hidden; }
 
 .upd { display:flex; justify-content:space-between; align-items:center; gap:10px; border-color:var(--g); box-shadow:0 0 28px rgba(52,211,153,.25); } .upd a { text-decoration:none; color:#04231a; background:linear-gradient(135deg,var(--g),#10b981); padding:8px 14px; border-radius:12px; font-weight:700; font-size:13px; }
+
+.row .snz { padding:6px 9px; margin-right:6px; opacity:.7; } .row .snz:hover { opacity:1; }
+.warn { color:#fbbf24; font-size:12px; line-height:1.4; border-color:rgba(251,191,36,.35); }
+.hist { display:flex; gap:8px; align-items:flex-end; margin-top:10px; } .hd { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; }
+.hb { width:100%; height:64px; background:rgba(255,255,255,.08); border-radius:8px; display:flex; align-items:flex-end; overflow:hidden; }
+.hb i { display:block; width:100%; background:linear-gradient(180deg,#38bdf8,var(--g)); border-radius:8px 8px 0 0; }
+.hd small { font-size:10px; color:var(--muted); } .hd .ha { color:var(--g); }
+body.ready .wrap > * { animation:none; } /* animação de entrada só na 1ª renderização */

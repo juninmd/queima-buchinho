@@ -3,13 +3,13 @@ FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
 COPY package.json bun.lock* ./
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Stage 2: PWA (dashboard/ -> dashboard/dist, servido pela API na porta DASHBOARD_PORT)
 FROM oven/bun:1-alpine AS pwa
 WORKDIR /app/dashboard
 COPY dashboard/package.json dashboard/bun.lock* ./
-RUN bun install --frozen-lockfile
+RUN bun install
 COPY dashboard/ ./
 RUN bun run build
 

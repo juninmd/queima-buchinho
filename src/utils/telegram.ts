@@ -1,4 +1,4 @@
-import type { TelegramBot } from 'node-telegram-bot-api';
+import { Bot } from 'node-telegram-bot-api/bot';
 import type { SendMessageOptions } from '../types/telegram';
 import { logger } from './logger';
 

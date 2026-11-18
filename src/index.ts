@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import TelegramBot from 'node-telegram-bot-api';
+import { Bot } from 'node-telegram-bot-api/bot';
 import * as dotenv from 'dotenv';
 import { SchedulerService } from './services/scheduler.service';
 import { BotController } from './controllers/bot.controller';
@@ -33,7 +33,7 @@ const dashboardServer = new DashboardApiServer(dashboardPort, dashboardUserId);
 if (process.env.DASHBOARD_TOKEN) dashboardServer.start();
 else logger.warn('⚠️ DASHBOARD_TOKEN não definido — Dashboard API desativada');
 
-let bot: TelegramBot;
+let bot: Bot;
 let botMode: 'polling' | 'webhook' | 'none' = 'none';
 
 async function shutdown(signal: string) {

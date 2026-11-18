@@ -1,4 +1,4 @@
-import TelegramBot from 'node-telegram-bot-api';
+import { Bot } from 'node-telegram-bot-api/bot';
 import type { BotCommand } from 'node-telegram-bot-api';
 import { logger } from '../utils/logger';
 
@@ -33,7 +33,7 @@ export const BOT_COMMANDS: BotCommand[] = [
 ];
 
 /** Falha aqui só tira o autocomplete; o bot segue funcionando. */
-export async function registerBotCommands(bot: TelegramBot): Promise<void> {
+export async function registerBotCommands(bot: Bot): Promise<void> {
   try {
     await bot.setMyCommands(BOT_COMMANDS);
     logger.info(`📋 ${BOT_COMMANDS.length} comandos registrados no Telegram.`);

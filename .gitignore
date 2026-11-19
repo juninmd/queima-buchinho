@@ -28,3 +28,6 @@ npm-debug.log*
 
 # Test coverage
 coverage/
+
+# Scratch / personal local files (never commit: may contain PII)
+scratch/

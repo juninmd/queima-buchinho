@@ -45,7 +45,15 @@ export function useActions(patch: Patch, refresh: () => Promise<void>) {
     const r = await guard(() => api.logMetric(type, value));
     if (!r || r.queued) return;
     const { id } = r.data;
-    toast(label, { label: 'Desfazer', run: () => { void api.undoMetric(id).then(refresh); } });
+    toast(label, {
+      label: 'Desfazer',
+      run: () => {
+        // Sempre relê o dia: se o servidor recusar, a UI volta ao valor real em vez de mentir.
+        void api.undoMetric(id)
+          .catch(() => toast('Não consegui desfazer agora.'))
+          .then(refresh);
+      },
+    });
   }, [patch, guard, toast, refresh]);
 
   const finish = useCallback(async (kind: 'treino' | 'cardio') => {

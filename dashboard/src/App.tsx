@@ -16,12 +16,21 @@ import { loadConfig } from './lib/config';
 const Progresso = lazy(() => import('./screens/Progresso').then(m => ({ default: m.Progresso })));
 
 function Screen({ onSignOut }: { onSignOut: () => void }) {
-  const { tab, go, online, pending, refresh } = useApp();
+  const { tab, go, online, pending, refresh, today, error } = useApp();
   useNativeBridge(go, useToast(), refresh);
+  // Com rede mas sem resposta do bot (fora do ar, token trocado), o cache seguia na tela como se
+  // fosse o dia atual, sem nenhum aviso: pode ser o de ontem.
+  const stale = online && pending === 0 && error !== null && today !== null;
   return (
     <div className="shell">
       {(!online || pending > 0) && (
         <div className="offline" role="status">{online ? `Sincronizando ${pending} ação(ões)…` : `Sem conexão${pending ? ` · ${pending} na fila` : ''}`}</div>
+      )}
+      {stale && (
+        <div className="offline" role="status">
+          Não consegui atualizar · dados salvos de {today.date.split('-').reverse().slice(0, 2).join('/')}{' '}
+          <button className="link" onClick={() => void refresh()}>Tentar de novo</button>
+        </div>
       )}
       <main className="scr" data-tab={tab}>
         {tab === 'hoje' && <Hoje />}

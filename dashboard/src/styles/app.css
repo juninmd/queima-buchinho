@@ -29,6 +29,7 @@ body { overscroll-behavior-y: contain; -webkit-tap-highlight-color: transparent;
 .nav .ico { width: 22px; height: 22px; }
 .ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .offline { background: var(--warn); color: #1a1300; text-align: center; font-size: 0.78rem; font-weight: 600; padding: 4px 8px; padding-top: calc(4px + env(safe-area-inset-top, 0px)); }
+.offline .link { background: none; border: 0; padding: 0 0 0 6px; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .connect { max-width: 420px; margin: 12vh auto 0; }
 .connect h1 { margin: 0; font-size: 1.4rem; }

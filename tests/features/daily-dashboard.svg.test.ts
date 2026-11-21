@@ -40,6 +40,12 @@ describe('buildDashboardSvg', () => {
     expect(svg).toContain('&lt;script&gt;&amp;');
   });
 
+  it('renders nota 0 without a progress arc', () => {
+    const svg = buildDashboardSvg(snapshot({ nota: 0 }));
+    expect(svg).not.toMatch(/NaN|Infinity/);
+    expect(svg).not.toContain('stroke-dasharray="0.0');
+  });
+
   it('never emits NaN/Infinity for zero goals or overflowing values', () => {
     const svg = buildDashboardSvg(snapshot({
       habitsTotal: 0, habitsCompleted: 0, waterGoal: 0, water: 9999, nota: 15,

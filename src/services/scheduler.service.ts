@@ -400,8 +400,8 @@ export class SchedulerService {
             const completed = HABITS.filter(h => reportStatus[h.key]).length;
             const waterRatio = Math.min(water / WATER_GOAL_ML, 1);
 
-            // Nota 1–10: hábitos (até 6) + treino (2) + água (até 2)
-            const nota = Math.max(1, Math.min(10, Math.round(
+            // Nota 0–10: hábitos (até 6) + treino (2) + água (até 2)
+            const nota = Math.max(0, Math.min(10, Math.round(
                 (completed / total) * 6 + (treinoDone ? 2 : 0) + waterRatio * 2
             )));
             const notaEmoji = nota >= 8 ? '🏆' : nota >= 5 ? '👍' : '😬';

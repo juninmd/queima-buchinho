@@ -30,6 +30,10 @@ const migrationQuery = `
   CREATE INDEX IF NOT EXISTS idx_user_metrics_date
     ON user_metrics (user_id, brasilia_date, type);
 
+  -- Últimos valores (peso/altura/gordura) sem varrer o histórico. Rollback: DROP INDEX idx_user_metrics_latest.
+  CREATE INDEX IF NOT EXISTS idx_user_metrics_latest
+    ON user_metrics (user_id, type, created_at DESC);
+
   CREATE TABLE IF NOT EXISTS daily_habits (
     id SERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,

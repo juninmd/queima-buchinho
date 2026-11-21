@@ -127,13 +127,13 @@ describe('MetricsService', () => {
 
     describe('getWeightDiffFromStart', () => {
         it('should return difference between first and last weight', async () => {
-            mockQuery.mockResolvedValueOnce({ rows: [{ value: '70' }, { value: '75' }, { value: '73' }] });
+            mockQuery.mockResolvedValueOnce({ rows: [{ first: '70', last: '73', n: '3' }] });
             const diff = await metricsService.getWeightDiffFromStart(userId);
             expect(diff).toBe(3);
         });
 
         it('should return 0 if less than 2 records', async () => {
-            mockQuery.mockResolvedValueOnce({ rows: [{ value: '70' }] });
+            mockQuery.mockResolvedValueOnce({ rows: [{ first: '70', last: '70', n: '1' }] });
             const diff = await metricsService.getWeightDiffFromStart(userId);
             expect(diff).toBe(0);
         });

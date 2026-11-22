@@ -12,8 +12,10 @@ export class WorkoutService {
             const today = getBrasiliaDateString();
             return { trained: await this.hasWorkoutToday(targetChatId ?? 0, today) };
         } catch (e) {
-            logger.error('Erro ao verificar treino:', new DatabaseError(toError(e).message));
-            return { trained: false };
+            // Unknown is not "did not train": callers must not roast or log a miss on a DB failure.
+            const error = new DatabaseError(toError(e).message);
+            logger.error('Erro ao verificar treino:', error);
+            throw error;
         }
     }
 

@@ -98,6 +98,26 @@ describe('SchedulerService', () => {
         });
     });
 
+    describe('runDailyCheck when the workout check fails', () => {
+        it('sends no roast and records nothing', async () => {
+            (workoutService.checkDailyMessages as jest.Mock).mockRejectedValue(new Error('DB down'));
+
+            await scheduler.runDailyCheck();
+
+            expect(workoutService.logWorkout).not.toHaveBeenCalled();
+            expect(memeService.getRoastMessage).not.toHaveBeenCalled();
+            expect(mockBot.sendMessage).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('closeDay when the workout check fails', () => {
+        it('does not record a missed workout', async () => {
+            (workoutService.checkDailyMessages as jest.Mock).mockRejectedValue(new Error('DB down'));
+            await scheduler.closeDay();
+            expect(workoutService.logWorkout).not.toHaveBeenCalled();
+        });
+    });
+
     describe('sendMorningReminder', () => {
         it('should send morning reminder', async () => {
             (memeService.getMorningReminder as jest.Mock).mockResolvedValue({ message: 'Good morning!', audioSearchTerm: 'sunny' });

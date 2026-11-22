@@ -108,12 +108,11 @@ describe('WorkoutService', () => {
             expect(result.trained).toBe(false);
         });
 
-        it('should handle errors and return trained: false', async () => {
+        it('rejects on a database error instead of answering "did not train"', async () => {
             mockQuery.mockRejectedValueOnce(new Error('DB Error'));
-            
-            const result = await workoutService.checkDailyMessages(bot, 123);
-            
-            expect(result.trained).toBe(false);
+
+            // A definite false here makes the scheduler roast someone who did train.
+            await expect(workoutService.checkDailyMessages(bot, 123)).rejects.toThrow('DB Error');
         });
     });
 

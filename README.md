@@ -119,7 +119,7 @@ flowchart LR
 
 - A ficha é determinística: o treino sai do catálogo em `src/features/ficha/catalog.ts`; a IA só escreve a provocação.
 - Lembretes conferem o estado do dia antes de enviar (água e refeição).
-- A API do app fica desligada sem `DASHBOARD_TOKEN` e exige Bearer em todas as rotas `/api/*`.
+- A API do app fica desligada sem `DASHBOARD_TOKEN` (ou `GITHUB_CLIENT_ID`+`SESSION_SECRET`) e exige Bearer em todas as rotas `/api/*`: sessão do login GitHub (só `GITHUB_ALLOWED_USER`, Device Flow) ou o `DASHBOARD_TOKEN` interno. Os crons do Telegram rodam no processo do bot e não dependem de login.
 - O vídeo da Mika renderiza em segundo plano; se falhar, vai a voz de sempre.
 
 ---
@@ -210,7 +210,8 @@ Variáveis de debug (`MIKA_VIDEO_DEBUG`, `MIKA_VIDEO_STILL`) ficam de fora.
 | `WEBHOOK_URL` | URL pública do bot; se definida, usa webhook em vez de polling | opcional | — |
 | `PORT` | porta do webhook | padrão `3000` | `3000` |
 | `HEALTH_PORT` | porta do `/health` (também usada no HEALTHCHECK do Dockerfile) | padrão `8080` | `8080` |
-| `DASHBOARD_TOKEN` | Bearer da API do app | sem ela, a API do app fica desativada | — |
+| `GITHUB_CLIENT_ID` / `SESSION_SECRET` / `GITHUB_ALLOWED_USER` | Login GitHub do app (Device Flow), sessão assinada e usuário permitido (padrão `juninmd`) | sem client id, só o token interno entra | — |
+| `DASHBOARD_TOKEN` | Bearer interno da API | sem ela, a API do app fica desativada | — |
 | `DASHBOARD_PORT` | porta da API e do PWA | padrão `8081` | `8081` |
 | `DASHBOARD_CORS_ORIGIN` | origem liberada no CORS | padrão `*` | `https://seu-dominio` |
 | `PWA_DIST_DIR` | pasta do build do PWA | padrão `dashboard/dist` | `dashboard/dist` |
@@ -296,3 +297,8 @@ cd dashboard && bun install --frozen-lockfile && bun run build   # PWA em dashbo
 ## 📄 Licença
 
 MIT, conforme o campo `license` do [`package.json`](package.json). O repositório ainda não traz o arquivo `LICENSE`.
+
+## APK Android em releases
+
+Ao criar uma tag `v*` (ou publicar uma release), `.github/workflows/android-release.yml` gera o APK assinado e anexa à release.
+Segredos: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (opcional `ANDROID_KEY_PASSWORD`, `GOOGLE_SERVICES_JSON`). Variável de repo opcional `APP_API_URL` (URL da API embutida no app).

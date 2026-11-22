@@ -9,6 +9,7 @@ import { redisService } from './services/redis.service';
 import { logger } from './utils/logger';
 import { HealthServer, markPollingAlive, setPollingMode } from './utils/server';
 import { DashboardApiServer } from './api/dashboard.server';
+import { authConfigured } from './api/auth';
 import { pool } from './config/database';
 import { notifyStartup, notifyShutdown, notifyCrash } from './utils/notifications';
 import { sendDailyFicha } from './features/ficha/ficha.publisher';
@@ -30,8 +31,8 @@ healthServer.start();
 const dashboardUserId = Number(process.env.USER_ID || process.env.CHAT_ID) || 0;
 const dashboardPort = Number(process.env.DASHBOARD_PORT) || 8081;
 const dashboardServer = new DashboardApiServer(dashboardPort, dashboardUserId);
-if (process.env.DASHBOARD_TOKEN) dashboardServer.start();
-else logger.warn('⚠️ DASHBOARD_TOKEN não definido — Dashboard API desativada');
+if (authConfigured()) dashboardServer.start();
+else logger.warn('⚠️ Sem DASHBOARD_TOKEN nem GITHUB_CLIENT_ID+SESSION_SECRET — Dashboard API desativada');
 
 let bot: TelegramBot;
 let botMode: 'polling' | 'webhook' | 'none' = 'none';

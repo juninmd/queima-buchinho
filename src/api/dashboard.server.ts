@@ -1,6 +1,7 @@
 import http from 'http';
 import { logger } from '../utils/logger';
-import { CORS_HEADERS, HttpError, isAuthorized, send } from './http';
+import { handleAuth, isAuthorized } from './auth';
+import { CORS_HEADERS, HttpError, send } from './http';
 import { Router } from './router';
 import { buildRouter } from './routes';
 import { servePwa } from './static';
@@ -22,6 +23,7 @@ export class DashboardApiServer {
     }
 
     const pathname = (req.url ?? '/').split('?')[0];
+    if (await handleAuth(req, res, pathname)) return;
     if (!pathname.startsWith('/api/')) {
       if (!(await servePwa(req, res).catch(() => false))) send(res, 404, { error: 'not_found' });
       return;

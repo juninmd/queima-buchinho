@@ -1,4 +1,4 @@
-import { getBrasiliaDateString, getBrasiliaDayStart, formatBrasiliaTime, getSurpriseMessage } from '../../src/utils/time';
+import { getBrasiliaDateString, getBrasiliaDayStart, formatBrasiliaTime, getSurpriseMessage, isTodayBirthday, getBirthdayAge, getMikaContext } from '../../src/utils/time';
 
 describe('Time Utils', () => {
   beforeEach(() => {
@@ -72,5 +72,29 @@ describe('Time Utils', () => {
       });
     });
   });
-});
 
+  // Birthday is a calendar fact: the 00:00-03:59 "reporting day" rule is for workout records only.
+  describe('birthday uses the calendar date in Brasília', () => {
+    const saved = process.env.USER_BIRTHDAY;
+    afterEach(() => { process.env.USER_BIRTHDAY = saved; });
+
+    it('is the birthday at 01:00 on the day itself', () => {
+      process.env.USER_BIRTHDAY = '22/11';
+      jest.setSystemTime(new Date('2026-11-22T01:00:00-03:00'));
+      expect(isTodayBirthday()).toBe(true);
+      expect(getMikaContext()).toContain('ANIVERSÁRIO');
+    });
+
+    it('is no longer the birthday at 01:00 on the next day', () => {
+      process.env.USER_BIRTHDAY = '22/11';
+      jest.setSystemTime(new Date('2026-11-23T01:00:00-03:00'));
+      expect(isTodayBirthday()).toBe(false);
+    });
+
+    it('counts the new age from midnight on 1 January', () => {
+      process.env.USER_BIRTHDAY = '01/01/1990';
+      jest.setSystemTime(new Date('2027-01-01T02:00:00-03:00'));
+      expect(getBirthdayAge()).toBe(37);
+    });
+  });
+});

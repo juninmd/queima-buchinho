@@ -20,6 +20,11 @@ export function getBrasiliaDateString(): string {
   return targetDate.toLocaleDateString('en-CA', { timeZone: BRASILIA_TIMEZONE });
 }
 
+/** Data de calendário (YYYY-MM-DD) em Brasília, sem a regra da madrugada. */
+export function getBrasiliaCalendarDate(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: BRASILIA_TIMEZONE });
+}
+
 /**
  * Retorna o timestamp (Date) correspondente ao início do dia atual (00:00:00) em Brasília.
  * Útil para comparações de datas.
@@ -110,7 +115,7 @@ export function isTodayBirthday(): boolean {
   const month = parseInt(parts[1], 10);
   if (isNaN(day) || isNaN(month)) return false;
 
-  const today = getBrasiliaDateString();
+  const today = getBrasiliaCalendarDate();
   const todayDay = parseInt(today.split('-')[2], 10);
   const todayMonth = parseInt(today.split('-')[1], 10);
   return todayDay === day && todayMonth === month;
@@ -126,6 +131,6 @@ export function getBirthdayAge(): number | null {
   if (parts.length < 3) return null;
   const birthYear = parseInt(parts[2], 10);
   if (isNaN(birthYear)) return null;
-  const currentYear = parseInt(getBrasiliaDateString().split('-')[0], 10);
+  const currentYear = parseInt(getBrasiliaCalendarDate().split('-')[0], 10);
   return currentYear - birthYear;
 }

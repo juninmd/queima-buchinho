@@ -170,29 +170,35 @@ export class MetricsService {
         }
 
         try {
+            // Semana em Brasília (o Postgres roda em UTC) e comparação sem CAST na coluna,
+            // para usar o índice. user_metrics.brasilia_date é VARCHAR ISO; workout_logs é DATE.
+            const brNow = "(CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date";
+            const weekStart = `date_trunc('week', ${brNow})`;
+            const prevWeekStart = `date_trunc('week', ${brNow} - INTERVAL '1 week')`;
+            const iso = (d: string) => `to_char(${d}, 'YYYY-MM-DD')`;
             const queries = {
                 currentMetrics: `
                     SELECT type, SUM(value) as total
                     FROM user_metrics
-                    WHERE user_id = $1 AND CAST(brasilia_date AS DATE) >= date_trunc('week', CURRENT_DATE)
+                    WHERE user_id = $1 AND brasilia_date >= ${iso(weekStart)}
                     GROUP BY type`,
                 previousMetrics: `
                     SELECT type, SUM(value) as total
                     FROM user_metrics
                     WHERE user_id = $1
-                      AND brasilia_date >= to_char(date_trunc('week', CURRENT_DATE - INTERVAL '1 week'), 'YYYY-MM-DD')
-                      AND brasilia_date < to_char(date_trunc('week', CURRENT_DATE), 'YYYY-MM-DD')
+                      AND brasilia_date >= ${iso(prevWeekStart)}
+                      AND brasilia_date < ${iso(weekStart)}
                     GROUP BY type`,
                 currentWorkouts: `
                     SELECT COUNT(*) as total
                     FROM workout_logs
-                    WHERE user_id = $1 AND trained = true AND CAST(brasilia_date AS DATE) >= date_trunc('week', CURRENT_DATE)`,
+                    WHERE user_id = $1 AND trained = true AND brasilia_date >= ${weekStart}`,
                 previousWorkouts: `
                     SELECT COUNT(*) as total
                     FROM workout_logs
                     WHERE user_id = $1 AND trained = true
-                      AND CAST(brasilia_date AS DATE) >= date_trunc('week', CURRENT_DATE - INTERVAL '1 week')
-                      AND CAST(brasilia_date AS DATE) < date_trunc('week', CURRENT_DATE)`
+                      AND brasilia_date >= ${prevWeekStart}
+                      AND brasilia_date < ${weekStart}`
             };
 
             type MetricRow = { type: string; total: string };

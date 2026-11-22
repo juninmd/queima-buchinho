@@ -142,15 +142,19 @@ export class MetricsService {
     
     public async getWeightDiffFromStart(userId: number): Promise<number> {
         try {
-            const { rows } = await query(
-                `SELECT value FROM user_metrics 
-                 WHERE user_id = $1 AND type = 'weight' 
-                 ORDER BY created_at ASC`,
+            // Primeiro e último peso direto no banco: antes trazia todas as linhas só para ler as pontas.
+            const { rows } = await query<{ first: string | null; last: string | null; n: string }>(
+                `SELECT (SELECT value FROM user_metrics WHERE user_id = $1 AND type = 'weight'
+                         ORDER BY created_at ASC LIMIT 1) AS first,
+                        (SELECT value FROM user_metrics WHERE user_id = $1 AND type = 'weight'
+                         ORDER BY created_at DESC LIMIT 1) AS last,
+                        (SELECT COUNT(*) FROM user_metrics WHERE user_id = $1 AND type = 'weight') AS n`,
                 [userId]
             );
-            if (rows.length < 2) return 0;
-            const firstWeight = parseFloat(rows[0].value);
-            const lastWeight = parseFloat(rows[rows.length - 1].value);
+            const r = rows[0];
+            if (!r || r.first == null || r.last == null || parseInt(r.n) < 2) return 0;
+            const firstWeight = parseFloat(r.first);
+            const lastWeight = parseFloat(r.last);
             return lastWeight - firstWeight;
         } catch (e) {
             logger.error('Erro ao calcular diferença de peso:', new DatabaseError(toError(e).message));
@@ -176,8 +180,8 @@ export class MetricsService {
                     SELECT type, SUM(value) as total
                     FROM user_metrics
                     WHERE user_id = $1
-                      AND CAST(brasilia_date AS DATE) >= date_trunc('week', CURRENT_DATE - INTERVAL '1 week')
-                      AND CAST(brasilia_date AS DATE) < date_trunc('week', CURRENT_DATE)
+                      AND brasilia_date >= to_char(date_trunc('week', CURRENT_DATE - INTERVAL '1 week'), 'YYYY-MM-DD')
+                      AND brasilia_date < to_char(date_trunc('week', CURRENT_DATE), 'YYYY-MM-DD')
                     GROUP BY type`,
                 currentWorkouts: `
                     SELECT COUNT(*) as total

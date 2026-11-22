@@ -1,0 +1,39 @@
+name: Android Debug Preview
+
+# APK debug (assinado com a chave debug, instala direto) publicado numa pré-release `apk-preview`,
+# para validar o app sem keystore. Manual ou ao mudar este arquivo em branches claude/**.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['.github/workflows/android-debug-preview.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-debug-preview
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-java@v6
+        with: { distribution: temurin, java-version: 21 }
+      - name: Build web + sync Capacitor
+        working-directory: dashboard
+        env: { VITE_API_URL: '${{ vars.APP_API_URL || ''https://queima-api.antonio-code.duckdns.org'' }}' }
+        run: bun install --frozen-lockfile && bun run native:sync
+      - run: ./gradlew assembleDebug
+        working-directory: dashboard/android
+      - name: Publica na pré-release apk-preview
+        run: |
+          cp dashboard/android/app/build/outputs/apk/debug/app-debug.apk Queima-Buchinho-debug.apk
+          gh release view apk-preview >/dev/null 2>&1 || gh release create apk-preview --prerelease --target "$GITHUB_SHA" --title "APK de validação (debug)" --notes "APK debug para testes. Não é a versão assinada de release."
+          gh release upload apk-preview Queima-Buchinho-debug.apk --clobber

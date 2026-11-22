@@ -1,0 +1,67 @@
+name: Android Release
+
+# Tag v* (ou release publicada) → APK assinado anexado à release. O app exige login com GitHub
+# (usuário GITHUB_ALLOWED_USER) no servidor; o APK em si não carrega segredo.
+on:
+  push:
+    tags: ['v*']
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag existente para (re)gerar o APK
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release-${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with: { ref: "${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}" }
+      - name: Exige keystore (APK sem assinatura fixa não instala nem atualiza)
+        env: { KS: '${{ secrets.ANDROID_KEYSTORE_BASE64 }}', KP: '${{ secrets.ANDROID_KEYSTORE_PASSWORD }}', KA: '${{ secrets.ANDROID_KEY_ALIAS }}' }
+        run: |
+          test -n "$KS" && test -n "$KP" && test -n "$KA" || { echo "::error::Defina ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD e ANDROID_KEY_ALIAS"; exit 1; }
+          echo "$KS" | base64 -d > "$RUNNER_TEMP/release.jks"
+      - name: Versão a partir da tag
+        run: |
+          V="${TAG#v}"; V="${V#lembretes-v}"
+          IFS=. read -r MA MI PA <<< "${V%%[-+]*}"
+          echo "APP_VERSION_NAME=$V" >> "$GITHUB_ENV"
+          echo "APP_VERSION_CODE=$(( ${MA:-0} * 1000000 + ${MI:-0} * 1000 + ${PA:-0} ))" >> "$GITHUB_ENV"
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-java@v6
+        with: { distribution: temurin, java-version: 21 }
+      - name: Build web + sync Capacitor
+        working-directory: dashboard
+        env: { VITE_API_URL: '${{ vars.APP_API_URL }}' }
+        run: bun install --frozen-lockfile && bun run native:sync
+      - name: google-services.json (opcional)
+        env: { GOOGLE_SERVICES_JSON: '${{ secrets.GOOGLE_SERVICES_JSON }}' }
+        run: test -z "$GOOGLE_SERVICES_JSON" || echo "$GOOGLE_SERVICES_JSON" > dashboard/android/app/google-services.json
+      - name: assembleRelease assinado
+        working-directory: dashboard/android
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
+      - name: Anexa à release (cria se só a tag existir)
+        run: |
+          OUT="Queima-Buchinho_${APP_VERSION_NAME}.apk"
+          cp dashboard/android/app/build/outputs/apk/release/app-release.apk "$OUT"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --verify-tag --generate-notes --title "$TAG"
+          gh release upload "$TAG" "$OUT" --clobber

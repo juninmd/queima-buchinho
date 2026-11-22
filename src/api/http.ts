@@ -1,5 +1,4 @@
 import http from 'http';
-import { timingSafeEqual } from 'crypto';
 
 export const MAX_BODY_BYTES = 32 * 1024;
 
@@ -20,14 +19,6 @@ export class HttpError extends Error {
 export function send(res: http.ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'Content-Type': 'application/json', ...CORS_HEADERS });
   res.end(JSON.stringify(body));
-}
-
-export function isAuthorized(req: http.IncomingMessage): boolean {
-  const token = process.env.DASHBOARD_TOKEN;
-  if (!token) return false;
-  const expected = Buffer.from(`Bearer ${token}`);
-  const given = Buffer.from(req.headers.authorization || '');
-  return expected.length === given.length && timingSafeEqual(expected, given);
 }
 
 /** Lê o corpo JSON com limite de tamanho. Corpo vazio vira `{}`. */

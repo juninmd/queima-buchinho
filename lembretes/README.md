@@ -11,7 +11,21 @@ bun run tauri icon ../dashboard/public/icons/icon-512.png   # gera ícones (1ª 
 bun run tauri android init && bun run tauri android build --apk
 ```
 
-Na primeira abertura, informe a URL do bot e o `DASHBOARD_TOKEN` em "Conexão com a API".
+## Pareamento por QR code (sem digitar nada)
+
+O app Android só funciona depois de pareado, e o único jeito é escanear um QR gerado no servidor:
+
+```bash
+bun run pair            # no servidor: imprime o QR (usa PUBLIC_API_URL; uso único, expira em 5 min)
+bun run pair list       # dispositivos pareados
+bun run pair revoke 3   # revoga um dispositivo (o app volta para a tela de pareamento)
+bun run pair revoke-all
+```
+
+O QR leva a URL e um código de uso único; o app troca o código por um token de dispositivo (365 dias,
+revogável, só o hash fica no banco). "Desparear" nos Ajustes revoga o token no servidor. No navegador em dev
+(`bun run dev`) continuam os dados de exemplo; no desktop o leitor de QR não existe (use o Android).
+Rode `bun run migrate` no servidor antes do primeiro pareamento.
 CI: `.github/workflows/lembretes.yml` gera desktop (Linux) e o APK.
 
 ## Release e auto-update

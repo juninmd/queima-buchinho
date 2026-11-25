@@ -1,6 +1,7 @@
 import http from 'http';
 import { logger } from '../utils/logger';
 import { handleAuth, isAuthorized } from './auth';
+import { handlePairing } from './pairing';
 import { CORS_HEADERS, HttpError, send } from './http';
 import { Router } from './router';
 import { buildRouter } from './routes';
@@ -23,13 +24,14 @@ export class DashboardApiServer {
     }
 
     const pathname = (req.url ?? '/').split('?')[0];
+    if (await handlePairing(req, res, pathname)) return;
     if (await handleAuth(req, res, pathname)) return;
     if (!pathname.startsWith('/api/')) {
       if (!(await servePwa(req, res).catch(() => false))) send(res, 404, { error: 'not_found' });
       return;
     }
 
-    if (!isAuthorized(req)) {
+    if (!(await isAuthorized(req))) {
       send(res, 401, { error: 'unauthorized' });
       return;
     }

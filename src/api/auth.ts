@@ -1,6 +1,7 @@
 import http from 'http';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { HttpError, readJson, send } from './http';
+import { verifyDeviceToken } from './pairing.store';
 
 /**
  * Login com GitHub (Device Flow: serve PWA e APK sem redirect nem client secret) restrito a um
@@ -15,7 +16,7 @@ export const allowedGithubUser = (): string => (process.env.GITHUB_ALLOWED_USER?
 const secret = (): string => process.env.SESSION_SECRET?.trim() || process.env.DASHBOARD_TOKEN?.trim() || '';
 
 /** A API só sobe se houver alguma forma de autenticar. */
-export const authConfigured = (): boolean => !!(process.env.DASHBOARD_TOKEN || (githubClientId() && secret()));
+export const authConfigured = (): boolean => !!(process.env.DASHBOARD_TOKEN || (githubClientId() && secret()) || process.env.DATABASE_URL);
 
 const b64 = (s: string | Buffer): string => Buffer.from(s).toString('base64url');
 const mac = (payload: string): string => createHmac('sha256', secret()).update(payload).digest('base64url');
@@ -43,13 +44,14 @@ const safeEq = (a: string, b: string): boolean => {
   return x.length === y.length && timingSafeEqual(x, y);
 };
 
-/** Token interno (DASHBOARD_TOKEN) ou sessão GitHub válida. */
-export function isAuthorized(req: http.IncomingMessage): boolean {
+/** Token interno (DASHBOARD_TOKEN), sessão GitHub ou dispositivo pareado por QR (não revogado). */
+export async function isAuthorized(req: http.IncomingMessage): Promise<boolean> {
   const header = req.headers.authorization || '';
   if (!header.startsWith('Bearer ')) return false;
   const given = header.slice(7);
   const internal = process.env.DASHBOARD_TOKEN;
   if (internal && safeEq(given, internal)) return true;
+  if (given.startsWith('qbd_')) return verifyDeviceToken(given);
   return verifySession(given);
 }
 

@@ -1,4 +1,4 @@
-import { isMock, loadConfig } from './api';
+import { isMock, needsPairing } from './api';
 import type { Day } from './history';
 import { buildReminders, nextPending } from './reminders';
 import type { Settings } from './settings';
@@ -34,13 +34,22 @@ const eta = (t: string, now: number): string => { const m = Number(t.slice(0, 2)
 
 export interface ViewState { today: Today; error: string; mika: string; chat: { me: boolean; text: string }[]; chatOpen: boolean; now: number; set: Settings; update: import('./update').UpdateInfo | null; updating: boolean; queued: number; hist: Day[] }
 
+/** Tela inicial sem pareamento: a única forma de configurar é escanear o QR gerado no servidor. */
+export function pairView(error: string, busy = false): string {
+  return `<div class="wrap"><header><div><h1>Lembretes</h1><div class="sub">Dispositivo não pareado</div></div></header>
+    <div class="glass"><b>Conecte ao seu servidor</b>
+      <p class="sub">No servidor, rode <code>bun run pair</code> e escaneie o QR code exibido. Nada de digitar URL, e-mail ou senha.</p>
+      ${error ? `<div class="warn" role="alert">⚠️ ${esc(error)}</div>` : ''}
+      <div class="actions"><button class="ok" id="scan" ${busy ? 'disabled' : ''}>${busy ? 'Pareando…' : '📷 Escanear QR code'}</button></div></div></div>`;
+}
+
 export function view(s: ViewState): string {
+  if (needsPairing()) return pairView(s.error);
   const list = buildReminders(s.today);
   const nxt = nextPending(list, s.now);
   const done = list.filter((r) => r.done), todo = list.filter((r) => !r.done);
   const goal = s.set.goalMl || s.today.water.goalMl;
   const pct = Math.min(100, Math.round((s.today.water.ml / goal) * 100));
-  const cfg = loadConfig();
   const msgs = s.chat.map((m) => `<div class="${m.me ? 'me' : 'ai'}">${esc(m.text)}</div>`).join('');
   return `<div class="wrap">
     <header><div><h1>Lembretes</h1><div class="sub">${s.today.streak} dias seguidos</div></div>
@@ -66,9 +75,7 @@ export function view(s: ViewState): string {
     <details class="glass"><summary>Ajustes</summary>
       <div class="sws">${sw('notif', s.set.notif, 'Notificações')}${sw('audio', s.set.audio, 'Áudio da Mika')}${sw('bg', s.set.bg, 'Mika ao fundo')}</div>
       <label class="sub">Meta de água (ml, 0 = da API)<input id="goal" type="number" min="0" step="250" value="${s.set.goalMl}" /></label>
-      <input id="url" placeholder="https://queima-api.antonio-code.duckdns.org" value="${esc(cfg?.baseUrl ?? 'https://queima-api.antonio-code.duckdns.org')}" />
-      <input id="tok" type="password" placeholder="Token (DASHBOARD_TOKEN)" value="${esc(cfg?.token ?? '')}" />
       ${s.error ? `<div class="sub">⚠️ ${esc(s.error)}</div>` : ''}
-      <div class="actions"><button id="save" class="ok">Salvar</button><button id="reset">Usar exemplo</button><button id="notif">Testar 🔔</button></div></details>
+      <div class="actions">${isMock() ? '' : '<button id="unpair">Desparear</button>'}<button id="notif">Testar 🔔</button></div></details>
     <button class="bubble" id="fab" aria-label="Falar com a Mika">💬 Fale comigo</button></div>`;
 }

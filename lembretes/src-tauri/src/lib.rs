@@ -1,6 +1,9 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default().plugin(tauri_plugin_notification::init());
+    // Leitor de QR (pareamento com o servidor): só existe no mobile.
+    #[cfg(mobile)]
+    let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
     // Updater só nos builds de release (feature "updater"): exige chave pública e assinatura.
     #[cfg(all(feature = "updater", desktop))]
     let builder = builder

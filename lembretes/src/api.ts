@@ -26,6 +26,7 @@ async function call<T>(cfg: Config, method: string, path: string, body?: unknown
       body: body ? JSON.stringify(body) : undefined,
       signal: ctl.signal,
     });
+    if (res.status === 401) { clearConfig(); throw new Error('Pareamento revogado ou expirado. Escaneie um novo QR.'); }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as T;
   } catch (e) {
@@ -34,10 +35,14 @@ async function call<T>(cfg: Config, method: string, path: string, body?: unknown
   } finally { clearTimeout(timer); }
 }
 
-/** Sem configuração → mock. Com configuração → API do cluster (/api/app/today). */
-export const isMock = (): boolean => !loadConfig();
+/** Dados de exemplo só no desenvolvimento no navegador. No app de verdade, sem pareamento nada funciona. */
+const DEV = import.meta.env.DEV;
+export const needsPairing = (): boolean => !loadConfig() && !DEV;
+/** Sem configuração (dev) → mock. Com configuração → API do cluster (/api/app/today). */
+export const isMock = (): boolean => !loadConfig() && DEV;
 export async function fetchToday(): Promise<Today> {
   const cfg = loadConfig();
+  if (!cfg && !DEV) throw new Error('Dispositivo não pareado.');
   return cfg ? call<Today>(cfg, 'GET', '/api/app/today') : mockToday();
 }
 const send = (cfg: Config, op: Op): Promise<unknown> =>

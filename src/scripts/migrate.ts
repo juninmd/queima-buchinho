@@ -109,6 +109,25 @@ const migrationQuery = `
 
   CREATE INDEX IF NOT EXISTS idx_device_tokens_user
     ON device_tokens (user_id);
+
+  -- Pareamento por QR code: códigos de uso único (5 min) e dispositivos pareados revogáveis.
+  -- Só guardamos o hash SHA-256 dos segredos. Rollback: DROP TABLE paired_devices, pairing_codes.
+  CREATE TABLE IF NOT EXISTS pairing_codes (
+    code_hash CHAR(64) PRIMARY KEY,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
+
+  CREATE TABLE IF NOT EXISTS paired_devices (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(60) NOT NULL,
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    last_used_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
 `;
 
 async function migrate() {

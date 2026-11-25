@@ -1,5 +1,6 @@
 import './style.css';
-import { addWater, clearConfig, fetchToday, isMock, markHabit, mikaChat, mikaLine, saveConfig, syncQueue } from './api';
+import { addWater, fetchToday, isMock, markHabit, mikaChat, mikaLine, needsPairing, syncQueue } from './api';
+import { scanAndPair, unpair } from './pairing';
 import { last7, loadHistory, record } from './history';
 import { loadQueue } from './queue';
 import { syncSchedule } from './schedule';
@@ -18,13 +19,13 @@ if (q.has('widget')) document.body.classList.add('widget');
 const clock = (): number => (q.get('now') ? Number(q.get('now')) : new Date().getHours() * 60 + new Date().getMinutes());
 const st: ViewState = { today: mockToday(), error: '', mika: 'Carregando minha paciência…', chat: [], chatOpen: q.has('chat'), now: clock(), set: loadSettings(), update: null, updating: false, queued: loadQueue().length, hist: last7(loadHistory()) };
 let snoozes = loadSnoozes();
-let fresh = false; // true após salvar/limpar a conexão: não restaurar o que estava digitado
+let fresh = false; // true após parear/desparear: não restaurar o que estava digitado
 const val = (id: string): string => (document.getElementById(id) as HTMLInputElement).value;
 
 const canvas = document.createElement('canvas'); canvas.id = 'mika-bg'; document.body.prepend(canvas);
 const bg = new MikaBg(canvas); bindSpeak((v) => bg.setSpeaking(v));
 const applyBg = (): void => { document.body.classList.toggle("nobg", !st.set.bg); document.body.classList.toggle("hasbg", st.set.bg); };
-const FIELDS = ['msg', 'url', 'tok', 'goal'];
+const FIELDS = ['msg', 'goal'];
 /** Re-renderiza sem perder o que o usuário está digitando, o foco nem o painel "Ajustes" aberto. */
 const render = (): void => {
   st.now = clock();
@@ -42,6 +43,7 @@ const render = (): void => {
 setTimeout(() => document.body.classList.add('ready'), 900);
 
 async function refresh(): Promise<void> {
+  if (needsPairing()) { render(); return; } // sem pareamento o app não conversa com ninguém
   await syncQueue();
   try { st.today = await fetchToday(); st.error = ''; } catch (e) { st.error = (e as Error).message; }
   st.queued = loadQueue().length;
@@ -61,8 +63,8 @@ app.addEventListener('click', async (e) => {
   else if (el.dataset.snooze) { snoozes = snooze(snoozes, el.dataset.snooze, clock()); saveSnoozes(snoozes); void syncSchedule(buildReminders(st.today), snoozes, st.set.notif); render(); }
   else if (el.dataset.habit) { const q = await markHabit(el.dataset.habit, true); if (isMock() || q) st.today.habits[el.dataset.habit] = true; await refresh(); }
   else if (el.dataset.water) { const q = await addWater(250); if (isMock() || q) st.today.water.ml += 250; await refresh(); }
-  else if (el.id === 'save') { saveConfig({ baseUrl: val('url'), token: val('tok') }); fresh = true; await refresh(); }
-  else if (el.id === 'reset') { clearConfig(); fresh = true; await refresh(); }
+  else if (el.id === 'scan') { st.error = ''; render(); try { await scanAndPair(); fresh = true; await refresh(); } catch (err) { st.error = (err as Error).message; render(); } }
+  else if (el.id === 'unpair') { await unpair(); st.error = ''; fresh = true; await refresh(); }
   else if (el.id === 'notif') { const r = nextPending(buildReminders(st.today), 0); if (r) await notify(r, st.set); }
   else if (el.id === 'upd' && st.update?.apply) { st.updating = true; render(); await st.update.apply().catch(() => { st.updating = false; render(); }); }
   else if (el.id === 'fab') { st.chatOpen = !st.chatOpen; render(); }

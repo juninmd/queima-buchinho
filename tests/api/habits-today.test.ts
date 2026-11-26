@@ -37,7 +37,7 @@ describe('estado do dia e hábitos', () => {
   it('GET /api/app/today agrega tudo o que o app precisa', async () => {
     const { status: code, json } = await api.call('GET', '/api/app/today');
     expect(code).toBe(200);
-    expect(json.habitDefs).toHaveLength(12);
+    expect(json.habitDefs).toHaveLength(14);
     expect(json.habitDefs[0]).toEqual({ key: 'treino', emoji: '💪', label: 'Treino', category: 'fitness' });
     expect(json.habits).toEqual(status);
     expect(json.water).toMatchObject({ ml: 1200, goalMl: 2000, celebrationMl: 3000 });

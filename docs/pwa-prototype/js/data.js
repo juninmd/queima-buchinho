@@ -3,6 +3,7 @@ const HABITS = [
   ['leitura', '📖', 'Leitura', 'wellness'], ['meditacao', '🧘‍♀️', 'Meditação', 'wellness'], ['fio_dental', '🦷', 'Fio dental', 'wellness'],
   ['suplemento', '💊', 'Suplemento', 'nutrition'], ['cafe', '🍳', 'Café da manhã', 'nutrition'], ['almoco', '🍽️', 'Almoço', 'nutrition'],
   ['cafe_tarde', '🍪', 'Café da tarde', 'nutrition'], ['jantar', '🌙', 'Jantar', 'nutrition'], ['sem_acucar', '🚫', 'Sem açúcar', 'nutrition'],
+  ['fui_dormir', '😴', 'Fui dormir', 'wellness'], ['acordei', '⏰', 'Acordei', 'wellness'],
 ].map(([key, emoji, label, cat]) => ({ key, emoji, label, cat }));
 const CATS = { fitness: 'Fitness', nutrition: 'Nutrição', wellness: 'Bem-estar' };
 const WATER_GOAL = 3000;

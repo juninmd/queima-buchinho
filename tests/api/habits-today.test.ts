@@ -1,4 +1,5 @@
 import { startApi } from './helpers';
+import { HABITS } from '../../src/config/habits';
 
 const status = { treino: true, cardio: false };
 jest.mock('../../src/services/habits.service', () => ({
@@ -37,7 +38,8 @@ describe('estado do dia e hábitos', () => {
   it('GET /api/app/today agrega tudo o que o app precisa', async () => {
     const { status: code, json } = await api.call('GET', '/api/app/today');
     expect(code).toBe(200);
-    expect(json.habitDefs).toHaveLength(14);
+    expect(json.habitDefs).toHaveLength(HABITS.length);
+    expect(json.habitDefs.map((h: { key: string }) => h.key)).toEqual(expect.arrayContaining(['fui_dormir', 'acordei']));
     expect(json.habitDefs[0]).toEqual({ key: 'treino', emoji: '💪', label: 'Treino', category: 'fitness' });
     expect(json.habits).toEqual(status);
     expect(json.water).toMatchObject({ ml: 1200, goalMl: 2000, celebrationMl: 3000 });

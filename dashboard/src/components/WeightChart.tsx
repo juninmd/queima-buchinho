@@ -1,3 +1,4 @@
+import { EmptyState } from '@juninmd/sonido';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import type { DayPoint } from '../types';
 import { TOOLTIP_STYLE, formatChartDate } from './chartTheme';
@@ -8,7 +9,13 @@ export function WeightChart({ days }: { days: DayPoint[] }) {
     .map(d => ({ date: formatChartDate(d.date), peso: d.weight }));
 
   if (data.length === 0) {
-    return <p className="chart-empty">Sem registros de peso no período.</p>;
+    return (
+      <EmptyState
+        icon={<span aria-hidden="true">⚖️</span>}
+        title="Sem registros de peso no período."
+        description="Registre o peso para ver a evolução."
+      />
+    );
   }
 
   return (

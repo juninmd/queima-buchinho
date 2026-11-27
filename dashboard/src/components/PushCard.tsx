@@ -1,3 +1,4 @@
+import { Button, Switch } from '@juninmd/sonido';
 import { usePush } from '../app/usePush';
 import type { PushPrefs } from '../api/contract';
 
@@ -22,16 +23,23 @@ export function PushCard() {
       <h2>Lembretes <small>{on ? 'ativos neste aparelho' : 'desligados'}</small></h2>
       {NOTE[status] && <p className="sub">{NOTE[status]}</p>}
       {(status === 'off' || on) && (
-        <button className={`btn ${on ? '' : 'primary'}`} disabled={busy} onClick={() => void (on ? disable() : enable())}>
+        <Button variant={on ? 'secondary' : 'primary'} loading={busy} onClick={() => void (on ? disable() : enable())}>
           {on ? 'Desligar neste aparelho' : 'Ativar lembretes'}
-        </button>
+        </Button>
       )}
-      {on && ROWS.map(r => (
-        <div key={r.key} className="row static">
-          <span className="grow">{r.label}<br /><small className="sub">{r.hint}</small></span>
-          <button className={`sw ${prefs[r.key] ? 'on' : ''}`} role="switch" aria-checked={prefs[r.key]} aria-label={r.label} onClick={() => void setPref(r.key, !prefs[r.key])} />
+      {on && (
+        <div className="prefs">
+          {ROWS.map(r => (
+            <Switch
+              key={r.key}
+              label={r.label}
+              description={r.hint}
+              checked={!!prefs[r.key]}
+              onChange={v => void setPref(r.key, v)}
+            />
+          ))}
         </div>
-      ))}
+      )}
     </section>
   );
 }

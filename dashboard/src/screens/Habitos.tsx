@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Badge, Button, EmptyState } from '@juninmd/sonido';
 import { useApp } from '../app/AppProvider';
 import { Header } from '../components/ui/Header';
 import { Icon } from '../components/ui/Icon';
@@ -21,7 +22,7 @@ export function Habitos() {
   return (
     <>
       <Header eyebrow={`${done} de ${defs.length} hoje`} title="Hábitos"
-        right={<span className={`chip num ${pct >= 70 ? 'good' : 'warn'}`}>{pct}%</span>} />
+        right={<Badge tone={pct >= 70 ? 'success' : 'warning'}>{pct}%</Badge>} />
       <Seg label="Seção" value={view} onChange={setView} options={[{ value: 'habitos', label: 'Hábitos' }, { value: 'cardapio', label: 'Cardápio' }]} />
       {view === 'habitos' ? (
         <>
@@ -36,10 +37,10 @@ export function Habitos() {
               ))}
             </section>
           ))}
-          <button className={`btn ${confirm ? 'danger' : ''}`}
+          <Button variant={confirm ? 'danger' : 'secondary'}
             onClick={() => { if (confirm) { void resetWorkout(); setConfirm(false); } else setConfirm(true); }}>
             {confirm ? 'Toque de novo para zerar o treino' : 'Zerar o treino de hoje'}
-          </button>
+          </Button>
         </>
       ) : (
         <>
@@ -49,12 +50,18 @@ export function Habitos() {
             const isDone = !!today.habits[m.key];
             return (
               <article key={m.key} className={`card meal ${isDone ? 'done' : ''}`}>
-                <h2>{def?.emoji} {def?.label}<span className={`chip ${isDone ? 'good' : ''}`}>{isDone ? 'feita' : 'pendente'}</span></h2>
+                <h2>{def?.emoji} {def?.label}<Badge tone={isDone ? 'success' : 'neutral'}>{isDone ? 'feita' : 'pendente'}</Badge></h2>
                 <p>{m.text}</p>
-                <button className={`btn ${isDone ? 'on' : ''}`} onClick={() => void toggleHabit(m.key, !isDone)}>{isDone ? 'Feita' : 'Marcar como feita'}</button>
+                <Button variant={isDone ? 'secondary' : 'primary'} onClick={() => void toggleHabit(m.key, !isDone)}>{isDone ? 'Feita' : 'Marcar como feita'}</Button>
               </article>
             );
-          }) ?? <p className="sub">Cardápio indisponível offline.</p>}
+          }) ?? (
+            <EmptyState
+              icon={<span aria-hidden="true">🍽️</span>}
+              title="Cardápio indisponível offline."
+              description="Conecte para ver o plano do dia."
+            />
+          )}
         </>
       )}
     </>

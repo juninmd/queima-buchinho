@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from '@juninmd/sonido';
 import type { FichaExercise } from '../api/contract';
 import { fmtKg } from '../lib/number';
 import { Icon } from './ui/Icon';
@@ -32,15 +33,15 @@ export function ExerciseCard({ ex, done, onSet, onLoad, progredir = true }: Prop
       </div>
       {ex.cargaKg !== null && (
         <div className="stepper">
-          {DELTAS.slice(0, 2).map(d => <button key={d} className="btn sm" onClick={() => onLoad(d)}>{fmtKg(d)}</button>)}
+          {DELTAS.slice(0, 2).map(d => <Button key={d} size="sm" variant="secondary" onClick={() => onLoad(d)}>{fmtKg(d)}</Button>)}
           <b>{fmtKg(ex.cargaKg)} kg</b>
-          {DELTAS.slice(2).map(d => <button key={d} className="btn sm" onClick={() => onLoad(d)}>+{fmtKg(d)}</button>)}
+          {DELTAS.slice(2).map(d => <Button key={d} size="sm" variant="secondary" onClick={() => onLoad(d)}>+{fmtKg(d)}</Button>)}
         </div>
       )}
       {progredir && ex.cargaKg !== null && ex.incrementoKg && (
-        <button className="btn sm progress" onClick={() => onLoad(ex.incrementoKg!)}>
+        <Button className="ex-progress" size="sm" variant="secondary" onClick={() => onLoad(ex.incrementoKg!)}>
           Bati o topo da faixa · progredir +{fmtKg(ex.incrementoKg)} kg
-        </button>
+        </Button>
       )}
     </article>
   );

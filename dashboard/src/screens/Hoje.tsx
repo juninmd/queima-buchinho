@@ -1,3 +1,4 @@
+import { Button } from '@juninmd/sonido';
 import { useApp } from '../app/AppProvider';
 import { Header } from '../components/ui/Header';
 import { Icon } from '../components/ui/Icon';
@@ -20,7 +21,7 @@ export function Hoje() {
   return (
     <>
       <Header eyebrow={today.weekday} title="Hoje"
-        right={<button className="icon-btn" aria-label="Abrir ajustes" onClick={() => go('ajustes')}><Icon name="gear" /></button>} />
+        right={<Button size="icon" variant="secondary" aria-label="Abrir ajustes" onClick={() => go('ajustes')}><Icon name="gear" /></Button>} />
       {today.pauseUntil && (
         <div className="card pause"><b>Pausa ativa até {today.pauseUntil.split('-').reverse().slice(0, 2).join('/')}</b>
           <p className="sub">Sem lembretes. Sequência congelada.</p></div>
@@ -41,13 +42,13 @@ export function Hoje() {
           <>
             <div className={`row ${today.trained ? 'done' : ''}`}><span className="em">{plan.emoji}</span>
               <span className="grow">{plan.titulo}<br /><small className="sub">{plan.foco}</small></span><span className="tick"><Icon name="check" /></span></div>
-            <button className="btn primary" onClick={() => go('treino')}>{today.trained ? 'Ver ficha' : 'Abrir ficha'}</button>
+            <Button variant="primary" onClick={() => go('treino')}>{today.trained ? 'Ver ficha' : 'Abrir ficha'}</Button>
           </>
         ) : <p className="sub">Hoje é descanso. Vá dormir.</p>}
       </section>
       {nextMeal && (
         <section className="card meal"><h2>Próxima refeição <small>{mealLabel}</small></h2><p>{nextMeal.text}</p>
-          <button className="btn" onClick={() => void toggleHabit(nextMeal.key, true)}>Marcar como feita</button></section>
+          <Button variant="secondary" onClick={() => void toggleHabit(nextMeal.key, true)}>Marcar como feita</Button></section>
       )}
     </>
   );

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Button } from '@juninmd/sonido';
 import type { MetricType } from '../api/contract';
 import { useApp } from '../app/AppProvider';
 import { useToast } from '../app/Toast';
@@ -46,7 +47,7 @@ export function MeasuresForm() {
           </label>
         ))}
       </div>
-      <button className="btn primary">Salvar medidas</button>
+      <Button type="submit" variant="primary">Salvar medidas</Button>
     </form>
   );
 }

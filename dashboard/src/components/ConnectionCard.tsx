@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from '@juninmd/sonido';
 import { clearConfig, loadConfig, normalizeBaseUrl, saveConfig } from '../lib/config';
 import { useToast } from '../app/Toast';
 
@@ -21,8 +22,8 @@ export function ConnectionCard({ onSignOut }: { onSignOut: () => void }) {
       <label className="field" htmlFor="api-url">URL da API<input id="api-url" value={url} onChange={e => setUrl(e.target.value)} autoComplete="off" /></label>
       <label className="field" htmlFor="api-token">Token<input id="api-token" type="password" value={token} onChange={e => setToken(e.target.value)} autoComplete="off" /></label>
       <div className="btns">
-        <button className="btn primary" onClick={save}>Salvar</button>
-        <button className="btn danger" onClick={() => { clearConfig(); onSignOut(); }}>Sair</button>
+        <Button variant="primary" onClick={save}>Salvar</Button>
+        <Button variant="danger" onClick={() => { clearConfig(); onSignOut(); }}>Sair</Button>
       </div>
     </section>
   );

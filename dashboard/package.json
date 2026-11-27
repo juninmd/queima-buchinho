@@ -18,6 +18,7 @@
     "@capacitor-firebase/messaging": "^8.5.2",
     "@capacitor/core": "^8.5.3",
     "@capacitor/local-notifications": "^8.3.1",
+    "@juninmd/sonido": "^2.2.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.0"

@@ -1,3 +1,4 @@
+import { Badge, Button } from '@juninmd/sonido';
 import { useApp } from '../app/AppProvider';
 import { ExerciseCard } from '../components/ExerciseCard';
 import { Header } from '../components/ui/Header';
@@ -19,22 +20,22 @@ export function Treino() {
 
   return (
     <>
-      <Header eyebrow={`${today?.weekday ?? ''} · ficha das 06:00`} title={plan.titulo} right={<span className="chip num">{made}/{total}</span>} />
+      <Header eyebrow={`${today?.weekday ?? ''} · ficha das 06:00`} title={plan.titulo} right={<Badge tone="aqua">{made}/{total}</Badge>} />
       <p className="sub">{plan.foco}</p>
-      <div className="chips-row"><span className="chip">{plan.metodo}</span><span className="chip">cárdio depois</span>{plan.fase && <span className="chip">Semana {plan.fase.semana}/4 · {plan.fase.nome} · bloco {plan.fase.bloco}</span>}</div>
+      <div className="chips-row"><Badge>{plan.metodo}</Badge><Badge>cárdio depois</Badge>{plan.fase && <Badge tone="violet">Semana {plan.fase.semana}/4 · {plan.fase.nome} · bloco {plan.fase.bloco}</Badge>}</div>
       {plan.fase && <p className="sub">{plan.fase.dica}</p>}
       {lifts.map(e => (
         <ExerciseCard key={e.key} ex={e} done={sets[e.key] ?? 0} onSet={i => toggleSet(e.key, i)} onLoad={d => void adjustLoad(e.key, d)} progredir={!plan.fase?.deload} />
       ))}
       {cardio && (
         <article className="card">
-          <h2>{cardio.nome}<span className={`chip ${cardioDone ? 'good' : ''}`}>{cardioDone ? 'feito' : 'pendente'}</span></h2>
+          <h2>{cardio.nome}<Badge tone={cardioDone ? 'success' : 'neutral'}>{cardioDone ? 'feito' : 'pendente'}</Badge></h2>
           <p className="sub">{cardio.aparelho} · {cardio.reps}</p>
         </article>
       )}
       <div className="btns">
-        <button className={`btn ${trained ? 'on' : 'primary'}`} disabled={trained} onClick={() => void finish('treino')}>{trained ? 'Treino feito ✓' : 'Treinei'}</button>
-        <button className={`btn ${cardioDone ? 'on' : ''}`} disabled={cardioDone} onClick={() => void finish('cardio')}>{cardioDone ? 'Cárdio feito ✓' : 'Fiz o cárdio'}</button>
+        <Button variant={trained ? 'secondary' : 'primary'} disabled={trained} onClick={() => void finish('treino')}>{trained ? 'Treino feito ✓' : 'Treinei'}</Button>
+        <Button variant={cardioDone ? 'secondary' : 'primary'} disabled={cardioDone} onClick={() => void finish('cardio')}>{cardioDone ? 'Cárdio feito ✓' : 'Fiz o cárdio'}</Button>
       </div>
     </>
   );

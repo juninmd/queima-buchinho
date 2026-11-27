@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Button } from '@juninmd/sonido';
 import { pollGithubLogin, startGithubLogin, type DeviceStart } from '../api/auth';
 import { api } from '../api/client';
 import { clearConfig, defaultBaseUrl, normalizeBaseUrl, saveConfig } from '../lib/config';
@@ -51,10 +52,10 @@ export function Connect({ onConnected }: { onConnected: () => void }) {
       <label className="field" htmlFor="c-url">URL da API<input id="c-url" value={url} onChange={e => setUrl(e.target.value)} inputMode="url" autoComplete="off" /></label>
       {device && <p className="sub">Abra <a href={device.verificationUri} target="_blank" rel="noreferrer">{device.verificationUri}</a> e digite o código <strong>{device.userCode}</strong>.</p>}
       {error && <p className="panel-error" role="alert">{error}</p>}
-      <button type="button" className="btn primary" disabled={busy || !url.trim()} onClick={() => void githubLogin()}>{device ? 'Aguardando GitHub…' : 'Entrar com GitHub'}</button>
+      <Button type="button" variant="primary" loading={busy} disabled={!url.trim()} onClick={() => void githubLogin()}>{device ? 'Aguardando GitHub…' : 'Entrar com GitHub'}</Button>
       <details><summary>Usar token manual</summary>
         <label className="field" htmlFor="c-token">Token<input id="c-token" type="password" value={token} onChange={e => setToken(e.target.value)} autoComplete="off" /></label>
-        <button className="btn" disabled={busy || !token.trim()}>Conectar com token</button>
+        <Button type="submit" variant="secondary" disabled={busy || !token.trim()}>Conectar com token</Button>
       </details>
     </form>
   );

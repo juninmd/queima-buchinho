@@ -29,24 +29,7 @@ Sonido é importado antes do CSS do app em `dashboard/src/main.tsx`.
 - `NavBar`: navegação inferior específica do app, sem equivalente no Sonido.
 - Bolhas do chat da Mika e os pontos de série do treino: não há primitivo equivalente publicado.
 
-## Como as imagens foram geradas
+## Comparações
 
-`preview.html` + `preview.tsx` montam a mesma página com os dois lados. O lado **Antes** importa
-cópias literais de `origin/master` em `legacy/` (só o caminho do import foi ajustado); o lado
-**Depois** importa os arquivos do app já apoiados no Sonido. O CSS real do dashboard é carregado
-junto com `@juninmd/sonido/styles.css`.
+As capturas (`antes-depois-1.png`, `antes-depois-2.png`) foram geradas antes do merge, em Chromium 1180×900 (`deviceScaleFactor: 2`, `fullPage`), com dados fictícios. O harness que montava os dois lados (`preview*` e as cópias em `legacy/`) foi removido depois da revisão; as imagens ficam como registro da troca.
 
-Com `bun run dev -- --port 5305` em `dashboard/`:
-
-```bash
-# http://localhost:5305/sonido-migration/preview.html?parte=1
-# http://localhost:5305/sonido-migration/preview.html?parte=2
-```
-
-O `vite.config.ts` tem um middleware só de dev que serve este HTML fora do root do Vite; o entry
-`dashboard/sonido-preview.tsx` importa `preview.tsx` e o app real. Ele fica fora de `src/` de
-propósito: assim o `tsc` do app não resolve esta pasta de documentação no build de produção/Docker.
-
-As capturas (`antes-depois-1.png`, `antes-depois-2.png`) foram feitas em Chromium 1180×900,
-`deviceScaleFactor: 2`, `fullPage`, com dados fictícios. A página inteira passava de 400 KB por
-captura, então a comparação foi dividida em duas partes.

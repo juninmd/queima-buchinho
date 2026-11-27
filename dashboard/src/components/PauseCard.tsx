@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Button } from '@juninmd/sonido';
 import { api } from '../api/client';
 import { useApp } from '../app/AppProvider';
 import { useToast } from '../app/Toast';
@@ -26,8 +27,8 @@ export function PauseCard() {
     <section className={`card ${until ? 'pause' : ''}`}>
       <h2>Pausa <small>{until ? `ativa até ${br(until)}` : 'desativada'}</small></h2>
       <p className="sub">Sem lembretes nem cobranças. A sequência de treinos fica congelada.</p>
-      <div className="btns">{DAYS.map(d => <button key={d} className="btn sm" onClick={() => void pause(d)}>{d} {d === 1 ? 'dia' : 'dias'}</button>)}</div>
-      {until && <button className="btn" onClick={() => void resume()}>Voltar agora</button>}
+      <div className="btns">{DAYS.map(d => <Button key={d} size="sm" variant="secondary" onClick={() => void pause(d)}>{d} {d === 1 ? 'dia' : 'dias'}</Button>)}</div>
+      {until && <Button variant="secondary" onClick={() => void resume()}>Voltar agora</Button>}
     </section>
   );
 }

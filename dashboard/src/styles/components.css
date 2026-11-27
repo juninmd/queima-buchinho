@@ -40,3 +40,33 @@
 .ql input { flex: 1; width: auto; }
 .ql { display: flex; gap: 8px; }
 .sub { margin: 0; color: var(--muted); font-size: 0.78rem; }
+
+/* --- Ponte de layout para os componentes do @juninmd/sonido --- */
+/* O Tabs do Sonido é inline; o controle segmentado do app ocupa a linha e divide igual. */
+.seg-sonido { display: flex; width: 100%; }
+.seg-sonido .sn-tab { flex: 1; justify-content: center; }
+
+/* StatTile + ProgressBar: o tile do Sonido não tem slot para a barra. */
+.stat-tile { display: grid; gap: 6px; min-width: 0; align-content: start; }
+.stat-tile .sn-stattile { height: 100%; }
+
+/* O marcador de ritmo do dia continua sobre a barra do Sonido. */
+.water-progress { position: relative; }
+.water-progress__pace { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--warn); border-radius: 1px; }
+
+/* Preferências: texto à esquerda, interruptor à direita, como a linha antiga. */
+.prefs { display: grid; gap: 10px; }
+.prefs .sn-switch { width: 100%; flex-direction: row-reverse; justify-content: space-between; }
+.prefs .sn-switch__text { flex: 1; }
+
+/* Skeleton ocupa o lugar do resumo enquanto a API responde. */
+.skeleton-summary { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; }
+
+/* O botão de refresh fica no canto direito do cabeçalho da Mika. */
+.mika-refresh { margin-left: auto; }
+
+/* A dica de progressão ocupa a linha inteira do card de exercício. */
+.ex .ex-progress { grid-column: 1 / -1; }
+
+/* Número central do anel de progresso. */
+.ring-count { font: 700 1.2rem var(--font-mono); font-variant-numeric: tabular-nums; }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Button, EmptyState, Skeleton } from '@juninmd/sonido';
 import { api } from '../api/client';
 import type { DashboardAnalysis, DashboardRange } from '../types';
 
@@ -26,17 +27,20 @@ export function MikaAnalysis({ range }: { range: DashboardRange }) {
           <h3>Análise da Mika</h3>
           <span className="mika-card__hint">{loading ? 'pensando...' : data?.fallback ? 'modo offline' : 'gerado por IA'}</span>
         </div>
-        <button className="mika-card__refresh" onClick={() => load(true)} disabled={loading} title="Gerar nova análise">
+        <Button className="mika-refresh" size="icon" variant="ghost" onClick={() => load(true)} disabled={loading} aria-label="Gerar nova análise" title="Gerar nova análise">
           ↻
-        </button>
+        </Button>
       </div>
 
-      {loading && (
-        <div className="mika-card__skeleton" aria-hidden="true">
-          <span /><span /><span />
-        </div>
+      {loading && <Skeleton label="A Mika está pensando." rows={3} />}
+      {!loading && error && (
+        <EmptyState
+          icon={<span aria-hidden="true">⚠️</span>}
+          title="A análise não veio."
+          description={`Erro: ${error}`}
+          action={<Button size="sm" variant="secondary" onClick={() => load(true)}>Tentar de novo</Button>}
+        />
       )}
-      {!loading && error && <p className="panel-error">Erro: {error}</p>}
       {!loading && !error && data && <p className="mika-card__message">{data.message}</p>}
     </section>
   );

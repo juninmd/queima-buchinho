@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Button } from '@juninmd/sonido';
 import { api } from '../api/client';
 import { ApiError } from '../api/http';
 import { useApp } from '../app/AppProvider';
@@ -39,7 +40,7 @@ export function QuickLog() {
     <form className="ql" onSubmit={submit}>
       <label htmlFor="ql" hidden>Registro rápido</label>
       <input id="ql" value={text} onChange={e => setText(e.target.value)} placeholder="bebi 500ml · pesei 82,5 · treinei" autoComplete="off" enterKeyHint="send" />
-      <button className="btn primary" disabled={busy} aria-label="Enviar"><Icon name="send" /></button>
+      <Button type="submit" size="icon" loading={busy} aria-label="Enviar"><Icon name="send" /></Button>
     </form>
   );
 }

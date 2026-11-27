@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Button } from '@juninmd/sonido';
 import { api } from '../api/client';
 import { ApiError } from '../api/http';
 import { useApp } from '../app/AppProvider';
@@ -71,7 +72,7 @@ export function Mika() {
         <form className="ql" onSubmit={submit}>
           <label htmlFor="msg" hidden>Mensagem para a Mika</label>
           <input id="msg" value={text} onChange={e => setText(e.target.value)} placeholder="Fala com a Mika ou use /gif termo" autoComplete="off" />
-          <button className="btn primary" disabled={busy} aria-label="Enviar"><Icon name="send" /></button>
+          <Button type="submit" size="icon" loading={busy} aria-label="Enviar"><Icon name="send" /></Button>
         </form>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { Button } from '@juninmd/sonido';
 import { useApp } from '../app/AppProvider';
 import { useInstall } from '../app/useInstall';
 import { flushQueue } from '../api/client';
@@ -12,13 +13,13 @@ export function Ajustes({ onSignOut }: { onSignOut: () => void }) {
 
   return (
     <>
-      <Header eyebrow="Conta e app" title="Ajustes" right={<button className="btn sm" onClick={() => go('hoje')}>Voltar</button>} />
+      <Header eyebrow="Conta e app" title="Ajustes" right={<Button size="sm" variant="secondary" onClick={() => go('hoje')}>Voltar</Button>} />
       <section className="card">
         <h2>Instalar no celular</h2>
         {installed ? <p className="sub">App instalado. Abre em tela cheia e funciona sem internet.</p> : (
           <>
             <p className="sub">{ios ? 'No iPhone: toque em Compartilhar e depois em Adicionar à Tela de Início.' : 'Abre em tela cheia, funciona sem internet e envia lembretes como o Telegram.'}</p>
-            {canPrompt && <button className="btn primary" onClick={() => void install()}>Adicionar à tela inicial</button>}
+            {canPrompt && <Button variant="primary" onClick={() => void install()}>Adicionar à tela inicial</Button>}
           </>
         )}
       </section>
@@ -27,7 +28,7 @@ export function Ajustes({ onSignOut }: { onSignOut: () => void }) {
       <section className="card">
         <h2>Sincronização <small>{online ? 'online' : 'offline'}</small></h2>
         <p className="sub">{pending ? `${pending} ação(ões) aguardando envio.` : 'Tudo sincronizado.'}</p>
-        <button className="btn" disabled={!online} onClick={() => void flushQueue().then(refresh)}>Sincronizar agora</button>
+        <Button variant="secondary" disabled={!online} onClick={() => void flushQueue().then(refresh)}>Sincronizar agora</Button>
       </section>
       <ConnectionCard onSignOut={onSignOut} />
     </>

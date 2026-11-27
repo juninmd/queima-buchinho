@@ -11,6 +11,7 @@ import { Hoje } from './screens/Hoje';
 import { Mika } from './screens/Mika';
 import { Treino } from './screens/Treino';
 import { loadConfig } from './lib/config';
+import { useSonidoTheme } from './lib/sonido';
 
 // Gráficos (recharts) só carregam quando a aba é aberta: o app abre mais leve.
 const Progresso = lazy(() => import('./screens/Progresso').then(m => ({ default: m.Progresso })));
@@ -46,6 +47,7 @@ function Screen({ onSignOut }: { onSignOut: () => void }) {
 }
 
 export function App() {
+  useSonidoTheme();
   const [configured, setConfigured] = useState(() => loadConfig() !== null);
   const [tab, setTab] = useState<Tab>(() => tabFromHash(window.location.hash));
 
